@@ -35,6 +35,7 @@ class EventsServiceProvider extends ServiceProvider
             PlatformCore::registerModule([
                 'key'        => 'events',
                 'title'      => 'Events',
+                'group'      => 'sales',
                 'routing'    => config('events.routing'),
                 'guard'      => config('events.guard'),
                 'navigation' => config('events.navigation'),
