@@ -49,6 +49,9 @@ class EventsServiceProvider extends ServiceProvider
             });
         }
 
+        // Public-Token-Routen (kein Auth, kein Modul-Prefix)
+        $this->loadRoutesFrom(__DIR__ . '/../routes/public.php');
+
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
 
         $this->publishes([
