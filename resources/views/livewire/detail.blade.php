@@ -38,6 +38,37 @@
         ];
     @endphp
 
+    {{-- Event-Detail-Sidebar (Tab-Navigation) --}}
+    <x-slot name="sidebar">
+        <x-ui-page-sidebar title="{{ $event->event_number }}" width="w-64" :defaultOpen="true">
+            <div class="p-3 border-b border-[var(--ui-border)]">
+                <p class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Event</p>
+                <p class="text-xs font-semibold text-[var(--ui-secondary)] truncate mt-0.5" title="{{ $event->name }}">{{ $event->name }}</p>
+                @if($event->customer)
+                    <p class="text-[0.62rem] text-[var(--ui-muted)] truncate mt-0.5">{{ $event->customer }}</p>
+                @endif
+                @if($event->start_date)
+                    <p class="text-[0.62rem] text-[var(--ui-muted)] font-mono mt-1">
+                        {{ $event->start_date->format('d.m.Y') }}@if($event->end_date && $event->end_date != $event->start_date) – {{ $event->end_date->format('d.m.Y') }} @endif
+                    </p>
+                @endif
+            </div>
+
+            <nav class="p-2 space-y-0.5">
+                @foreach($tabs as $key => $meta)
+                    <button wire:click="$set('activeTab', '{{ $key }}')" type="button"
+                            class="w-full flex items-center gap-2 px-3 py-2 text-xs rounded-md transition text-left
+                                   {{ $activeTab === $key
+                                      ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold'
+                                      : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
+                        @svg($meta['icon'], 'w-4 h-4 flex-shrink-0')
+                        <span class="truncate">{{ $meta['label'] }}</span>
+                    </button>
+                @endforeach
+            </nav>
+        </x-ui-page-sidebar>
+    </x-slot>
+
     <x-ui-page-container>
         <x-ui-page-actionbar :breadcrumbs="[
             ['label' => 'Events', 'route' => 'events.dashboard'],
@@ -101,23 +132,6 @@
                     </select>
                 </div>
             </div>
-        </div>
-
-        {{-- Tab-Navigation --}}
-        <div class="mt-4 border-b border-[var(--ui-border)] overflow-x-auto">
-            <nav class="flex gap-1">
-                @foreach($tabs as $key => $meta)
-                    <button wire:click="$set('activeTab', '{{ $key }}')"
-                            type="button"
-                            class="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap
-                                   {{ $activeTab === $key
-                                      ? 'border-[var(--ui-primary)] text-[var(--ui-primary)]'
-                                      : 'border-transparent text-[var(--ui-muted)] hover:text-[var(--ui-secondary)] hover:border-[var(--ui-border)]' }}">
-                        @svg($meta['icon'], 'w-4 h-4')
-                        {{ $meta['label'] }}
-                    </button>
-                @endforeach
-            </nav>
         </div>
 
         {{-- ================= Tab: Basis ================= --}}
