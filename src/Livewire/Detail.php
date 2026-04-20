@@ -31,6 +31,7 @@ class Detail extends Component
         'liefertext'   => 'Liefertext',
         'absprache'    => 'Absprache',
         'vereinbarung' => 'Vereinbarung',
+        'intern'       => 'Interne Info',
     ];
 
     public ?Event $event = null;
@@ -115,6 +116,42 @@ class Detail extends Component
         $this->validate();
         $this->event->save();
         $this->dispatch('events:toast', message: 'Grunddaten gespeichert');
+    }
+
+    /**
+     * Live-Save: bei jedem Wechsel eines event.*-Felds sofort persistieren
+     * (analog zum Alt-System: @change saveEventData()). Validierungsfehler
+     * werden still verschluckt – die UI wuerde sie sonst bei jedem blur anzeigen.
+     */
+    public function updated($property): void
+    {
+        if (str_starts_with($property, 'event.') && $this->event) {
+            try {
+                $this->event->save();
+            } catch (\Throwable $e) {
+                // ignore – eventuelle Validierungsprobleme werden erst beim
+                // expliziten saveEvent() Button gemeldet.
+            }
+        }
+    }
+
+    /**
+     * Schneller Inline-Notiz-Creator (Alt-System: add-input in Stream).
+     */
+    public function addInlineNote(string $type, string $text): void
+    {
+        $text = trim($text);
+        if ($text === '' || !in_array($type, array_keys(self::NOTE_TYPES), true)) {
+            return;
+        }
+        EventNote::create([
+            'event_id'  => $this->event->id,
+            'team_id'   => $this->event->team_id,
+            'user_id'   => Auth::id(),
+            'type'      => $type,
+            'text'      => $text,
+            'user_name' => Auth::user()?->name ?? 'Benutzer',
+        ]);
     }
 
     public function setStatus(string $status): void
@@ -571,11 +608,14 @@ class Detail extends Component
             ->get()
             ->keyBy('role');
 
+        $notesByType = $notes->groupBy('type');
+
         return view('events::livewire.detail', [
             'days'           => $days,
             'bookings'       => $bookings,
             'schedule'       => $schedule,
             'notes'          => $notes,
+            'notesByType'    => $notesByType,
             'locations'      => $locations,
             'statusOptions'  => self::STATUS_OPTIONS,
             'bookingRangs'   => self::BOOKING_RANGS,

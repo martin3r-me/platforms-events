@@ -295,141 +295,317 @@
             </div>
         </div>
 
-        {{-- ================= Tab: Basis ================= --}}
+        {{-- ================= Tab: Basis (3-Spalten-Layout analog Alt) ================= --}}
         @if($activeTab === 'basis')
-            <div class="pt-6 space-y-6">
-                <form wire:submit.prevent="saveEvent" class="space-y-6">
+            <div class="pt-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-                    <x-ui-panel title="Basis" subtitle="Name, Kunde, Gruppe, Ort, Zeitraum und Status">
-                        <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="md:col-span-2">
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Name *</label>
-                                <input wire:model="event.name" type="text"
+                {{-- ========== Spalte 1: Termine ========== --}}
+                <div class="lg:col-span-4 space-y-4">
+                    <x-ui-panel title="Termine" subtitle="{{ $days->count() }} Tag(e)">
+                        <div class="p-2 flex justify-end border-b border-[var(--ui-border)]">
+                            <x-ui-button variant="secondary-outline" size="sm" wire:click="openDayCreate">
+                                @svg('heroicon-o-plus', 'w-3.5 h-3.5 inline') Tag
+                            </x-ui-button>
+                        </div>
+                        @if($days->isEmpty())
+                            <div class="p-8 text-center border border-dashed border-[var(--ui-border)]/40 rounded-md m-3">
+                                @svg('heroicon-o-calendar', 'w-8 h-8 text-[var(--ui-muted)] mx-auto mb-2')
+                                <p class="text-xs text-[var(--ui-muted)]">Keine Termine</p>
+                            </div>
+                        @else
+                            <div class="divide-y divide-[var(--ui-border)]/30">
+                                @foreach($days as $day)
+                                    <div class="p-2 flex items-center gap-2 hover:bg-[var(--ui-muted-5)]/40 group cursor-pointer"
+                                         wire:click="openDayEdit('{{ $day->uuid }}')">
+                                        <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background: {{ $day->color }}"></span>
+                                        <span class="text-[0.58rem] font-bold text-[var(--ui-muted)] w-5 text-center flex-shrink-0">{{ $day->day_of_week ?? '' }}</span>
+                                        <span class="text-xs font-mono text-[var(--ui-secondary)] flex-1 truncate">{{ $day->datum?->format('d.m.Y') ?: '—' }}</span>
+                                        <span class="text-[0.62rem] font-mono text-[var(--ui-muted)] bg-[var(--ui-muted-5)] px-1.5 py-0.5 rounded">
+                                            {{ $day->von ?: '—' }}–{{ $day->bis ?: '—' }}
+                                        </span>
+                                        @if($day->pers_von || $day->pers_bis)
+                                            <span class="text-[0.62rem] font-mono text-[var(--ui-muted)] bg-[var(--ui-muted-5)] px-1.5 py-0.5 rounded flex items-center gap-1">
+                                                @svg('heroicon-o-users', 'w-2.5 h-2.5')
+                                                {{ $day->pers_von ?: '?' }}–{{ $day->pers_bis ?: '?' }}
+                                            </span>
+                                        @endif
+                                        <span class="text-[0.58rem] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded-full">{{ $day->day_status }}</span>
+                                        <button wire:click.stop="deleteDay('{{ $day->uuid }}')" wire:confirm="Tag löschen?"
+                                                class="opacity-0 group-hover:opacity-100 text-red-500 hover:bg-red-50 p-1 rounded flex-shrink-0">
+                                            @svg('heroicon-o-trash', 'w-3 h-3')
+                                        </button>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </x-ui-panel>
+                </div>
+
+                {{-- ========== Spalte 2: Stammdaten-Cards ========== --}}
+                <div class="lg:col-span-4 space-y-4">
+
+                    <x-ui-panel title="Basis" subtitle="Name, Kunde, Zeitraum, Status">
+                        <div class="p-4 space-y-3">
+                            <div>
+                                <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Name *</label>
+                                <input wire:model.blur="event.name" type="text"
                                        class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                                 @error('event.name') <p class="mt-1 text-[0.62rem] text-red-600">{{ $message }}</p> @enderror
                             </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Kunde</label>
-                                <input wire:model="event.customer" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Gruppe</label>
-                                <input wire:model="event.group" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Ort (freitext)</label>
-                                <input wire:model="event.location" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Anlass</label>
-                                @if(!empty($settings['event_types']))
-                                    <div class="flex gap-1">
-                                        <select wire:model="event.event_type"
-                                                class="flex-1 border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                                            <option value="">—</option>
-                                            @foreach($settings['event_types'] as $type)
-                                                <option value="{{ $type }}">{{ $type }}</option>
-                                            @endforeach
-                                        </select>
-                                        <a href="{{ route('events.settings', ['tab' => 'event_types']) }}" target="_blank"
-                                           class="text-[var(--ui-muted)] hover:text-[var(--ui-primary)] p-2" title="Anlass-Typen pflegen">
-                                            @svg('heroicon-o-cog-6-tooth', 'w-4 h-4')
-                                        </a>
-                                    </div>
-                                @else
-                                    <input wire:model="event.event_type" type="text" placeholder="— kein Typ definiert, siehe Einstellungen —"
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Kunde</label>
+                                    <input wire:model.blur="event.customer" type="text"
                                            class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                                @endif
+                                </div>
+                                <div>
+                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Status</label>
+                                    <select wire:model.blur="event.status"
+                                            class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                        @foreach($statusOptions as $s)
+                                            <option value="{{ $s }}">{{ $s }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
                             </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Start</label>
-                                <input wire:model="event.start_date" type="date"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Start</label>
+                                    <input wire:model.blur="event.start_date" type="date"
+                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                </div>
+                                <div>
+                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Ende</label>
+                                    <input wire:model.blur="event.end_date" type="date"
+                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                </div>
                             </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Ende</label>
-                                <input wire:model="event.end_date" type="date"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        </div>
+                    </x-ui-panel>
+
+                    <x-ui-panel title="Veranstalter">
+                        <div class="p-4 space-y-2">
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Unternehmen</label>
+                            <input wire:model.blur="event.organizer_for_whom" type="text"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Ansprechpartner</label>
+                                    <input wire:model.blur="event.organizer_contact" type="text"
+                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                </div>
+                                <div>
+                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Vor Ort</label>
+                                    <input wire:model.blur="event.organizer_contact_onsite" type="text"
+                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                </div>
                             </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Status</label>
-                                <select wire:model="event.status"
-                                        class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                                    @foreach($statusOptions as $s)
-                                        <option value="{{ $s }}">{{ $s }}</option>
-                                    @endforeach
-                                </select>
+                        </div>
+                    </x-ui-panel>
+
+                    <x-ui-panel title="Besteller">
+                        <div class="p-4 space-y-2">
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Bestellt über</label>
+                            <div class="flex gap-1 bg-[var(--ui-muted-5)] rounded-md p-1 w-fit">
+                                @foreach([
+                                    'mail' => ['icon' => 'heroicon-o-envelope',    'label' => 'E-Mail'],
+                                    'phone' => ['icon' => 'heroicon-o-phone',      'label' => 'Telefon'],
+                                    'meeting' => ['icon' => 'heroicon-o-user-group','label' => 'Termin'],
+                                    'referral' => ['icon' => 'heroicon-o-link',    'label' => 'Empfehlung'],
+                                    'other' => ['icon' => 'heroicon-o-ellipsis-horizontal', 'label' => 'Sonstiges'],
+                                ] as $via => $meta)
+                                    <button type="button" wire:click="$set('event.orderer_via', '{{ $via }}')"
+                                            title="{{ $meta['label'] }}"
+                                            class="p-1.5 rounded transition
+                                                   {{ ($event->orderer_via ?? 'mail') === $via
+                                                      ? 'bg-white shadow-sm text-[var(--ui-primary)]'
+                                                      : 'text-[var(--ui-muted)] hover:text-[var(--ui-secondary)]' }}">
+                                        @svg($meta['icon'], 'w-3.5 h-3.5')
+                                    </button>
+                                @endforeach
+                            </div>
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Unternehmen</label>
+                            <input wire:model.blur="event.orderer_company" type="text"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Ansprechpartner</label>
+                            <input wire:model.blur="event.orderer_contact" type="text"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        </div>
+                    </x-ui-panel>
+
+                    <x-ui-panel title="Rechnung">
+                        <div class="p-4 space-y-2">
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Rechnung an</label>
+                            <input wire:model.blur="event.invoice_to" type="text"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Ansprechpartner</label>
+                                    <input wire:model.blur="event.invoice_contact" type="text"
+                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                </div>
+                                <div>
+                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Rechnungsdatum</label>
+                                    <select wire:model.blur="event.invoice_date_type"
+                                            class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                        <option value="">— wählen —</option>
+                                        @foreach($days as $d)
+                                            <option value="{{ $d->datum?->format('Y-m-d') }}">{{ $d->datum?->format('d.m.Y') }}{{ $d->day_of_week ? ' ('.$d->day_of_week.')' : '' }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </x-ui-panel>
 
                     <x-ui-panel title="Zuständigkeit">
-                        <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Verantwortlich</label>
-                                <input wire:model="event.responsible" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Kostenstelle</label>
-                                @if(!empty($settings['cost_centers']))
-                                    <div class="flex gap-1">
-                                        <select wire:model="event.cost_center"
-                                                class="flex-1 border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        <div class="p-4 space-y-2">
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Verantwortlich</label>
+                            <input wire:model.blur="event.responsible" type="text"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Kostenstelle</label>
+                                    @if(!empty($settings['cost_centers']))
+                                        <select wire:model.blur="event.cost_center"
+                                                class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                                             <option value="">—</option>
                                             @foreach($settings['cost_centers'] as $cc)
                                                 <option value="{{ $cc }}">{{ $cc }}</option>
                                             @endforeach
                                         </select>
-                                        <a href="{{ route('events.settings', ['tab' => 'cost_centers']) }}" target="_blank"
-                                           class="text-[var(--ui-muted)] hover:text-[var(--ui-primary)] p-2" title="Kostenstellen pflegen">
-                                            @svg('heroicon-o-cog-6-tooth', 'w-4 h-4')
-                                        </a>
-                                    </div>
-                                @else
-                                    <input wire:model="event.cost_center" type="text" placeholder="— keine Kostenstellen definiert —"
+                                    @else
+                                        <input wire:model.blur="event.cost_center" type="text"
+                                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                    @endif
+                                </div>
+                                <div>
+                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Kostenträger</label>
+                                    <input wire:model.blur="event.cost_carrier" type="text" placeholder="{{ $event->event_number }}"
+                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                </div>
+                            </div>
+                        </div>
+                    </x-ui-panel>
+                </div>
+
+                {{-- ========== Spalte 3: Anlass / Eingang / Lieferung / Weiterleitung / Notizen ========== --}}
+                <div class="lg:col-span-4 space-y-4">
+
+                    <x-ui-panel title="Anlass">
+                        <div class="p-4 space-y-2">
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Anlassgruppe</label>
+                            <input wire:model.blur="event.group" type="text" placeholder="z.B. Messe"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Anlass</label>
+                            @if(!empty($settings['event_types']))
+                                <select wire:model.blur="event.event_type"
+                                        class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                    <option value="">—</option>
+                                    @foreach($settings['event_types'] as $t)
+                                        <option value="{{ $t }}">{{ $t }}</option>
+                                    @endforeach
+                                </select>
+                            @else
+                                <input wire:model.blur="event.event_type" type="text"
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            @endif
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Ort (freitext)</label>
+                            <input wire:model.blur="event.location" type="text"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        </div>
+                    </x-ui-panel>
+
+                    <x-ui-panel title="Eingang">
+                        <div class="p-4 space-y-2">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Datum</label>
+                                    <input wire:model.blur="event.inquiry_date" type="date"
+                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                </div>
+                                <div>
+                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Uhrzeit</label>
+                                    <input wire:model.blur="event.inquiry_time" type="text" placeholder="10:00"
+                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                </div>
+                            </div>
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Potenzial</label>
+                            <input wire:model.blur="event.potential" type="text" placeholder="hoch / mittel / niedrig"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Notiz zur Anfrage</label>
+                            <input wire:model.blur="event.inquiry_note" type="text"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        </div>
+                    </x-ui-panel>
+
+                    <x-ui-panel title="Lieferung & Wiedervorlage">
+                        <div class="p-4 space-y-2">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Wiedervorlage am</label>
+                                    <input wire:model.blur="event.follow_up_date" type="date"
+                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                </div>
+                                <div>
+                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Lieferant</label>
+                                    <input wire:model.blur="event.delivery_supplier" type="text"
                                            class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                                @endif
+                                </div>
+                            </div>
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Lieferkontakt</label>
+                            <input wire:model.blur="event.delivery_contact" type="text"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Notiz</label>
+                            <textarea wire:model.blur="event.follow_up_note" rows="2"
+                                      class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30"></textarea>
+                        </div>
+                    </x-ui-panel>
+
+                    <x-ui-panel title="Weiterleitung">
+                        <div class="p-4 grid grid-cols-3 gap-2">
+                            <div class="flex items-center">
+                                <label class="flex items-center gap-2 cursor-pointer select-none">
+                                    <input wire:model.blur="event.forwarded" type="checkbox" class="w-4 h-4 accent-[var(--ui-primary)] cursor-pointer">
+                                    <span class="text-xs text-[var(--ui-secondary)]">aktiv</span>
+                                </label>
                             </div>
                             <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Kostenträger</label>
-                                @if(!empty($settings['cost_carriers']))
-                                    <select wire:model="event.cost_carrier"
-                                            class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                                        <option value="">—</option>
-                                        @foreach($settings['cost_carriers'] as $cc)
-                                            <option value="{{ $cc }}">{{ $cc }}</option>
-                                        @endforeach
-                                    </select>
-                                @else
-                                    <input wire:model="event.cost_carrier" type="text"
-                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                                @endif
+                                <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Datum</label>
+                                <input wire:model.blur="event.forwarding_date" type="date"
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            </div>
+                            <div>
+                                <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Uhrzeit</label>
+                                <input wire:model.blur="event.forwarding_time" type="text" placeholder="14:30"
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                             </div>
                         </div>
                     </x-ui-panel>
 
-                    <div class="sticky bottom-4 z-10 flex justify-end gap-2 p-3 bg-white/95 backdrop-blur border border-[var(--ui-border)] rounded-lg shadow-md">
-                        <x-ui-button type="submit" variant="primary" size="sm">
-                            <span wire:loading.remove wire:target="saveEvent">
-                                @svg('heroicon-o-check', 'w-4 h-4 mr-1 inline')
-                                Basis speichern
-                            </span>
-                            <span wire:loading wire:target="saveEvent">Speichert …</span>
-                        </x-ui-button>
-                    </div>
-                </form>
+                    <x-ui-panel title="Liefertext" subtitle="Sichtbar für Auslieferung">
+                        @include('events::partials.note-stream', ['type' => 'liefertext', 'notes' => $notesByType->get('liefertext', collect())])
+                    </x-ui-panel>
+
+                    <x-ui-panel title="Erste Absprache">
+                        @include('events::partials.note-stream', ['type' => 'absprache', 'notes' => $notesByType->get('absprache', collect())])
+                    </x-ui-panel>
+                </div>
             </div>
         @endif
 
         {{-- ================= Tab: Details ================= --}}
         @if($activeTab === 'details')
-            <div class="pt-6 space-y-6">
-                <form wire:submit.prevent="saveEvent" class="space-y-6">
+            <div class="pt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="space-y-4">
 
+                <x-ui-panel title="Interne Infos" subtitle="Nur intern sichtbar, nicht auf Kunden-PDFs">
+                    @include('events::partials.note-stream', ['type' => 'intern', 'notes' => $notesByType->get('intern', collect())])
+                </x-ui-panel>
+
+                </div>
+
+                <div class="space-y-4">
                     <x-ui-panel title="Projektverantwortung" subtitle="Unterschriften-Namen + digitale Freigabe">
                         <div class="p-5 space-y-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -635,6 +811,7 @@
                         </x-ui-button>
                     </div>
                 </form>
+                </div>
             </div>
         @endif
 
