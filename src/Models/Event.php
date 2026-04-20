@@ -79,6 +79,20 @@ class Event extends Model
                 $event->status_changed_at = now();
             }
         });
+
+        static::created(function (self $event) {
+            \Platform\Events\Services\ActivityLogger::eventCreated($event);
+        });
+
+        static::updated(function (self $event) {
+            if ($event->wasChanged('status')) {
+                \Platform\Events\Services\ActivityLogger::statusChanged(
+                    $event,
+                    $event->getOriginal('status'),
+                    $event->status
+                );
+            }
+        });
     }
 
     /**

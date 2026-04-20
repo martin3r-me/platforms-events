@@ -17,12 +17,24 @@
         $statusClass   = $statusBadge[$currentStatus] ?? 'bg-slate-100 text-slate-600';
 
         $tabs = [
-            'basis'     => ['label' => 'Grunddaten', 'icon' => 'heroicon-o-identification'],
-            'tage'      => ['label' => 'Tage',       'icon' => 'heroicon-o-calendar'],
-            'buchungen' => ['label' => 'Buchungen',  'icon' => 'heroicon-o-building-office-2'],
-            'ablauf'    => ['label' => 'Ablauf',     'icon' => 'heroicon-o-clock'],
-            'notizen'   => ['label' => 'Notizen',    'icon' => 'heroicon-o-pencil-square'],
-            'mr'        => ['label' => 'Mgmt-Report','icon' => 'heroicon-o-clipboard-document-check'],
+            'basis'        => ['label' => 'Basis',       'icon' => 'heroicon-o-identification'],
+            'details'      => ['label' => 'Details',     'icon' => 'heroicon-o-document-text'],
+            'tage'         => ['label' => 'Tage',        'icon' => 'heroicon-o-calendar'],
+            'buchungen'    => ['label' => 'Räume',       'icon' => 'heroicon-o-building-office-2'],
+            'ablauf'       => ['label' => 'Ablauf',      'icon' => 'heroicon-o-clock'],
+            'aktivitaeten' => ['label' => 'Aktivitäten', 'icon' => 'heroicon-o-bolt'],
+            'kalkulation'  => ['label' => 'Kalkulation', 'icon' => 'heroicon-o-calculator'],
+            'projekt'      => ['label' => 'Projekt-Function', 'icon' => 'heroicon-o-document-check'],
+            'vertraege'    => ['label' => 'Verträge',    'icon' => 'heroicon-o-document'],
+            'packliste'    => ['label' => 'Packliste',   'icon' => 'heroicon-o-cube'],
+            'kommunikation'=> ['label' => 'Kommunikation','icon' => 'heroicon-o-envelope'],
+            'angebote'     => ['label' => 'Angebote',    'icon' => 'heroicon-o-document-duplicate'],
+            'bestellungen' => ['label' => 'Bestellungen','icon' => 'heroicon-o-shopping-cart'],
+            'rechnungen'   => ['label' => 'Rechnungen',  'icon' => 'heroicon-o-receipt-percent'],
+            'schluss'      => ['label' => 'Schlussbericht','icon' => 'heroicon-o-presentation-chart-line'],
+            'feedback'     => ['label' => 'Feedback',    'icon' => 'heroicon-o-chat-bubble-left-right'],
+            'notizen'      => ['label' => 'Notizen',     'icon' => 'heroicon-o-pencil-square'],
+            'mr'           => ['label' => 'Mgmt-Report', 'icon' => 'heroicon-o-clipboard-document-check'],
         ];
     @endphp
 
@@ -108,7 +120,7 @@
             </nav>
         </div>
 
-        {{-- ================= Tab: Grunddaten ================= --}}
+        {{-- ================= Tab: Basis ================= --}}
         @if($activeTab === 'basis')
             <div class="pt-6 space-y-6">
                 <form wire:submit.prevent="saveEvent" class="space-y-6">
@@ -162,6 +174,54 @@
                             </div>
                         </div>
                     </x-ui-panel>
+
+                    <x-ui-panel title="Zuständigkeit & Unterschriften">
+                        <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Verantwortlich</label>
+                                <input wire:model="event.responsible" type="text"
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            </div>
+                            <div>
+                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Kostenstelle</label>
+                                <input wire:model="event.cost_center" type="text"
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            </div>
+                            <div>
+                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Kostenträger</label>
+                                <input wire:model="event.cost_carrier" type="text"
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            </div>
+                            <div>
+                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Unterschrift links</label>
+                                <input wire:model="event.sign_left" type="text"
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            </div>
+                            <div>
+                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Unterschrift rechts</label>
+                                <input wire:model="event.sign_right" type="text"
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            </div>
+                        </div>
+                    </x-ui-panel>
+
+                    <div class="sticky bottom-4 z-10 flex justify-end gap-2 p-3 bg-white/95 backdrop-blur border border-[var(--ui-border)] rounded-lg shadow-md">
+                        <x-ui-button type="submit" variant="primary" size="sm">
+                            <span wire:loading.remove wire:target="saveEvent">
+                                @svg('heroicon-o-check', 'w-4 h-4 mr-1 inline')
+                                Basis speichern
+                            </span>
+                            <span wire:loading wire:target="saveEvent">Speichert …</span>
+                        </x-ui-button>
+                    </div>
+                </form>
+            </div>
+        @endif
+
+        {{-- ================= Tab: Details ================= --}}
+        @if($activeTab === 'details')
+            <div class="pt-6 space-y-6">
+                <form wire:submit.prevent="saveEvent" class="space-y-6">
 
                     <x-ui-panel title="Veranstalter" subtitle="Ansprechpartner und Zielgruppe">
                         <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -224,36 +284,6 @@
                             <div>
                                 <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Rechnungsdatum</label>
                                 <input wire:model="event.invoice_date_type" type="text" placeholder="vor Event / nach Event"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                        </div>
-                    </x-ui-panel>
-
-                    <x-ui-panel title="Zuständigkeit & Unterschriften">
-                        <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Verantwortlich</label>
-                                <input wire:model="event.responsible" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Kostenstelle</label>
-                                <input wire:model="event.cost_center" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Kostenträger</label>
-                                <input wire:model="event.cost_carrier" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Unterschrift links</label>
-                                <input wire:model="event.sign_left" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Unterschrift rechts</label>
-                                <input wire:model="event.sign_right" type="text"
                                        class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                             </div>
                         </div>
@@ -335,12 +365,19 @@
                         <x-ui-button type="submit" variant="primary" size="sm">
                             <span wire:loading.remove wire:target="saveEvent">
                                 @svg('heroicon-o-check', 'w-4 h-4 mr-1 inline')
-                                Grunddaten speichern
+                                Details speichern
                             </span>
                             <span wire:loading wire:target="saveEvent">Speichert …</span>
                         </x-ui-button>
                     </div>
                 </form>
+            </div>
+        @endif
+
+        {{-- ================= Tab: Aktivitäten ================= --}}
+        @if($activeTab === 'aktivitaeten')
+            <div class="pt-6">
+                <livewire:events.detail.activities :event-id="$event->id" :key="'activities-'.$event->id" />
             </div>
         @endif
 
