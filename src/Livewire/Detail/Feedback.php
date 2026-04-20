@@ -13,7 +13,7 @@ class Feedback extends Component
 {
     public int $eventId;
 
-    public bool $showCreateModal = false;
+    public bool $showNewLink = false;
     public string $newLabel = '';
     public string $newAudience = 'participant';
 
@@ -30,11 +30,13 @@ class Feedback extends Component
         return $event;
     }
 
-    public function openCreate(): void
+    public function toggleNewLink(): void
     {
-        $this->newLabel = '';
-        $this->newAudience = 'participant';
-        $this->showCreateModal = true;
+        $this->showNewLink = !$this->showNewLink;
+        if (!$this->showNewLink) {
+            $this->newLabel = '';
+            $this->newAudience = 'participant';
+        }
     }
 
     public function createLink(): void
@@ -42,15 +44,17 @@ class Feedback extends Component
         if (trim($this->newLabel) === '') return;
         $event = $this->event();
         FeedbackLink::create([
-            'team_id'  => $event->team_id,
-            'user_id'  => Auth::id(),
-            'event_id' => $event->id,
-            'label'    => $this->newLabel,
-            'audience' => $this->newAudience,
-            'token'    => Str::random(48),
-            'is_active'=> true,
+            'team_id'   => $event->team_id,
+            'user_id'   => Auth::id(),
+            'event_id'  => $event->id,
+            'label'     => $this->newLabel,
+            'audience'  => $this->newAudience,
+            'token'     => Str::random(48),
+            'is_active' => true,
         ]);
-        $this->showCreateModal = false;
+        $this->newLabel = '';
+        $this->newAudience = 'participant';
+        $this->showNewLink = false;
     }
 
     public function toggleActive(int $linkId): void
@@ -69,10 +73,22 @@ class Feedback extends Component
     public function render()
     {
         $event = Event::findOrFail($this->eventId);
-        $links = FeedbackLink::where('event_id', $event->id)->withCount('entries')->orderByDesc('id')->get();
-        $entries = FeedbackEntry::where('event_id', $event->id)->with('link')->orderByDesc('created_at')->limit(50)->get();
+        $links = FeedbackLink::where('event_id', $event->id)
+            ->withCount('entries')
+            ->orderByDesc('id')
+            ->get();
+        $entries = FeedbackEntry::where('event_id', $event->id)
+            ->with('link')
+            ->orderByDesc('created_at')
+            ->limit(50)
+            ->get();
 
-        $avg = null;
+        $avg = [
+            'overall'      => null,
+            'location'     => null,
+            'catering'     => null,
+            'organization' => null,
+        ];
         $totalEntries = $entries->count();
         if ($totalEntries > 0) {
             $avg = [
