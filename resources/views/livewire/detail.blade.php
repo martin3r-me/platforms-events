@@ -388,6 +388,13 @@
             </div>
         @endif
 
+        {{-- ================= Tab: Bestellungen ================= --}}
+        @if($activeTab === 'bestellungen')
+            <div class="pt-6">
+                <livewire:events.detail.orders :event-id="$event->id" :key="'orders-'.$event->id" />
+            </div>
+        @endif
+
         {{-- ================= Tab: Tage ================= --}}
         @if($activeTab === 'tage')
             <div class="pt-6 space-y-4">
