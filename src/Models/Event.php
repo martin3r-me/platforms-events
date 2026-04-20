@@ -40,6 +40,8 @@ class Event extends Model
         'sign_left', 'sign_right',
         // Management Report
         'mr_data',
+        // Schlussbericht / Nachbewertung
+        'internal_rating', 'customer_satisfaction', 'rebooking_recommendation',
         // Wiedervorlage
         'follow_up_date', 'follow_up_note',
         // Lieferung
