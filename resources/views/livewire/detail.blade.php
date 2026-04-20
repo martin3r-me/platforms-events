@@ -590,16 +590,12 @@
 
         {{-- ================= Tab: Details ================= --}}
         @if($activeTab === 'details')
-            <div class="pt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div class="space-y-4">
+            <div class="pt-4 space-y-4">
 
                 <x-ui-panel title="Interne Infos" subtitle="Nur intern sichtbar, nicht auf Kunden-PDFs">
                     @include('events::partials.note-stream', ['type' => 'intern', 'notes' => $notesByType->get('intern', collect())])
                 </x-ui-panel>
 
-                </div>
-
-                <div class="space-y-4">
                     <x-ui-panel title="Projektverantwortung" subtitle="Unterschriften-Namen + digitale Freigabe">
                         <div class="p-5 space-y-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -739,7 +735,6 @@
                             @endforeach
                         </div>
                     </x-ui-panel>
-                </div>
             </div>
         @endif
 
