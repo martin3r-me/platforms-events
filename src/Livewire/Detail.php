@@ -49,10 +49,26 @@ class Detail extends Component
     public ?string $editingBookingUuid = null;
     public array $bookingForm = [];
 
+    // Inline-Edit: Bookings (Raeume) – Map UUID → Felder
+    public array $inlineBookings = [];
+    public array $newBookingInline = [
+        'datum'       => '', 'beginn' => '', 'ende' => '',
+        'pers'        => '', 'location_id' => null, 'raum' => '',
+        'bestuhlung'  => '', 'optionsrang' => '1. Option', 'absprache' => '',
+        'taeglich'    => false,
+    ];
+
     // Schedule-Modal
     public bool $showScheduleModal = false;
     public ?string $editingScheduleUuid = null;
     public array $scheduleForm = [];
+
+    // Inline-Edit: Ablaufplan – Map UUID → Felder
+    public array $inlineSchedule = [];
+    public array $newScheduleInline = [
+        'datum'        => '', 'von' => '', 'bis' => '',
+        'beschreibung' => '', 'raum' => '', 'bemerkung' => '',
+    ];
 
     // Note-Modal
     public bool $showNoteModal = false;
@@ -394,6 +410,70 @@ class Detail extends Component
         $this->event->bookings()->where('uuid', $uuid)->delete();
     }
 
+    // ---------- Inline-Edit: Bookings ----------
+
+    public function updatedInlineBookings($value, $key): void
+    {
+        // $key = "uuid.feldname"
+        if (!str_contains($key, '.')) return;
+        [$uuid, $field] = explode('.', $key, 2);
+
+        $allowed = ['datum', 'beginn', 'ende', 'pers', 'location_id', 'raum', 'bestuhlung', 'optionsrang', 'absprache'];
+        if (!in_array($field, $allowed, true)) return;
+
+        $this->event->bookings()->where('uuid', $uuid)->update([
+            $field => $value === '' ? null : $value,
+        ]);
+    }
+
+    public function addInlineBooking(): void
+    {
+        $data = $this->newBookingInline;
+        $taeglich = !empty($data['taeglich']);
+
+        if (empty($data['location_id']) && empty($data['raum'])) {
+            return;
+        }
+
+        $targetDates = [];
+        if ($taeglich) {
+            foreach ($this->event->days as $d) {
+                $targetDates[] = $d->datum?->format('Y-m-d');
+            }
+            $targetDates = array_values(array_filter($targetDates));
+        } else {
+            $targetDates = [$data['datum'] ?: null];
+        }
+
+        $maxSort = (int) Booking::where('event_id', $this->event->id)->max('sort_order');
+
+        foreach ($targetDates as $dt) {
+            $maxSort++;
+            Booking::create([
+                'event_id'    => $this->event->id,
+                'team_id'     => $this->event->team_id,
+                'user_id'     => Auth::id(),
+                'location_id' => !empty($data['location_id']) ? (int) $data['location_id'] : null,
+                'raum'        => $data['raum'] ?: null,
+                'datum'       => $dt,
+                'beginn'      => $data['beginn'] ?: null,
+                'ende'        => $data['ende'] ?: null,
+                'pers'        => $data['pers'] ?: null,
+                'bestuhlung'  => $data['bestuhlung'] ?: null,
+                'optionsrang' => $data['optionsrang'] ?: '1. Option',
+                'absprache'   => $data['absprache'] ?: null,
+                'sort_order'  => $maxSort,
+            ]);
+        }
+
+        $this->newBookingInline = [
+            'datum'       => '', 'beginn' => '', 'ende' => '',
+            'pers'        => '', 'location_id' => null, 'raum' => '',
+            'bestuhlung'  => '', 'optionsrang' => '1. Option', 'absprache' => '',
+            'taeglich'    => false,
+        ];
+    }
+
     // ========== Ablaufplan ==========
 
     public function openScheduleCreate(): void
@@ -465,6 +545,49 @@ class Detail extends Component
         $this->event->scheduleItems()->where('uuid', $uuid)->delete();
     }
 
+    // ---------- Inline-Edit: Schedule ----------
+
+    public function updatedInlineSchedule($value, $key): void
+    {
+        if (!str_contains($key, '.')) return;
+        [$uuid, $field] = explode('.', $key, 2);
+
+        $allowed = ['datum', 'von', 'bis', 'beschreibung', 'raum', 'bemerkung'];
+        if (!in_array($field, $allowed, true)) return;
+
+        $this->event->scheduleItems()->where('uuid', $uuid)->update([
+            $field => $value === '' ? null : $value,
+        ]);
+    }
+
+    public function addInlineSchedule(): void
+    {
+        $data = $this->newScheduleInline;
+        if (trim((string) ($data['beschreibung'] ?? '')) === '') {
+            return;
+        }
+
+        $maxSort = (int) ScheduleItem::where('event_id', $this->event->id)->max('sort_order');
+
+        ScheduleItem::create([
+            'event_id'     => $this->event->id,
+            'team_id'      => $this->event->team_id,
+            'user_id'      => Auth::id(),
+            'datum'        => $data['datum'] ?: null,
+            'von'          => $data['von'] ?: null,
+            'bis'          => $data['bis'] ?: null,
+            'beschreibung' => $data['beschreibung'],
+            'raum'         => $data['raum'] ?: null,
+            'bemerkung'    => $data['bemerkung'] ?: null,
+            'sort_order'   => $maxSort + 1,
+        ]);
+
+        $this->newScheduleInline = [
+            'datum' => '', 'von' => '', 'bis' => '',
+            'beschreibung' => '', 'raum' => '', 'bemerkung' => '',
+        ];
+    }
+
     // ========== Notizen ==========
 
     public function openNoteCreate(string $type = 'absprache'): void
@@ -531,9 +654,36 @@ class Detail extends Component
         $team = Auth::user()->currentTeam;
 
         $days      = $this->event->days()->orderBy('sort_order')->get();
-        $bookings  = $this->event->bookings()->with('location')->orderBy('sort_order')->get();
-        $schedule  = $this->event->scheduleItems()->orderBy('sort_order')->get();
+        $bookings  = $this->event->bookings()->with('location')->orderBy('datum')->orderBy('sort_order')->get();
+        $schedule  = $this->event->scheduleItems()->orderBy('datum')->orderBy('sort_order')->get();
         $notes     = $this->event->notes()->orderByDesc('created_at')->get();
+
+        // Inline-State aus DB in Livewire-Properties mappen (ueberschreibt nach jedem Request,
+        // was im updated-Hook zuvor persistierte Aenderungen enthaelt).
+        $this->inlineBookings = $bookings->mapWithKeys(fn ($b) => [
+            $b->uuid => [
+                'datum'       => $b->datum,
+                'beginn'      => $b->beginn,
+                'ende'        => $b->ende,
+                'pers'        => $b->pers,
+                'location_id' => $b->location_id,
+                'raum'        => $b->raum,
+                'bestuhlung'  => $b->bestuhlung,
+                'optionsrang' => $b->optionsrang,
+                'absprache'   => $b->absprache,
+            ],
+        ])->toArray();
+
+        $this->inlineSchedule = $schedule->mapWithKeys(fn ($s) => [
+            $s->uuid => [
+                'datum'        => $s->datum,
+                'von'          => $s->von,
+                'bis'          => $s->bis,
+                'beschreibung' => $s->beschreibung,
+                'raum'         => $s->raum,
+                'bemerkung'    => $s->bemerkung,
+            ],
+        ])->toArray();
         $locations = Location::where('team_id', $team->id)->orderBy('sort_order')->orderBy('name')->get();
 
         // Sidebar-Counts + Drilldown-Baum

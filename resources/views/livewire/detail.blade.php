@@ -841,143 +841,269 @@
         {{-- Die openDayCreate/openDayEdit/deleteDay-Actions bleiben unveraendert verfuegbar
              ueber die Basis-Spalte 1 und das weiter unten definierte Day-Modal. --}}
 
-        {{-- ================= Tab: Buchungen ================= --}}
+        {{-- ================= Tab: Räume (Buchungen) – Inline-Edit ================= --}}
         @if($activeTab === 'buchungen')
-            <div class="pt-6 space-y-4">
-                <x-ui-panel title="Raum-Buchungen" subtitle="Welche Räume/Locations werden genutzt">
-                    <div class="p-4 flex justify-between items-center border-b border-[var(--ui-border)]">
-                        <p class="text-xs text-[var(--ui-muted)]">{{ $bookings->count() }} Buchung(en)</p>
-                        <x-ui-button variant="primary" size="sm" wire:click="openBookingCreate">
-                            <span class="flex items-center gap-1.5">
-                                @svg('heroicon-o-plus', 'w-3.5 h-3.5')
-                                Buchung
-                            </span>
-                        </x-ui-button>
+            <div class="pt-4 space-y-4">
+                <x-ui-panel title="Räume" subtitle="{{ $bookings->count() }} Buchung(en)">
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse text-xs">
+                            <thead>
+                                <tr class="border-b border-[var(--ui-border)] bg-[var(--ui-muted-5)]">
+                                    <th class="px-3 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] w-[115px]">Datum</th>
+                                    <th class="px-2 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] w-[70px]">Beginn</th>
+                                    <th class="px-2 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] w-[70px]">Ende</th>
+                                    <th class="px-2 py-2 text-center text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] w-[60px]">Pers.</th>
+                                    <th class="px-2 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Raum</th>
+                                    <th class="px-2 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] w-[140px]">Bestuhlung</th>
+                                    <th class="px-2 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] w-[120px]">Optionsrang</th>
+                                    <th class="px-2 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Absprache</th>
+                                    <th class="w-8"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if($bookings->isEmpty())
+                                    <tr>
+                                        <td colspan="9" class="px-3 py-8 text-center text-[var(--ui-muted)] text-xs">
+                                            Noch keine Räume – unten hinzufügen.
+                                        </td>
+                                    </tr>
+                                @endif
+                                @foreach($bookings as $b)
+                                    <tr class="border-b border-[var(--ui-border)]/40 hover:bg-[var(--ui-muted-5)]/40 group">
+                                        <td class="px-3 py-1.5">
+                                            <input wire:model.blur="inlineBookings.{{ $b->uuid }}.datum" type="date"
+                                                   class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-[0.68rem] font-mono bg-transparent focus:bg-white">
+                                        </td>
+                                        <td class="px-2 py-1.5">
+                                            <input wire:model.blur="inlineBookings.{{ $b->uuid }}.beginn" type="text" placeholder="—"
+                                                   class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-mono bg-transparent focus:bg-white">
+                                        </td>
+                                        <td class="px-2 py-1.5">
+                                            <input wire:model.blur="inlineBookings.{{ $b->uuid }}.ende" type="text" placeholder="—"
+                                                   class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-mono bg-transparent focus:bg-white">
+                                        </td>
+                                        <td class="px-2 py-1.5">
+                                            <input wire:model.blur="inlineBookings.{{ $b->uuid }}.pers" type="text" placeholder="—"
+                                                   class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-mono bg-transparent focus:bg-white text-center">
+                                        </td>
+                                        <td class="px-2 py-1.5">
+                                            <select wire:model.blur="inlineBookings.{{ $b->uuid }}.location_id"
+                                                    class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs bg-transparent focus:bg-white">
+                                                <option value="">— frei —</option>
+                                                @foreach($locations as $loc)
+                                                    <option value="{{ $loc->id }}">{{ $loc->kuerzel }} – {{ $loc->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                        <td class="px-2 py-1.5">
+                                            @if(!empty($settings['bestuhlung']))
+                                                <select wire:model.blur="inlineBookings.{{ $b->uuid }}.bestuhlung"
+                                                        class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs bg-transparent focus:bg-white">
+                                                    <option value="">—</option>
+                                                    @foreach($settings['bestuhlung'] as $bOpt)
+                                                        <option value="{{ $bOpt }}">{{ $bOpt }}</option>
+                                                    @endforeach
+                                                </select>
+                                            @else
+                                                <input wire:model.blur="inlineBookings.{{ $b->uuid }}.bestuhlung" type="text" placeholder="—"
+                                                       class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs bg-transparent focus:bg-white">
+                                            @endif
+                                        </td>
+                                        <td class="px-2 py-1.5">
+                                            <select wire:model.blur="inlineBookings.{{ $b->uuid }}.optionsrang"
+                                                    class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs bg-transparent focus:bg-white font-semibold">
+                                                @foreach($bookingRangs as $r)
+                                                    <option value="{{ $r }}">{{ $r }}</option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                        <td class="px-2 py-1.5">
+                                            <input wire:model.blur="inlineBookings.{{ $b->uuid }}.absprache" type="text" placeholder="Absprache…"
+                                                   class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs bg-transparent focus:bg-white italic">
+                                        </td>
+                                        <td class="px-2 py-1.5 text-right">
+                                            <button wire:click="deleteBooking('{{ $b->uuid }}')" wire:confirm="Buchung löschen?"
+                                                    class="opacity-0 group-hover:opacity-100 text-red-500 hover:bg-red-50 p-1 rounded">
+                                                @svg('heroicon-o-trash', 'w-3.5 h-3.5')
+                                            </button>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
 
-                    @if($bookings->isEmpty())
-                        <div class="p-12 text-center">
-                            @svg('heroicon-o-building-office-2', 'w-12 h-12 text-[var(--ui-muted)] mx-auto mb-3')
-                            <p class="text-sm font-semibold text-[var(--ui-secondary)] mb-1">Noch keine Buchungen</p>
-                            <p class="text-xs text-[var(--ui-muted)]">Füge eine Raum-Buchung hinzu.</p>
-                        </div>
-                    @else
-                        <div class="overflow-x-auto">
-                            <table class="w-full border-collapse">
-                                <thead>
-                                    <tr class="border-b border-[var(--ui-border)] bg-[var(--ui-muted-5)]">
-                                        <th class="px-3 py-2 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Raum</th>
-                                        <th class="px-3 py-2 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Datum</th>
-                                        <th class="px-3 py-2 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Von–Bis</th>
-                                        <th class="px-3 py-2 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Pers.</th>
-                                        <th class="px-3 py-2 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Bestuhlung</th>
-                                        <th class="px-3 py-2 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Optionsrang</th>
-                                        <th class="px-3 py-2 w-20"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($bookings as $b)
-                                        <tr class="border-b border-[var(--ui-border)]/60 hover:bg-[var(--ui-muted-5)]/60">
-                                            <td class="px-3 py-2">
-                                                @if($b->location)
-                                                    <div class="flex items-center gap-1.5">
-                                                        <span class="text-xs font-mono font-bold text-[var(--ui-secondary)]">{{ $b->location->kuerzel }}</span>
-                                                        <span class="text-[0.62rem] text-[var(--ui-muted)]">{{ $b->location->name }}</span>
-                                                    </div>
-                                                @else
-                                                    <span class="text-xs font-mono text-[var(--ui-muted)]">{{ $b->raum ?: '—' }}</span>
-                                                @endif
-                                            </td>
-                                            <td class="px-3 py-2 text-xs font-mono text-[var(--ui-muted)]">{{ $b->datum ?: '—' }}</td>
-                                            <td class="px-3 py-2 text-xs font-mono text-[var(--ui-muted)]">
-                                                {{ $b->beginn ?: '—' }}{{ $b->ende ? ' – ' . $b->ende : '' }}
-                                            </td>
-                                            <td class="px-3 py-2 text-xs font-mono text-[var(--ui-muted)]">{{ $b->pers ?: '—' }}</td>
-                                            <td class="px-3 py-2 text-xs text-[var(--ui-muted)]">{{ $b->bestuhlung ?: '—' }}</td>
-                                            <td class="px-3 py-2 text-xs text-[var(--ui-muted)]">{{ $b->optionsrang }}</td>
-                                            <td class="px-3 py-2">
-                                                <div class="flex items-center justify-end gap-1">
-                                                    <x-ui-button variant="secondary-outline" size="sm" wire:click="openBookingEdit('{{ $b->uuid }}')">
-                                                        @svg('heroicon-o-pencil', 'w-3.5 h-3.5')
-                                                    </x-ui-button>
-                                                    <x-ui-button variant="danger-outline" size="sm"
-                                                                 wire:click="deleteBooking('{{ $b->uuid }}')"
-                                                                 wire:confirm="Buchung löschen?">
-                                                        @svg('heroicon-o-trash', 'w-3.5 h-3.5')
-                                                    </x-ui-button>
-                                                </div>
-                                            </td>
-                                        </tr>
+                    {{-- Inline Quick-Add --}}
+                    <div class="p-3 bg-[var(--ui-muted-5)]/50 border-t border-[var(--ui-border)]">
+                        <div class="grid grid-cols-12 gap-2 items-start">
+                            <div class="col-span-2">
+                                <input wire:model.defer="newBookingInline.datum" type="date"
+                                       :disabled="@js($newBookingInline['taeglich'] ?? false)"
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30 disabled:opacity-50">
+                                <label class="flex items-center gap-1.5 mt-1 cursor-pointer select-none">
+                                    <input wire:model.live="newBookingInline.taeglich" type="checkbox" class="w-3 h-3 accent-[var(--ui-primary)]">
+                                    <span class="text-[0.6rem] text-[var(--ui-muted)]">täglich</span>
+                                </label>
+                            </div>
+                            <div class="col-span-1">
+                                <input wire:model.defer="newBookingInline.beginn" type="text" placeholder="Beginn"
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            </div>
+                            <div class="col-span-1">
+                                <input wire:model.defer="newBookingInline.ende" type="text" placeholder="Ende"
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            </div>
+                            <div class="col-span-1">
+                                <input wire:model.defer="newBookingInline.pers" type="text" placeholder="Pers."
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30 text-center">
+                            </div>
+                            <div class="col-span-2">
+                                <select wire:model.defer="newBookingInline.location_id"
+                                        class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                    <option value="">Raum</option>
+                                    @foreach($locations as $loc)
+                                        <option value="{{ $loc->id }}">{{ $loc->kuerzel }} – {{ $loc->name }}</option>
                                     @endforeach
-                                </tbody>
-                            </table>
+                                </select>
+                            </div>
+                            <div class="col-span-2">
+                                @if(!empty($settings['bestuhlung']))
+                                    <select wire:model.defer="newBookingInline.bestuhlung"
+                                            class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                        <option value="">Bestuhlung</option>
+                                        @foreach($settings['bestuhlung'] as $bOpt)
+                                            <option value="{{ $bOpt }}">{{ $bOpt }}</option>
+                                        @endforeach
+                                    </select>
+                                @else
+                                    <input wire:model.defer="newBookingInline.bestuhlung" type="text" placeholder="Bestuhlung"
+                                           class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                @endif
+                            </div>
+                            <div class="col-span-1">
+                                <select wire:model.defer="newBookingInline.optionsrang"
+                                        class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                    @foreach($bookingRangs as $r)
+                                        <option value="{{ $r }}">{{ $r }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-span-1">
+                                <input wire:model.defer="newBookingInline.absprache" type="text" placeholder="Absprache"
+                                       wire:keydown.enter="addInlineBooking"
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            </div>
+                            <div class="col-span-1">
+                                <x-ui-button variant="primary" size="sm" wire:click="addInlineBooking" class="w-full">
+                                    @svg('heroicon-o-plus', 'w-3.5 h-3.5 inline') Add
+                                </x-ui-button>
+                            </div>
                         </div>
-                    @endif
+                        <p class="text-[0.6rem] text-[var(--ui-muted)] mt-2">Enter im Absprache-Feld oder Button zum Hinzufügen. „täglich" belegt automatisch alle Event-Tage.</p>
+                    </div>
                 </x-ui-panel>
             </div>
         @endif
 
-        {{-- ================= Tab: Ablauf ================= --}}
+        {{-- ================= Tab: Ablauf – Inline-Edit ================= --}}
         @if($activeTab === 'ablauf')
-            <div class="pt-6 space-y-4">
-                <x-ui-panel title="Ablaufplan" subtitle="Zeitleiste der Veranstaltung">
-                    <div class="p-4 flex justify-between items-center border-b border-[var(--ui-border)]">
-                        <p class="text-xs text-[var(--ui-muted)]">{{ $schedule->count() }} Eintrag/Einträge</p>
-                        <x-ui-button variant="primary" size="sm" wire:click="openScheduleCreate">
-                            <span class="flex items-center gap-1.5">
-                                @svg('heroicon-o-plus', 'w-3.5 h-3.5')
-                                Eintrag
-                            </span>
-                        </x-ui-button>
+            <div class="pt-4 space-y-4">
+                <x-ui-panel title="Ablaufplan" subtitle="{{ $schedule->count() }} Eintrag/Einträge">
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse text-xs">
+                            <thead>
+                                <tr class="border-b border-[var(--ui-border)] bg-[var(--ui-muted-5)]">
+                                    <th class="px-3 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] w-[115px]">Datum</th>
+                                    <th class="px-2 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] w-[70px]">Von</th>
+                                    <th class="px-2 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] w-[70px]">Bis</th>
+                                    <th class="px-2 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Beschreibung</th>
+                                    <th class="px-2 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] w-[120px]">Raum</th>
+                                    <th class="px-2 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Bemerkung</th>
+                                    <th class="w-8"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if($schedule->isEmpty())
+                                    <tr>
+                                        <td colspan="7" class="px-3 py-8 text-center text-[var(--ui-muted)] text-xs">
+                                            Noch kein Ablaufplan – unten hinzufügen.
+                                        </td>
+                                    </tr>
+                                @endif
+                                @foreach($schedule as $item)
+                                    <tr class="border-b border-[var(--ui-border)]/40 hover:bg-[var(--ui-muted-5)]/40 group">
+                                        <td class="px-3 py-1.5">
+                                            <input wire:model.blur="inlineSchedule.{{ $item->uuid }}.datum" type="date"
+                                                   class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-[0.68rem] font-mono bg-transparent focus:bg-white">
+                                        </td>
+                                        <td class="px-2 py-1.5">
+                                            <input wire:model.blur="inlineSchedule.{{ $item->uuid }}.von" type="text" placeholder="—"
+                                                   class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-mono bg-transparent focus:bg-white">
+                                        </td>
+                                        <td class="px-2 py-1.5">
+                                            <input wire:model.blur="inlineSchedule.{{ $item->uuid }}.bis" type="text" placeholder="—"
+                                                   class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-mono bg-transparent focus:bg-white">
+                                        </td>
+                                        <td class="px-2 py-1.5">
+                                            <input wire:model.blur="inlineSchedule.{{ $item->uuid }}.beschreibung" type="text" placeholder="Beschreibung…"
+                                                   class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-semibold text-[var(--ui-secondary)] bg-transparent focus:bg-white">
+                                        </td>
+                                        <td class="px-2 py-1.5">
+                                            <input wire:model.blur="inlineSchedule.{{ $item->uuid }}.raum" type="text" placeholder="—"
+                                                   class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs bg-transparent focus:bg-white">
+                                        </td>
+                                        <td class="px-2 py-1.5">
+                                            <input wire:model.blur="inlineSchedule.{{ $item->uuid }}.bemerkung" type="text" placeholder="Bemerkung…"
+                                                   class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs italic text-[var(--ui-muted)] bg-transparent focus:bg-white">
+                                        </td>
+                                        <td class="px-2 py-1.5 text-right">
+                                            <button wire:click="deleteSchedule('{{ $item->uuid }}')" wire:confirm="Eintrag löschen?"
+                                                    class="opacity-0 group-hover:opacity-100 text-red-500 hover:bg-red-50 p-1 rounded">
+                                                @svg('heroicon-o-trash', 'w-3.5 h-3.5')
+                                            </button>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
 
-                    @if($schedule->isEmpty())
-                        <div class="p-12 text-center">
-                            @svg('heroicon-o-clock', 'w-12 h-12 text-[var(--ui-muted)] mx-auto mb-3')
-                            <p class="text-sm font-semibold text-[var(--ui-secondary)] mb-1">Ablaufplan ist leer</p>
-                            <p class="text-xs text-[var(--ui-muted)]">Füge den ersten Programmpunkt hinzu.</p>
+                    {{-- Inline Quick-Add --}}
+                    <div class="p-3 bg-[var(--ui-muted-5)]/50 border-t border-[var(--ui-border)]">
+                        <div class="grid grid-cols-12 gap-2 items-center">
+                            <div class="col-span-2">
+                                <input wire:model.defer="newScheduleInline.datum" type="date"
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            </div>
+                            <div class="col-span-1">
+                                <input wire:model.defer="newScheduleInline.von" type="text" placeholder="Von"
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            </div>
+                            <div class="col-span-1">
+                                <input wire:model.defer="newScheduleInline.bis" type="text" placeholder="Bis"
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            </div>
+                            <div class="col-span-4">
+                                <input wire:model.defer="newScheduleInline.beschreibung" type="text" placeholder="Beschreibung…"
+                                       wire:keydown.enter="addInlineSchedule"
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            </div>
+                            <div class="col-span-2">
+                                <input wire:model.defer="newScheduleInline.raum" type="text" placeholder="Raum"
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            </div>
+                            <div class="col-span-1">
+                                <input wire:model.defer="newScheduleInline.bemerkung" type="text" placeholder="Bemerk."
+                                       class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            </div>
+                            <div class="col-span-1">
+                                <x-ui-button variant="primary" size="sm" wire:click="addInlineSchedule" class="w-full">
+                                    @svg('heroicon-o-plus', 'w-3.5 h-3.5 inline') Add
+                                </x-ui-button>
+                            </div>
                         </div>
-                    @else
-                        <div class="overflow-x-auto">
-                            <table class="w-full border-collapse">
-                                <thead>
-                                    <tr class="border-b border-[var(--ui-border)] bg-[var(--ui-muted-5)]">
-                                        <th class="px-3 py-2 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Datum</th>
-                                        <th class="px-3 py-2 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Von–Bis</th>
-                                        <th class="px-3 py-2 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Beschreibung</th>
-                                        <th class="px-3 py-2 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Raum</th>
-                                        <th class="px-3 py-2 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Bemerkung</th>
-                                        <th class="px-3 py-2 w-20"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($schedule as $item)
-                                        <tr class="border-b border-[var(--ui-border)]/60 hover:bg-[var(--ui-muted-5)]/60">
-                                            <td class="px-3 py-2 text-xs font-mono text-[var(--ui-muted)]">{{ $item->datum ?: '—' }}</td>
-                                            <td class="px-3 py-2 text-xs font-mono text-[var(--ui-muted)]">
-                                                {{ $item->von ?: '—' }}{{ $item->bis ? ' – ' . $item->bis : '' }}
-                                            </td>
-                                            <td class="px-3 py-2 text-xs font-semibold text-[var(--ui-secondary)]">{{ $item->beschreibung }}</td>
-                                            <td class="px-3 py-2 text-xs text-[var(--ui-muted)]">{{ $item->raum ?: '—' }}</td>
-                                            <td class="px-3 py-2 text-xs text-[var(--ui-muted)]">{{ $item->bemerkung ?: '—' }}</td>
-                                            <td class="px-3 py-2">
-                                                <div class="flex items-center justify-end gap-1">
-                                                    <x-ui-button variant="secondary-outline" size="sm" wire:click="openScheduleEdit('{{ $item->uuid }}')">
-                                                        @svg('heroicon-o-pencil', 'w-3.5 h-3.5')
-                                                    </x-ui-button>
-                                                    <x-ui-button variant="danger-outline" size="sm"
-                                                                 wire:click="deleteSchedule('{{ $item->uuid }}')"
-                                                                 wire:confirm="Eintrag löschen?">
-                                                        @svg('heroicon-o-trash', 'w-3.5 h-3.5')
-                                                    </x-ui-button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    @endif
+                        <p class="text-[0.6rem] text-[var(--ui-muted)] mt-2">Enter im Beschreibungsfeld oder Button zum Hinzufügen.</p>
+                    </div>
                 </x-ui-panel>
             </div>
         @endif
