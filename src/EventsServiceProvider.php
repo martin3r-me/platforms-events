@@ -65,7 +65,6 @@ class EventsServiceProvider extends ServiceProvider
 
     /**
      * Registriert Events-Tools für die AI/Chat-Funktionalität.
-     * Tools kommen in einem späteren Schritt – hier nur die Hook-Stelle.
      */
     protected function registerTools(): void
     {
@@ -74,8 +73,45 @@ class EventsServiceProvider extends ServiceProvider
                 return;
             }
 
-            // $registry = resolve(\Platform\Core\Tools\ToolRegistry::class);
-            // Tools werden in einem Folge-Commit registriert.
+            $registry = resolve(\Platform\Core\Tools\ToolRegistry::class);
+
+            // --- Events (voll inkl. Bulk) ---
+            $registry->register(new \Platform\Events\Tools\ListEventsTool());
+            $registry->register(new \Platform\Events\Tools\GetEventTool());
+            $registry->register(new \Platform\Events\Tools\CreateEventTool());
+            $registry->register(new \Platform\Events\Tools\UpdateEventTool());
+            $registry->register(new \Platform\Events\Tools\DeleteEventTool());
+            $registry->register(new \Platform\Events\Tools\BulkCreateEventsTool());
+            $registry->register(new \Platform\Events\Tools\BulkUpdateEventsTool());
+            $registry->register(new \Platform\Events\Tools\BulkDeleteEventsTool());
+
+            // --- EventDays (Single-CUD) ---
+            $registry->register(new \Platform\Events\Tools\ListEventDaysTool());
+            $registry->register(new \Platform\Events\Tools\GetEventDayTool());
+            $registry->register(new \Platform\Events\Tools\CreateEventDayTool());
+            $registry->register(new \Platform\Events\Tools\UpdateEventDayTool());
+            $registry->register(new \Platform\Events\Tools\DeleteEventDayTool());
+
+            // --- Bookings (Single-CUD) ---
+            $registry->register(new \Platform\Events\Tools\ListBookingsTool());
+            $registry->register(new \Platform\Events\Tools\GetBookingTool());
+            $registry->register(new \Platform\Events\Tools\CreateBookingTool());
+            $registry->register(new \Platform\Events\Tools\UpdateBookingTool());
+            $registry->register(new \Platform\Events\Tools\DeleteBookingTool());
+
+            // --- ScheduleItems (Single-CUD) ---
+            $registry->register(new \Platform\Events\Tools\ListScheduleItemsTool());
+            $registry->register(new \Platform\Events\Tools\GetScheduleItemTool());
+            $registry->register(new \Platform\Events\Tools\CreateScheduleItemTool());
+            $registry->register(new \Platform\Events\Tools\UpdateScheduleItemTool());
+            $registry->register(new \Platform\Events\Tools\DeleteScheduleItemTool());
+
+            // --- EventNotes (Single-CUD) ---
+            $registry->register(new \Platform\Events\Tools\ListEventNotesTool());
+            $registry->register(new \Platform\Events\Tools\GetEventNoteTool());
+            $registry->register(new \Platform\Events\Tools\CreateEventNoteTool());
+            $registry->register(new \Platform\Events\Tools\UpdateEventNoteTool());
+            $registry->register(new \Platform\Events\Tools\DeleteEventNoteTool());
         } catch (\Throwable $e) {
             // Silent fail – Tool-Registry ggf. noch nicht verfügbar
         }

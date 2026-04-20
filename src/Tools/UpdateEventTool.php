@@ -1,0 +1,148 @@
+<?php
+
+namespace Platform\Events\Tools;
+
+use Platform\Core\Contracts\ToolContract;
+use Platform\Core\Contracts\ToolContext;
+use Platform\Core\Contracts\ToolMetadataContract;
+use Platform\Core\Contracts\ToolResult;
+use Platform\Events\Models\Event;
+
+/**
+ * Aktualisiert ein Event. Nur übergebene Felder werden geändert.
+ */
+class UpdateEventTool implements ToolContract, ToolMetadataContract
+{
+    protected const UPDATABLE_STRING_FIELDS = [
+        'name', 'customer', 'group', 'location', 'status', 'event_type',
+        'organizer_contact', 'organizer_contact_onsite', 'organizer_for_whom',
+        'orderer_company', 'orderer_contact', 'orderer_via',
+        'invoice_to', 'invoice_contact', 'invoice_date_type',
+        'responsible', 'cost_center', 'cost_carrier',
+        'sign_left', 'sign_right',
+        'follow_up_note',
+        'delivery_supplier', 'delivery_contact',
+        'inquiry_time', 'inquiry_note', 'potential',
+        'forwarding_time',
+    ];
+
+    protected const UPDATABLE_DATE_FIELDS = [
+        'start_date', 'end_date', 'follow_up_date', 'inquiry_date', 'forwarding_date',
+    ];
+
+    public function getName(): string
+    {
+        return 'events.events.PATCH';
+    }
+
+    public function getDescription(): string
+    {
+        return 'PATCH /events/{id} - Aktualisiert ein Event. Identifikation: event_id ODER uuid ODER event_number. '
+            . 'Alle übrigen Felder aus dem Event-Model sind optional (siehe events.event.GET für verfügbare Felder). '
+            . 'Nur übergebene Werte werden geändert. mr_data wird komplett ersetzt (merge bitte clientseitig).';
+    }
+
+    public function getSchema(): array
+    {
+        $stringFields = [];
+        foreach (self::UPDATABLE_STRING_FIELDS as $f) {
+            $stringFields[$f] = ['type' => 'string'];
+        }
+        $dateFields = [];
+        foreach (self::UPDATABLE_DATE_FIELDS as $f) {
+            $dateFields[$f] = ['type' => 'string', 'description' => 'YYYY-MM-DD'];
+        }
+
+        return [
+            'type' => 'object',
+            'properties' => array_merge([
+                'event_id'     => ['type' => 'integer'],
+                'uuid'         => ['type' => 'string'],
+                'event_number' => ['type' => 'string'],
+                'mr_data'      => ['type' => 'object', 'description' => 'Management-Report als Key/Value-Map (ersetzt den gesamten Inhalt).'],
+                'forwarded'    => ['type' => 'boolean'],
+            ], $stringFields, $dateFields),
+        ];
+    }
+
+    public function execute(array $arguments, ToolContext $context): ToolResult
+    {
+        try {
+            if (!$context->user) {
+                return ToolResult::error('AUTH_ERROR', 'Kein User im Kontext gefunden.');
+            }
+
+            $query = Event::query();
+            if (!empty($arguments['event_id'])) {
+                $query->where('id', (int) $arguments['event_id']);
+            } elseif (!empty($arguments['uuid'])) {
+                $query->where('uuid', $arguments['uuid']);
+            } elseif (!empty($arguments['event_number'])) {
+                $raw = (string) $arguments['event_number'];
+                $query->where(function ($q) use ($raw) {
+                    $q->where('event_number', $raw)
+                      ->orWhere('event_number', preg_replace('/^(VA)(\d)/', '$1#$2', $raw));
+                });
+            } else {
+                return ToolResult::error('VALIDATION_ERROR', 'event_id, uuid oder event_number ist erforderlich.');
+            }
+
+            $event = $query->first();
+            if (!$event) {
+                return ToolResult::error('EVENT_NOT_FOUND', 'Das angegebene Event wurde nicht gefunden.');
+            }
+
+            $userHasAccess = $context->user->teams()->where('teams.id', $event->team_id)->exists();
+            if (!$userHasAccess) {
+                return ToolResult::error('ACCESS_DENIED', 'Du hast keinen Zugriff auf dieses Event.');
+            }
+
+            $update = [];
+            foreach (array_merge(self::UPDATABLE_STRING_FIELDS, self::UPDATABLE_DATE_FIELDS) as $f) {
+                if (array_key_exists($f, $arguments)) {
+                    $update[$f] = $arguments[$f];
+                }
+            }
+            if (array_key_exists('forwarded', $arguments)) {
+                $update['forwarded'] = (bool) $arguments['forwarded'];
+            }
+            if (array_key_exists('mr_data', $arguments)) {
+                $update['mr_data'] = is_array($arguments['mr_data']) ? $arguments['mr_data'] : null;
+            }
+
+            if (empty($update)) {
+                return ToolResult::error('VALIDATION_ERROR', 'Keine Felder zum Aktualisieren übergeben.');
+            }
+
+            $event->update($update);
+
+            return ToolResult::success([
+                'id'           => $event->id,
+                'uuid'         => $event->uuid,
+                'slug'         => $event->slug,
+                'event_number' => $event->event_number,
+                'name'         => $event->name,
+                'status'       => $event->status,
+                'team_id'      => $event->team_id,
+                'updated_at'   => $event->updated_at?->toIso8601String(),
+                'message'      => "Event '{$event->name}' erfolgreich aktualisiert.",
+            ]);
+        } catch (\Throwable $e) {
+            return ToolResult::error('EXECUTION_ERROR', 'Fehler beim Aktualisieren des Events: ' . $e->getMessage());
+        }
+    }
+
+    public function getMetadata(): array
+    {
+        return [
+            'category'      => 'action',
+            'tags'          => ['events', 'event', 'update'],
+            'read_only'     => false,
+            'requires_auth' => true,
+            'requires_team' => false,
+            'risk_level'    => 'write',
+            'idempotent'    => true,
+            'side_effects'  => ['updates'],
+        ];
+    }
+}
