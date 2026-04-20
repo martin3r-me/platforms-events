@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Platform\Events\Http\Controllers\PublicContractController;
+use Platform\Events\Http\Controllers\PublicInvoiceController;
 use Platform\Events\Http\Controllers\PublicQuoteController;
 
 /*
@@ -19,3 +20,5 @@ Route::post('/angebot/{token}/respond', [PublicQuoteController::class, 'respond'
 
 Route::get('/vertrag/{token}', [PublicContractController::class, 'show'])->name('events.public.contract');
 Route::post('/vertrag/{token}/respond', [PublicContractController::class, 'respond'])->name('events.public.contract.respond');
+
+Route::get('/rechnung/{token}', [PublicInvoiceController::class, 'show'])->name('events.public.invoice');

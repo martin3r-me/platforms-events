@@ -402,6 +402,13 @@
             </div>
         @endif
 
+        {{-- ================= Tab: Rechnungen ================= --}}
+        @if($activeTab === 'rechnungen')
+            <div class="pt-6">
+                <livewire:events.detail.invoices :event-id="$event->id" :key="'invoices-'.$event->id" />
+            </div>
+        @endif
+
         {{-- ================= Tab: Tage ================= --}}
         @if($activeTab === 'tage')
             <div class="pt-6 space-y-4">
