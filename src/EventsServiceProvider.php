@@ -147,7 +147,12 @@ class EventsServiceProvider extends ServiceProvider
                 continue;
             }
 
-            $aliasPath = str_replace(['\\', '/'], '.', Str::kebab(str_replace('.php', '', $relativePath)));
+            // Segmentweise kebab-case-Umwandlung: Detail/ProjektFunction → detail.projekt-function
+            // (Str::kebab direkt auf den Gesamtpfad wuerde einen Bindestrich zwischen
+            // Verzeichnisseparator und folgendem Grossbuchstaben einfuegen.)
+            $pathWithoutExt = str_replace('.php', '', $relativePath);
+            $segments = preg_split('#[/\\\\]#', $pathWithoutExt);
+            $aliasPath = implode('.', array_map(fn ($seg) => Str::kebab($seg), $segments));
             $alias = $prefix . '.' . $aliasPath;
 
             Livewire::component($alias, $class);
