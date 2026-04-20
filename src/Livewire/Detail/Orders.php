@@ -20,8 +20,6 @@ class Orders extends Component
     public string $itemStatus = 'Offen';
     public string $itemLieferant = '';
 
-    public bool $showPositionsModal = false;
-
     public array $newPosition = [
         'gruppe' => '', 'name' => '', 'anz' => '', 'anz2' => '',
         'uhrzeit' => '', 'bis' => '', 'inhalt' => '', 'gebinde' => '',
@@ -130,12 +128,11 @@ class Orders extends Component
     {
         $this->activeItemId = $itemId;
         $this->resetNewPosition();
-        $this->showPositionsModal = true;
+        $this->dispatch('scroll-to-positions');
     }
 
     public function closePositions(): void
     {
-        $this->showPositionsModal = false;
         $this->activeItemId = null;
     }
 

@@ -17,8 +17,6 @@ class Quotes extends Component
     public ?int $activeQuoteId = null;
     public ?int $activeItemId = null;
 
-    public bool $showPositionsModal = false;
-
     public array $newPosition = [
         'gruppe' => '', 'name' => '', 'anz' => '', 'anz2' => '',
         'uhrzeit' => '', 'bis' => '', 'inhalt' => '', 'gebinde' => '',
@@ -193,12 +191,11 @@ class Quotes extends Component
         if (!$item) return;
         $this->activeItemId = $itemId;
         $this->resetNewPosition();
-        $this->showPositionsModal = true;
+        $this->dispatch('scroll-to-positions');
     }
 
     public function closePositions(): void
     {
-        $this->showPositionsModal = false;
         $this->activeItemId = null;
     }
 

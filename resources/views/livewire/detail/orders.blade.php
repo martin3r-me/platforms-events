@@ -178,68 +178,101 @@
         </form>
     </x-ui-modal>
 
-    {{-- Modal: Positionen --}}
-    <x-ui-modal wire:model="showPositionsModal" size="xl" :hideFooter="true">
-        <x-slot name="header">Bestellpositionen{{ $activeItem ? ' – ' . $activeItem->typ : '' }}</x-slot>
-        <div class="space-y-4">
+    {{-- Inline Positions-Editor für aktiven Vorgang --}}
+    @if($activeItem)
+        <div id="positions-editor"
+             x-data
+             x-on:scroll-to-positions.window="$nextTick(() => $el.scrollIntoView({ behavior: 'smooth', block: 'start' }))"
+             class="mt-5 bg-white border-2 border-orange-400 rounded-xl overflow-hidden shadow-sm">
+            <div class="flex items-center justify-between px-4 py-3 bg-orange-50 border-b border-orange-200">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-[3px] h-4 bg-orange-600 rounded-sm"></div>
+                    <h3 class="text-[0.8rem] font-bold text-[var(--ui-secondary)]">Bestellpositionen · {{ $activeItem->typ }}</h3>
+                    <span class="text-[0.6rem] text-[var(--ui-muted)]">{{ $positions->count() }} Positionen · Einkauf {{ $fmt($activeItem->einkauf) }} €</span>
+                </div>
+                <button wire:click="closePositions"
+                        class="flex items-center gap-1 px-2.5 py-1 rounded bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 text-[0.62rem] font-semibold cursor-pointer">
+                    @svg('heroicon-o-x-mark', 'w-3 h-3')
+                    Schließen
+                </button>
+            </div>
+
             @if($positions->isEmpty())
-                <p class="text-xs text-[var(--ui-muted)] text-center py-4">Noch keine Bestellpositionen.</p>
+                <div class="px-4 py-6 text-center text-[0.7rem] text-[var(--ui-muted)]">
+                    Noch keine Positionen. Fülle die Eingabefelder unten aus, um die erste Position hinzuzufügen.
+                </div>
             @else
-                <table class="w-full border-collapse">
-                    <thead>
-                        <tr class="bg-slate-50 border-b border-[var(--ui-border)]">
-                            <th class="px-2 py-1.5 text-left text-[0.62rem] font-bold text-[var(--ui-muted)]">Gruppe</th>
-                            <th class="px-2 py-1.5 text-left text-[0.62rem] font-bold text-[var(--ui-muted)]">Name</th>
-                            <th class="px-2 py-1.5 text-right text-[0.62rem] font-bold text-[var(--ui-muted)]">Anz</th>
-                            <th class="px-2 py-1.5 text-left text-[0.62rem] font-bold text-[var(--ui-muted)]">Gebinde</th>
-                            <th class="px-2 py-1.5 text-right text-[0.62rem] font-bold text-[var(--ui-muted)]">EK</th>
-                            <th class="px-2 py-1.5 text-right text-[0.62rem] font-bold text-[var(--ui-muted)]">Gesamt</th>
-                            <th class="w-8"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($positions as $p)
-                            <tr class="border-b border-[var(--ui-border)]/60">
-                                <td class="px-2 py-1 text-xs text-[var(--ui-muted)]">{{ $p->gruppe }}</td>
-                                <td class="px-2 py-1 text-xs text-[var(--ui-secondary)]">{{ $p->name }}</td>
-                                <td class="px-2 py-1 text-xs font-mono text-right">{{ $p->anz }}</td>
-                                <td class="px-2 py-1 text-xs text-[var(--ui-muted)]">{{ $p->gebinde }}</td>
-                                <td class="px-2 py-1 text-xs font-mono text-right">{{ $fmt($p->ek) }}</td>
-                                <td class="px-2 py-1 text-xs font-mono text-right">{{ $fmt($p->gesamt) }}</td>
-                                <td class="px-2 py-1">
-                                    <button wire:click="deletePosition({{ $p->id }})" wire:confirm="Löschen?" class="text-red-500 hover:text-red-700">
-                                        @svg('heroicon-o-trash', 'w-3 h-3')
-                                    </button>
-                                </td>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse text-[0.65rem]">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-100">
+                                <th class="text-left py-1.5 px-2.5 text-[0.56rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Gruppe</th>
+                                <th class="text-left py-1.5 px-2 text-[0.56rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Name</th>
+                                <th class="text-right py-1.5 px-2 text-[0.56rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Anz</th>
+                                <th class="text-left py-1.5 px-2 text-[0.56rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Gebinde</th>
+                                <th class="text-right py-1.5 px-2 text-[0.56rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">EK</th>
+                                <th class="text-center py-1.5 px-2 text-[0.56rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">MwSt</th>
+                                <th class="text-right py-1.5 px-2 text-[0.56rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Gesamt</th>
+                                <th class="w-8"></th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach($positions as $p)
+                                <tr class="border-b border-slate-100 hover:bg-slate-50/60">
+                                    <td class="py-1.5 px-2.5 text-slate-600">{{ $p->gruppe }}</td>
+                                    <td class="py-1.5 px-2 text-[var(--ui-secondary)]">{{ $p->name }}</td>
+                                    <td class="py-1.5 px-2 text-right font-mono">{{ $p->anz }}</td>
+                                    <td class="py-1.5 px-2 text-slate-500">{{ $p->gebinde }}</td>
+                                    <td class="py-1.5 px-2 text-right font-mono">{{ $fmt($p->ek) }}</td>
+                                    <td class="py-1.5 px-2 text-center text-slate-500">{{ $p->mwst }}</td>
+                                    <td class="py-1.5 px-2 text-right font-mono font-semibold">{{ $fmt($p->gesamt) }}</td>
+                                    <td class="py-1.5 px-2">
+                                        <button wire:click="deletePosition({{ $p->id }})" wire:confirm="Position löschen?"
+                                                class="text-red-500 hover:text-red-700">
+                                            @svg('heroicon-o-trash', 'w-3 h-3')
+                                        </button>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             @endif
 
-            <div class="bg-slate-50 rounded-md p-3 space-y-2">
-                <p class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Neue Bestell-Position</p>
-                <div class="grid grid-cols-8 gap-2">
-                    <input wire:model="newPosition.gruppe" type="text" placeholder="Gruppe" class="border border-slate-200 rounded-md px-2 py-1.5 text-xs">
-                    <input wire:model="newPosition.name" type="text" placeholder="Name" class="col-span-2 border border-slate-200 rounded-md px-2 py-1.5 text-xs">
-                    <input wire:model="newPosition.anz" type="text" placeholder="Anz" class="border border-slate-200 rounded-md px-2 py-1.5 text-xs font-mono">
-                    <input wire:model="newPosition.gebinde" type="text" placeholder="Gebinde" class="border border-slate-200 rounded-md px-2 py-1.5 text-xs">
-                    <input wire:model="newPosition.ek" type="number" step="0.01" placeholder="EK" class="border border-slate-200 rounded-md px-2 py-1.5 text-xs font-mono">
-                    <select wire:model="newPosition.mwst" class="border border-slate-200 rounded-md px-2 py-1.5 text-xs">
+            <div class="px-4 py-3 bg-slate-50 border-t border-slate-100 space-y-2">
+                <p class="text-[0.6rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Neue Position</p>
+                <div class="grid grid-cols-12 gap-1.5">
+                    <input wire:model="newPosition.gruppe" type="text" placeholder="Gruppe"
+                           class="col-span-2 border border-slate-200 rounded-md px-2 py-1.5 text-[0.65rem]">
+                    <input wire:model="newPosition.name" type="text" placeholder="Name / Bezeichnung"
+                           class="col-span-3 border border-slate-200 rounded-md px-2 py-1.5 text-[0.65rem]">
+                    <input wire:model="newPosition.anz" type="text" placeholder="Anz"
+                           class="col-span-1 border border-slate-200 rounded-md px-2 py-1.5 text-[0.65rem] font-mono text-right">
+                    <input wire:model="newPosition.gebinde" type="text" placeholder="Gebinde"
+                           class="col-span-2 border border-slate-200 rounded-md px-2 py-1.5 text-[0.65rem]">
+                    <input wire:model="newPosition.ek" type="number" step="0.01" placeholder="EK"
+                           class="col-span-1 border border-slate-200 rounded-md px-2 py-1.5 text-[0.65rem] font-mono text-right">
+                    <select wire:model="newPosition.mwst"
+                            class="col-span-1 border border-slate-200 rounded-md px-2 py-1.5 text-[0.65rem]">
                         <option value="7%">7%</option>
                         <option value="19%">19%</option>
                     </select>
-                    <input wire:model="newPosition.gesamt" type="number" step="0.01" placeholder="Gesamt" class="border border-slate-200 rounded-md px-2 py-1.5 text-xs font-mono">
+                    <input wire:model="newPosition.gesamt" type="number" step="0.01" placeholder="Gesamt (auto)"
+                           class="col-span-2 border border-slate-200 rounded-md px-2 py-1.5 text-[0.65rem] font-mono text-right">
                 </div>
-                <input wire:model="newPosition.bemerkung" type="text" placeholder="Bemerkung" class="w-full border border-slate-200 rounded-md px-2 py-1.5 text-xs">
-                <div class="flex justify-end">
-                    <x-ui-button wire:click="addPosition" variant="primary" size="sm">Position hinzufügen</x-ui-button>
+                <div class="flex gap-1.5">
+                    <input wire:model="newPosition.bemerkung" type="text" placeholder="Bemerkung (optional)"
+                           class="flex-1 border border-slate-200 rounded-md px-2 py-1.5 text-[0.65rem]">
+                    <button wire:click="addPosition"
+                            class="flex items-center gap-1 px-3 py-1.5 rounded bg-orange-600 hover:bg-orange-700 text-white border-0 cursor-pointer text-[0.65rem] font-semibold whitespace-nowrap">
+                        @svg('heroicon-o-plus', 'w-3 h-3')
+                        Hinzufügen
+                    </button>
                 </div>
-            </div>
-
-            <div class="flex justify-end pt-3 border-t border-[var(--ui-border)]">
-                <x-ui-button variant="secondary-outline" size="sm" wire:click="closePositions">Schließen</x-ui-button>
+                <p class="text-[0.55rem] text-[var(--ui-muted)]">
+                    Gesamt-Feld leer lassen ⇒ Anz × EK wird automatisch berechnet.
+                </p>
             </div>
         </div>
-    </x-ui-modal>
+    @endif
 </div>
