@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Platform\Events\Http\Controllers\PublicContractController;
 use Platform\Events\Http\Controllers\PublicQuoteController;
 
 /*
@@ -15,3 +16,6 @@ use Platform\Events\Http\Controllers\PublicQuoteController;
 
 Route::get('/angebot/{token}', [PublicQuoteController::class, 'show'])->name('events.public.quote');
 Route::post('/angebot/{token}/respond', [PublicQuoteController::class, 'respond'])->name('events.public.quote.respond');
+
+Route::get('/vertrag/{token}', [PublicContractController::class, 'show'])->name('events.public.contract');
+Route::post('/vertrag/{token}/respond', [PublicContractController::class, 'respond'])->name('events.public.contract.respond');
