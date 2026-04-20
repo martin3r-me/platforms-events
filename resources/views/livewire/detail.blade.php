@@ -416,6 +416,13 @@
             </div>
         @endif
 
+        {{-- ================= Tab: Kommunikation ================= --}}
+        @if($activeTab === 'kommunikation')
+            <div class="pt-6">
+                <livewire:events.detail.communication :event-id="$event->id" :key="'comm-'.$event->id" />
+            </div>
+        @endif
+
         {{-- ================= Tab: Tage ================= --}}
         @if($activeTab === 'tage')
             <div class="pt-6 space-y-4">

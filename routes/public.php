@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Platform\Events\Http\Controllers\EmailTrackController;
 use Platform\Events\Http\Controllers\PublicContractController;
 use Platform\Events\Http\Controllers\PublicInvoiceController;
 use Platform\Events\Http\Controllers\PublicPickListController;
@@ -27,3 +28,5 @@ Route::get('/rechnung/{token}', [PublicInvoiceController::class, 'show'])->name(
 Route::get('/picking/{token}', [PublicPickListController::class, 'show'])->name('events.public.picklist');
 Route::patch('/picking/{token}/items/{itemId}', [PublicPickListController::class, 'updateItem'])->name('events.public.picklist.item');
 Route::get('/picking/{token}/progress', [PublicPickListController::class, 'progress'])->name('events.public.picklist.progress');
+
+Route::get('/email/track/{token}', [EmailTrackController::class, 'track'])->name('events.public.email.track');
