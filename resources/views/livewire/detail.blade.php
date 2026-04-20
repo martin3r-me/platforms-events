@@ -525,47 +525,30 @@
                                 </div>
                             </div>
                             <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Potenzialanalyse</label>
-                            @php
-                                $pct = (int) preg_replace('/[^0-9]/', '', (string) ($event->potential ?? ''));
-                                $potentialBarBg = match(true) {
-                                    $pct >= 70 => 'bg-green-100',
-                                    $pct >= 50 => 'bg-yellow-100',
-                                    $pct >= 30 => 'bg-orange-100',
-                                    $pct >= 10 => 'bg-red-100',
-                                    default    => 'bg-slate-100',
-                                };
-                                $potentialBarFill = match(true) {
-                                    $pct >= 90 => 'bg-green-600',
-                                    $pct >= 70 => 'bg-green-500',
-                                    $pct >= 50 => 'bg-yellow-500',
-                                    $pct >= 30 => 'bg-orange-500',
-                                    $pct >= 10 => 'bg-red-500',
-                                    default    => 'bg-slate-300',
-                                };
-                                $potentialText = match(true) {
-                                    $pct >= 90 => 'text-green-700',
-                                    $pct >= 70 => 'text-green-600',
-                                    $pct >= 50 => 'text-yellow-700',
-                                    $pct >= 30 => 'text-orange-600',
-                                    $pct >= 10 => 'text-red-600',
-                                    default    => 'text-slate-400',
-                                };
-                            @endphp
-                            <div class="flex items-center gap-2 mb-1">
-                                <div class="flex-1 h-2 rounded-full overflow-hidden {{ $potentialBarBg }}">
-                                    <div class="h-full rounded-full transition-all duration-300 {{ $potentialBarFill }}" style="width: {{ $pct }}%"></div>
+                            @php $pct = (int) preg_replace('/[^0-9]/', '', (string) ($event->potential ?? '')); @endphp
+                            <div x-data="{
+                                    pct: {{ $pct }},
+                                    bg()   { return this.pct >= 70 ? '#dcfce7' : this.pct >= 50 ? '#fef3c7' : this.pct >= 30 ? '#ffedd5' : this.pct >= 10 ? '#fee2e2' : '#f1f5f9'; },
+                                    fill() { return this.pct >= 90 ? '#16a34a' : this.pct >= 70 ? '#22c55e' : this.pct >= 50 ? '#f59e0b' : this.pct >= 30 ? '#f97316' : this.pct >= 10 ? '#ef4444' : '#cbd5e1'; },
+                                    txt()  { return this.pct >= 90 ? '#15803d' : this.pct >= 70 ? '#16a34a' : this.pct >= 50 ? '#a16207' : this.pct >= 30 ? '#c2410c' : this.pct >= 10 ? '#dc2626' : '#94a3b8'; }
+                                 }">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <div class="flex-1 h-2 rounded-full overflow-hidden" :style="'background:' + bg()">
+                                        <div class="h-full rounded-full transition-all duration-300" :style="'width:' + pct + '%; background:' + fill()"></div>
+                                    </div>
+                                    <span class="text-xs font-bold font-mono min-w-[2.5rem] text-right" :style="'color:' + txt()" x-text="pct ? pct + '%' : '—'"></span>
                                 </div>
-                                <span class="text-xs font-bold font-mono min-w-[2.5rem] text-right {{ $potentialText }}">{{ $pct ? $pct.'%' : '—' }}</span>
+                                <select wire:model.blur="event.potential"
+                                        @change="pct = parseInt($event.target.value) || 0"
+                                        class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                    <option value="">— bitte wählen —</option>
+                                    <option value="10% (unwahrscheinlich)">10% (unwahrscheinlich)</option>
+                                    <option value="30% (unverbindliche Anfrage)">30% (unverbindliche Anfrage)</option>
+                                    <option value="50% (Tendenz offen)">50% (Tendenz offen)</option>
+                                    <option value="70% (deutliche Tendenz zur Buchung)">70% (deutliche Tendenz zur Buchung)</option>
+                                    <option value="90% (ziemlich definitiv)">90% (ziemlich definitiv)</option>
+                                </select>
                             </div>
-                            <select wire:model.blur="event.potential"
-                                    class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                                <option value="">— bitte wählen —</option>
-                                <option value="10% (unwahrscheinlich)">10% (unwahrscheinlich)</option>
-                                <option value="30% (unverbindliche Anfrage)">30% (unverbindliche Anfrage)</option>
-                                <option value="50% (Tendenz offen)">50% (Tendenz offen)</option>
-                                <option value="70% (deutliche Tendenz zur Buchung)">70% (deutliche Tendenz zur Buchung)</option>
-                                <option value="90% (ziemlich definitiv)">90% (ziemlich definitiv)</option>
-                            </select>
                             <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mt-2">Notiz zur Anfrage</label>
                             <input wire:model.blur="event.inquiry_note" type="text"
                                    class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
