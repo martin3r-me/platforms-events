@@ -52,13 +52,13 @@ class Event extends Model
 
     protected $casts = [
         'uuid'              => 'string',
-        'start_date'        => 'date',
-        'end_date'          => 'date',
+        'start_date'        => 'date:Y-m-d',
+        'end_date'          => 'date:Y-m-d',
         'status_changed_at' => 'datetime',
         'mr_data'           => 'array',
-        'follow_up_date'    => 'date',
-        'inquiry_date'      => 'date',
-        'forwarding_date'   => 'date',
+        'follow_up_date'    => 'date:Y-m-d',
+        'inquiry_date'      => 'date:Y-m-d',
+        'forwarding_date'   => 'date:Y-m-d',
         'forwarded'         => 'boolean',
     ];
 

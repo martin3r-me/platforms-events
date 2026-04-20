@@ -555,46 +555,23 @@
                         </div>
                     </x-ui-panel>
 
-                    <x-ui-panel title="Lieferung & Wiedervorlage">
-                        <div class="p-4 space-y-2">
-                            <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Wiedervorlage am</label>
-                                    <input wire:model.live="event.follow_up_date" type="date"
-                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                                </div>
-                                <div>
-                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Lieferant</label>
-                                    <input wire:model.blur="event.delivery_supplier" type="text"
-                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                                </div>
-                            </div>
-                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Lieferkontakt</label>
-                            <input wire:model.blur="event.delivery_contact" type="text"
-                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Notiz</label>
-                            <textarea wire:model.blur="event.follow_up_note" rows="2"
-                                      class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30"></textarea>
-                        </div>
-                    </x-ui-panel>
-
                     <x-ui-panel title="Weiterleitung">
-                        <div class="p-4 grid grid-cols-3 gap-2">
-                            <div class="flex items-center">
-                                <label class="flex items-center gap-2 cursor-pointer select-none">
-                                    <input wire:model.blur="event.forwarded" type="checkbox" class="w-4 h-4 accent-[var(--ui-primary)] cursor-pointer">
-                                    <span class="text-xs text-[var(--ui-secondary)]">aktiv</span>
-                                </label>
-                            </div>
-                            <div>
-                                <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Datum</label>
-                                <input wire:model.live="event.forwarding_date" type="date"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Uhrzeit</label>
-                                <input wire:model.blur="event.forwarding_time" type="text" placeholder="14:30"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        <div class="p-3 space-y-2">
+                            <label class="flex items-start gap-2 cursor-pointer select-none bg-white border border-[var(--ui-border)] rounded-md px-2 py-1.5">
+                                <input wire:model.live="event.forwarded" type="checkbox" class="w-3.5 h-3.5 mt-0.5 accent-[var(--ui-primary)] cursor-pointer flex-shrink-0">
+                                <span class="text-[0.68rem] font-semibold text-[var(--ui-secondary)]">Bearbeitung nach Weiterleitung durch anderes Team</span>
+                            </label>
+                            <div class="grid grid-cols-[1fr_auto] gap-2">
+                                <div>
+                                    <label class="text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-0.5">Eingangsdatum</label>
+                                    <input wire:model.live="event.forwarding_date" type="date"
+                                           class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                </div>
+                                <div>
+                                    <label class="text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-0.5">Uhrzeit</label>
+                                    <input wire:model.blur="event.forwarding_time" type="text" placeholder="14:30"
+                                           class="w-[70px] border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                </div>
                             </div>
                         </div>
                     </x-ui-panel>
@@ -609,6 +586,30 @@
 
                     <x-ui-panel title="Vereinbarung">
                         @include('events::partials.note-stream', ['type' => 'vereinbarung', 'notes' => $notesByType->get('vereinbarung', collect())])
+                    </x-ui-panel>
+
+                    {{-- Lieferung/Wiedervorlage als kleine Ergaenzung (Alt hat diese Felder nicht prominent auf Basis) --}}
+                    <x-ui-panel title="Lieferung & Wiedervorlage" subtitle="Optional – Lieferant, Kontakt, Wiedervorlage">
+                        <div class="p-3 space-y-2">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-0.5">Wiedervorlage</label>
+                                    <input wire:model.live="event.follow_up_date" type="date"
+                                           class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                </div>
+                                <div>
+                                    <label class="text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-0.5">Lieferant</label>
+                                    <input wire:model.blur="event.delivery_supplier" type="text"
+                                           class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                </div>
+                            </div>
+                            <label class="text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Lieferkontakt</label>
+                            <input wire:model.blur="event.delivery_contact" type="text"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            <label class="text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Notiz</label>
+                            <textarea wire:model.blur="event.follow_up_note" rows="2"
+                                      class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30"></textarea>
+                        </div>
                     </x-ui-panel>
                 </div>
             </div>
