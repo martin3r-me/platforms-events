@@ -8,7 +8,7 @@
 
 return [
     'routing' => [
-        'mode' => env('EVENTS_MODE', 'path'),
+        'mode'   => env('EVENTS_MODE', 'path'),
         'prefix' => 'events',
     ],
 
@@ -28,11 +28,6 @@ return [
                     'label' => 'Dashboard',
                     'route' => 'events.dashboard',
                     'icon'  => 'heroicon-o-home',
-                ],
-                [
-                    'label' => 'Test',
-                    'route' => 'events.test',
-                    'icon'  => 'heroicon-o-beaker',
                 ],
             ],
         ],

@@ -64,19 +64,6 @@
     <x-slot name="sidebar">
         <x-ui-page-sidebar title="Schnellzugriff" width="w-80" :defaultOpen="true">
             <div class="p-6 space-y-6">
-                {{-- Quick Actions --}}
-                <div>
-                    <h3 class="text-sm font-bold text-[var(--ui-secondary)] uppercase tracking-wider mb-3">Aktionen</h3>
-                    <div class="space-y-2">
-                        <x-ui-button variant="secondary-outline" size="sm" :href="route('events.test')" wire:navigate class="w-full">
-                            <span class="flex items-center gap-2">
-                                @svg('heroicon-o-beaker', 'w-4 h-4')
-                                Test-Seite
-                            </span>
-                        </x-ui-button>
-                    </div>
-                </div>
-
                 {{-- Quick Stats --}}
                 <div>
                     <h3 class="text-sm font-bold text-[var(--ui-secondary)] uppercase tracking-wider mb-3">Schnellstatistiken</h3>

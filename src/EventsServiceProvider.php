@@ -58,6 +58,27 @@ class EventsServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'events');
 
         $this->registerLivewireComponents();
+
+        // Tools registrieren (loose gekoppelt - für AI/Chat)
+        $this->registerTools();
+    }
+
+    /**
+     * Registriert Events-Tools für die AI/Chat-Funktionalität.
+     * Tools kommen in einem späteren Schritt – hier nur die Hook-Stelle.
+     */
+    protected function registerTools(): void
+    {
+        try {
+            if (!class_exists(\Platform\Core\Tools\ToolRegistry::class)) {
+                return;
+            }
+
+            // $registry = resolve(\Platform\Core\Tools\ToolRegistry::class);
+            // Tools werden in einem Folge-Commit registriert.
+        } catch (\Throwable $e) {
+            // Silent fail – Tool-Registry ggf. noch nicht verfügbar
+        }
     }
 
     protected function registerLivewireComponents(): void
