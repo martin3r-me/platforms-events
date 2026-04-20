@@ -1,101 +1,161 @@
-<div class="space-y-4">
+<div class="space-y-4 max-w-[960px]">
     @php
-        $statusMap = [
-            'draft'    => ['bg' => 'bg-slate-100', 'text' => 'text-slate-600', 'label' => 'Entwurf'],
-            'sent'     => ['bg' => 'bg-blue-50',   'text' => 'text-blue-700',  'label' => 'Versandt'],
-            'signed'   => ['bg' => 'bg-green-100', 'text' => 'text-green-700', 'label' => 'Unterzeichnet'],
-            'rejected' => ['bg' => 'bg-red-50',    'text' => 'text-red-700',   'label' => 'Abgelehnt'],
+        $statusMeta = [
+            'draft'    => ['bg' => '#fef3c7', 'color' => '#d97706', 'label' => 'Entwurf'],
+            'sent'     => ['bg' => '#dbeafe', 'color' => '#2563eb', 'label' => 'Versendet'],
+            'signed'   => ['bg' => '#dcfce7', 'color' => '#16a34a', 'label' => 'Unterschrieben'],
+            'rejected' => ['bg' => '#fee2e2', 'color' => '#dc2626', 'label' => 'Abgelehnt'],
         ];
         $typeOptions = [
-            'nutzungsvertrag'    => 'Nutzungsvertrag',
-            'optionsbestaetigung'=> 'Optionsbestätigung',
+            'nutzungsvertrag'     => 'Nutzungsvertrag',
+            'optionsbestaetigung' => 'Optionsbestätigung',
         ];
+
+        // Group contracts by root-parent for version history
+        $versionGroups = [];
+        foreach ($contracts as $c) {
+            $rootId = $c->parent_id ?? $c->id;
+            $versionGroups[$rootId][] = $c;
+        }
+        $currentByGroup = [];
+        foreach ($versionGroups as $rootId => $list) {
+            usort($list, fn($a, $b) => ($b->version ?? 1) <=> ($a->version ?? 1));
+            $currentByGroup[$rootId] = $list[0] ?? null;
+        }
     @endphp
 
-    <x-ui-panel>
-        <div class="p-4 flex justify-between items-start gap-4 flex-wrap">
-            <div>
-                <h3 class="text-sm font-bold text-[var(--ui-secondary)] mb-2">Verträge</h3>
-                @if($contracts->isEmpty())
-                    <p class="text-xs text-[var(--ui-muted)]">Kein Vertrag angelegt.</p>
-                @else
-                    <div class="flex gap-2 flex-wrap">
-                        @foreach($contracts as $c)
-                            @php $sb = $statusMap[$c->status] ?? $statusMap['draft']; @endphp
-                            <button wire:click="selectContract({{ $c->id }})"
-                                    class="px-3 py-1.5 rounded-md border text-xs flex items-center gap-2 transition-colors
-                                           {{ $activeContract && $activeContract->id === $c->id
-                                              ? 'border-[var(--ui-primary)] bg-[var(--ui-primary)]/10 text-[var(--ui-primary)]'
-                                              : 'border-[var(--ui-border)] bg-white text-[var(--ui-muted)] hover:border-[var(--ui-primary)]/40' }}">
-                                <span class="font-mono font-bold">v{{ $c->version }}</span>
-                                <span class="text-[0.6rem]">{{ $typeOptions[$c->type] ?? $c->type }}</span>
-                                <span class="text-[0.62rem] font-bold px-1.5 py-0.5 rounded-full {{ $sb['bg'] }} {{ $sb['text'] }}">{{ $sb['label'] }}</span>
-                                @if($c->is_current)
-                                    <span class="text-[0.6rem] font-bold text-[var(--ui-primary)]">·aktuell</span>
-                                @endif
-                            </button>
-                        @endforeach
-                    </div>
-                @endif
-            </div>
-            <div class="flex items-center gap-2">
-                <select wire:change="createContract($event.target.value); $event.target.value=''"
-                        class="border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs">
-                    <option value="">+ Neuer Vertrag…</option>
-                    @foreach($typeOptions as $key => $label)
-                        <option value="{{ $key }}">{{ $label }}</option>
-                    @endforeach
-                </select>
-                @if($activeContract)
-                    <x-ui-button variant="secondary-outline" size="sm" wire:click="newVersion"
-                                 wire:confirm="Neue Version anlegen?">
-                        @svg('heroicon-o-document-duplicate', 'w-3.5 h-3.5 inline') Neue Version
-                    </x-ui-button>
-                @endif
+    {{-- Header --}}
+    <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2.5">
+            <div class="w-[3px] h-4 bg-purple-600 rounded-sm"></div>
+            <h2 class="text-[0.9rem] font-bold text-[var(--ui-secondary)]">Verträge</h2>
+        </div>
+        <div class="relative" x-data="{ dropOpen: false }">
+            <button type="button" @click="dropOpen = !dropOpen"
+                    class="flex items-center gap-1.5 px-3.5 py-1.5 border-0 rounded-md bg-purple-600 hover:bg-purple-700 text-white text-[0.68rem] font-bold cursor-pointer">
+                @svg('heroicon-o-plus', 'w-3 h-3')
+                Neues Dokument
+                @svg('heroicon-o-chevron-down', 'w-2.5 h-2.5 ml-0.5')
+            </button>
+            <div x-show="dropOpen" @click.outside="dropOpen = false" x-cloak
+                 class="absolute right-0 top-[calc(100%+4px)] z-[100] bg-white border border-slate-200 rounded-lg p-1 shadow-lg min-w-[220px]">
+                @foreach($typeOptions as $key => $label)
+                    <button type="button" wire:click="createContract('{{ $key }}')" @click="dropOpen = false"
+                            class="flex items-center gap-2 w-full px-2.5 py-2 border-0 rounded bg-white hover:bg-slate-50 cursor-pointer text-left text-[0.65rem] text-slate-700 transition">
+                        <div class="w-2 h-2 rounded-full flex-shrink-0" style="background: {{ $key === 'nutzungsvertrag' ? '#7c3aed' : '#0891b2' }};"></div>
+                        <span class="font-semibold">{{ $label }}</span>
+                    </button>
+                @endforeach
             </div>
         </div>
+    </div>
 
-        @if($activeContract)
-            <div class="p-4 border-t border-[var(--ui-border)] flex items-center justify-between flex-wrap gap-3">
-                <div class="flex items-center gap-3">
-                    <span class="text-xs font-mono font-bold text-[var(--ui-primary)]">v{{ $activeContract->version }}</span>
-                    <select wire:change="setStatus($event.target.value)"
-                            class="border border-[var(--ui-border)] rounded-md px-2 py-1 text-xs bg-white">
-                        @foreach($statusMap as $key => $meta)
-                            <option value="{{ $key }}" @if($activeContract->status === $key) selected @endif>{{ $meta['label'] }}</option>
-                        @endforeach
-                    </select>
-                    <span class="text-[0.62rem] text-[var(--ui-muted)]">Token: <span class="font-mono">{{ Str::limit($activeContract->token, 12) }}</span></span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <x-ui-button variant="secondary-outline" size="sm" wire:click="openEdit">
-                        @svg('heroicon-o-pencil', 'w-3.5 h-3.5 inline') Text bearbeiten
-                    </x-ui-button>
-                    <a href="{{ route('events.public.contract', ['token' => $activeContract->token]) }}" target="_blank"
-                       class="text-xs text-[var(--ui-primary)] hover:underline flex items-center gap-1">
-                        @svg('heroicon-o-eye', 'w-3.5 h-3.5') Public-Ansicht
-                    </a>
-                    <x-ui-button variant="secondary-outline" size="sm"
-                                 :href="route('events.contract.pdf', ['event' => $event->slug, 'contractId' => $activeContract->id])">
-                        @svg('heroicon-o-arrow-down-tray', 'w-3.5 h-3.5 inline mr-1') PDF
-                    </x-ui-button>
-                    <x-ui-button variant="danger-outline" size="sm"
-                                 wire:click="deleteContract({{ $activeContract->id }})"
-                                 wire:confirm="Vertrag löschen?">
-                        @svg('heroicon-o-trash', 'w-3.5 h-3.5')
-                    </x-ui-button>
-                </div>
-            </div>
+    @if($contracts->isEmpty())
+        <div class="bg-white border border-[var(--ui-border)] rounded-xl p-10 text-center">
+            @svg('heroicon-o-document-text', 'w-10 h-10 text-slate-300 mx-auto mb-3')
+            <p class="text-[0.72rem] text-[var(--ui-muted)] m-0">Noch keine Verträge erstellt.</p>
+        </div>
+    @else
+        {{-- Current contract cards per group --}}
+        <div class="space-y-2">
+            @foreach($currentByGroup as $rootId => $ct)
+                @php
+                    $s = $statusMeta[$ct->status] ?? $statusMeta['draft'];
+                    $versionHistory = collect($versionGroups[$rootId])->reject(fn($x) => $x->id === $ct->id)->sortBy('version')->values();
+                @endphp
+                <div>
+                    <div class="bg-white border border-[var(--ui-border)] rounded-xl px-4 py-3.5"
+                         x-data="{ historyOpen: false }">
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <span class="text-[0.58rem] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
+                                  style="background: {{ $s['bg'] }}; color: {{ $s['color'] }};">{{ $s['label'] }}</span>
+                            <span class="text-[0.56rem] font-bold px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-600 border border-purple-200 flex-shrink-0">v{{ $ct->version ?? 1 }}</span>
+                            @if($ct->is_current === false)
+                                <span class="text-[0.54rem] font-semibold text-[var(--ui-muted)] italic flex-shrink-0">Alte Version</span>
+                            @endif
 
-            <div class="p-4 border-t border-[var(--ui-border)]">
-                <p class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] mb-2">Vertragstext (Preview)</p>
-                <div class="bg-[var(--ui-muted-5)] rounded-md p-3 text-xs text-[var(--ui-secondary)] whitespace-pre-wrap max-h-60 overflow-y-auto">
-                    {{ $activeContract->content['text'] ?? '(kein Text)' }}
-                </div>
-            </div>
-        @endif
-    </x-ui-panel>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-[0.72rem] font-semibold text-[var(--ui-secondary)] m-0">
+                                    {{ $typeOptions[$ct->type] ?? $ct->type }} Nr. {{ $event->event_number }}
+                                </p>
+                                <p class="text-[0.62rem] text-[var(--ui-muted)] mt-0.5">
+                                    Erstellt am {{ $ct->created_at->format('d.m.Y') }}
+                                    @if($ct->sent_at) · Versendet {{ $ct->sent_at->format('d.m.Y') }} @endif
+                                </p>
+                            </div>
 
+                            <div class="flex gap-1.5 flex-wrap">
+                                @if($ct->status === 'draft')
+                                    <button wire:click="selectContract({{ $ct->id }}); $wire.openEdit()"
+                                            class="px-2.5 py-1 border border-slate-200 rounded-md bg-white hover:bg-slate-50 text-slate-600 text-[0.62rem] font-semibold cursor-pointer">
+                                        Editor
+                                    </button>
+                                @endif
+                                <a href="{{ route('events.contract.pdf', ['event' => $event->slug, 'contractId' => $ct->id]) }}" target="_blank"
+                                   class="px-2.5 py-1 border border-slate-200 rounded-md bg-white hover:bg-slate-50 text-slate-600 text-[0.62rem] font-semibold no-underline">
+                                    PDF
+                                </a>
+                                <button type="button"
+                                        x-data="{ copied: false }"
+                                        @click="navigator.clipboard.writeText('{{ route('events.public.contract', ['token' => $ct->token]) }}'); copied = true; setTimeout(() => copied = false, 1500)"
+                                        :class="copied ? 'bg-green-50 border-green-200 text-green-600' : 'bg-white border-slate-200 text-slate-600'"
+                                        class="px-2.5 py-1 border rounded-md hover:bg-slate-50 text-[0.62rem] font-semibold cursor-pointer">
+                                    <span x-text="copied ? 'Kopiert' : 'Link'"></span>
+                                </button>
+                                @if($ct->status === 'draft')
+                                    <button wire:click="selectContract({{ $ct->id }}); $wire.setStatus('sent')"
+                                            class="px-2.5 py-1 border-0 rounded-md bg-purple-600 hover:bg-purple-700 text-white text-[0.62rem] font-bold cursor-pointer">
+                                        Versenden
+                                    </button>
+                                @endif
+                                @if(in_array($ct->status, ['sent', 'signed', 'rejected']) && $ct->is_current)
+                                    <button wire:click="selectContract({{ $ct->id }}); $wire.newVersion()"
+                                            wire:confirm="Neue Version anlegen?"
+                                            class="px-2.5 py-1 border border-purple-600 rounded-md bg-white hover:bg-purple-50 text-purple-600 text-[0.62rem] font-semibold cursor-pointer">
+                                        Neue Version
+                                    </button>
+                                @endif
+                                <button wire:click="deleteContract({{ $ct->id }})" wire:confirm="Vertrag wirklich löschen?"
+                                        class="px-2.5 py-1 border border-red-200 rounded-md bg-red-50 hover:bg-red-100 text-red-500 text-[0.62rem] font-semibold cursor-pointer">
+                                    Löschen
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if($versionHistory->isNotEmpty())
+                        <div class="mt-0.5" x-data="{ historyOpen: false }">
+                            <button @click="historyOpen = !historyOpen"
+                                    class="flex items-center gap-1 px-2.5 py-0.5 bg-transparent border-0 cursor-pointer text-[0.58rem] font-semibold text-[var(--ui-muted)] hover:text-slate-500 transition">
+                                <svg class="w-2 h-2 transition-transform" :class="historyOpen ? 'rotate-90' : ''"
+                                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                </svg>
+                                <span>{{ $versionHistory->count() }} weitere Version{{ $versionHistory->count() > 1 ? 'en' : '' }}</span>
+                            </button>
+                            <div x-show="historyOpen" x-cloak class="ml-3.5 border-l-2 border-purple-200 pl-2.5">
+                                @foreach($versionHistory as $hct)
+                                    @php $hs = $statusMeta[$hct->status] ?? $statusMeta['draft']; @endphp
+                                    <div class="flex items-center gap-2 py-0.5 text-[0.58rem] text-slate-500">
+                                        <span class="font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-full text-[0.52rem]">v{{ $hct->version ?? 1 }}</span>
+                                        <span class="font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap text-[0.56rem]"
+                                              style="background: {{ $hs['bg'] }}; color: {{ $hs['color'] }};">{{ $hs['label'] }}</span>
+                                        <span>{{ $hct->created_at->format('d.m.Y') }}</span>
+                                        <a href="{{ route('events.contract.pdf', ['event' => $event->slug, 'contractId' => $hct->id]) }}" target="_blank"
+                                           class="text-purple-600 no-underline font-semibold">PDF</a>
+                                        <a href="{{ route('events.public.contract', ['token' => $hct->token]) }}" target="_blank"
+                                           class="text-green-700 no-underline font-semibold">Ansehen</a>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+    @endif
+
+    {{-- Editor Modal (kept as Livewire-modal fallback) --}}
     <x-ui-modal wire:model="showEditModal" size="xl" :hideFooter="true">
         <x-slot name="header">Vertrag bearbeiten</x-slot>
         <form wire:submit.prevent="saveContent" class="space-y-4">
