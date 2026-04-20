@@ -366,7 +366,7 @@
                         </div>
                     </x-ui-panel>
 
-                    <x-ui-panel title="Zuständigkeit & Unterschriften">
+                    <x-ui-panel title="Zuständigkeit">
                         <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Verantwortlich</label>
@@ -409,46 +409,6 @@
                                            class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                                 @endif
                             </div>
-                            <div class="md:col-span-3">
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-2">Unterschriften</label>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    @foreach(['left' => 'Auftraggeber (links)', 'right' => 'Auftragnehmer (rechts)'] as $role => $roleLabel)
-                                        @php $sig = $signatures->get($role); @endphp
-                                        <div class="border border-[var(--ui-border)] rounded-md p-3 bg-[var(--ui-muted-5)]/40">
-                                            <div class="flex items-center justify-between mb-2">
-                                                <span class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">{{ $roleLabel }}</span>
-                                                @if($sig)
-                                                    <span class="text-[0.62rem] text-green-600 font-semibold">✓ unterzeichnet</span>
-                                                @endif
-                                            </div>
-                                            <label class="text-[0.62rem] text-[var(--ui-muted)] block mb-1">Name</label>
-                                            <input wire:model="event.sign_{{ $role }}" type="text" placeholder="Max Mustermann"
-                                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                                            @if($sig)
-                                                <div class="mt-2">
-                                                    <img src="{{ $sig->signature_image }}" alt="Unterschrift" class="max-h-16 border border-[var(--ui-border)] rounded-md bg-white">
-                                                    <p class="text-[0.58rem] text-[var(--ui-muted)] font-mono mt-1">
-                                                        {{ $sig->user?->name ?? '—' }} · {{ $sig->signed_at?->format('d.m.Y H:i') }}
-                                                    </p>
-                                                    <p class="text-[0.58rem] text-[var(--ui-muted)] font-mono truncate" title="{{ $sig->document_hash }}">
-                                                        Hash: {{ substr($sig->document_hash, 0, 16) }}…
-                                                    </p>
-                                                    <button type="button" onclick="resetSignature('{{ $event->slug }}', '{{ $role }}')"
-                                                            class="mt-1 text-[0.6rem] text-red-600 hover:underline">
-                                                        Unterschrift zurücksetzen
-                                                    </button>
-                                                </div>
-                                            @else
-                                                <button type="button"
-                                                        onclick="openSignaturePad('{{ $event->slug }}', '{{ $role }}')"
-                                                        class="mt-2 w-full px-3 py-2 text-xs font-semibold bg-[var(--ui-primary)] text-white rounded-md hover:opacity-90">
-                                                    @svg('heroicon-o-pencil-square', 'w-3.5 h-3.5 inline') Jetzt unterschreiben
-                                                </button>
-                                            @endif
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
                         </div>
                     </x-ui-panel>
 
@@ -469,6 +429,63 @@
         @if($activeTab === 'details')
             <div class="pt-6 space-y-6">
                 <form wire:submit.prevent="saveEvent" class="space-y-6">
+
+                    <x-ui-panel title="Projektverantwortung" subtitle="Unterschriften-Namen + digitale Freigabe">
+                        <div class="p-5 space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Unterschrift links (Projektverantwortlicher)</label>
+                                    <input wire:model="event.sign_left" type="text" placeholder="Max Mustermann"
+                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                </div>
+                                <div>
+                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Unterschrift rechts (Vorgesetzter)</label>
+                                    <input wire:model="event.sign_right" type="text" placeholder="Erika Mustermann"
+                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-[var(--ui-border)]">
+                                @foreach(['left' => 'Links (Projektverantwortlicher)', 'right' => 'Rechts (Vorgesetzter)'] as $role => $roleLabel)
+                                    @php $sig = $signatures->get($role); @endphp
+                                    <div class="border border-[var(--ui-border)] rounded-md p-3 bg-[var(--ui-muted-5)]/40">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">{{ $roleLabel }}</span>
+                                            @if($sig)
+                                                <span class="text-[0.62rem] text-green-600 font-semibold flex items-center gap-1">
+                                                    @svg('heroicon-o-check-badge', 'w-3.5 h-3.5') unterzeichnet
+                                                </span>
+                                            @else
+                                                <span class="text-[0.62rem] text-[var(--ui-muted)]">offen</span>
+                                            @endif
+                                        </div>
+                                        @if($sig)
+                                            <img src="{{ $sig->signature_image }}" alt="Unterschrift" class="max-h-20 w-full object-contain border border-[var(--ui-border)] rounded-md bg-white">
+                                            <p class="text-[0.58rem] text-[var(--ui-muted)] font-mono mt-2">
+                                                {{ $sig->user?->name ?? '—' }} · {{ $sig->signed_at?->format('d.m.Y H:i') }}
+                                            </p>
+                                            <p class="text-[0.56rem] text-[var(--ui-muted)] font-mono truncate" title="Dokumenten-Hash (SHA-256): {{ $sig->document_hash }}">
+                                                Hash: {{ substr($sig->document_hash, 0, 24) }}…
+                                            </p>
+                                            <button type="button" onclick="resetSignature('{{ $event->slug }}', '{{ $role }}')"
+                                                    class="mt-2 text-[0.62rem] text-red-600 hover:underline">
+                                                Unterschrift zurücksetzen
+                                            </button>
+                                        @else
+                                            <div class="flex flex-col items-center justify-center gap-2 py-4 border border-dashed border-[var(--ui-border)] rounded-md bg-white">
+                                                <p class="text-[0.62rem] text-[var(--ui-muted)]">Noch nicht unterzeichnet</p>
+                                                <button type="button"
+                                                        onclick="openSignaturePad('{{ $event->slug }}', '{{ $role }}')"
+                                                        class="px-3 py-1.5 text-xs font-semibold bg-[var(--ui-primary)] text-white rounded-md hover:opacity-90 flex items-center gap-1.5">
+                                                    @svg('heroicon-o-pencil-square', 'w-3.5 h-3.5') Jetzt unterschreiben
+                                                </button>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </x-ui-panel>
 
                     <x-ui-panel title="Veranstalter" subtitle="Ansprechpartner und Zielgruppe">
                         <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
