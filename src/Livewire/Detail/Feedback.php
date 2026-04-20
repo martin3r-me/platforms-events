@@ -1,0 +1,94 @@
+<?php
+
+namespace Platform\Events\Livewire\Detail;
+
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Livewire\Component;
+use Platform\Events\Models\Event;
+use Platform\Events\Models\FeedbackEntry;
+use Platform\Events\Models\FeedbackLink;
+
+class Feedback extends Component
+{
+    public int $eventId;
+
+    public bool $showCreateModal = false;
+    public string $newLabel = '';
+    public string $newAudience = 'participant';
+
+    public function mount(int $eventId): void
+    {
+        $this->eventId = $eventId;
+    }
+
+    protected function event(): Event
+    {
+        $event = Event::findOrFail($this->eventId);
+        $team = Auth::user()->currentTeam;
+        if ($event->team_id !== $team?->id) abort(403);
+        return $event;
+    }
+
+    public function openCreate(): void
+    {
+        $this->newLabel = '';
+        $this->newAudience = 'participant';
+        $this->showCreateModal = true;
+    }
+
+    public function createLink(): void
+    {
+        if (trim($this->newLabel) === '') return;
+        $event = $this->event();
+        FeedbackLink::create([
+            'team_id'  => $event->team_id,
+            'user_id'  => Auth::id(),
+            'event_id' => $event->id,
+            'label'    => $this->newLabel,
+            'audience' => $this->newAudience,
+            'token'    => Str::random(48),
+            'is_active'=> true,
+        ]);
+        $this->showCreateModal = false;
+    }
+
+    public function toggleActive(int $linkId): void
+    {
+        $link = FeedbackLink::where('event_id', $this->eventId)->find($linkId);
+        if ($link) {
+            $link->update(['is_active' => !$link->is_active]);
+        }
+    }
+
+    public function deleteLink(int $linkId): void
+    {
+        FeedbackLink::where('event_id', $this->eventId)->where('id', $linkId)->delete();
+    }
+
+    public function render()
+    {
+        $event = Event::findOrFail($this->eventId);
+        $links = FeedbackLink::where('event_id', $event->id)->withCount('entries')->orderByDesc('id')->get();
+        $entries = FeedbackEntry::where('event_id', $event->id)->with('link')->orderByDesc('created_at')->limit(50)->get();
+
+        $avg = null;
+        $totalEntries = $entries->count();
+        if ($totalEntries > 0) {
+            $avg = [
+                'overall'      => round($entries->avg('rating_overall'), 1),
+                'location'     => round($entries->avg('rating_location'), 1),
+                'catering'     => round($entries->avg('rating_catering'), 1),
+                'organization' => round($entries->avg('rating_organization'), 1),
+            ];
+        }
+
+        return view('events::livewire.detail.feedback', [
+            'event'   => $event,
+            'links'   => $links,
+            'entries' => $entries,
+            'avg'     => $avg,
+            'total'   => $totalEntries,
+        ]);
+    }
+}

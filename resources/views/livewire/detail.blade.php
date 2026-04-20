@@ -444,6 +444,13 @@
             </div>
         @endif
 
+        {{-- ================= Tab: Feedback ================= --}}
+        @if($activeTab === 'feedback')
+            <div class="pt-6">
+                <livewire:events.detail.feedback :event-id="$event->id" :key="'feedback-'.$event->id" />
+            </div>
+        @endif
+
         {{-- ================= Tab: Tage ================= --}}
         @if($activeTab === 'tage')
             <div class="pt-6 space-y-4">

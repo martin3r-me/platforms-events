@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Platform\Events\Http\Controllers\EmailTrackController;
 use Platform\Events\Http\Controllers\PublicContractController;
+use Platform\Events\Http\Controllers\PublicFeedbackController;
 use Platform\Events\Http\Controllers\PublicInvoiceController;
 use Platform\Events\Http\Controllers\PublicPickListController;
 use Platform\Events\Http\Controllers\PublicQuoteController;
@@ -30,3 +31,6 @@ Route::patch('/picking/{token}/items/{itemId}', [PublicPickListController::class
 Route::get('/picking/{token}/progress', [PublicPickListController::class, 'progress'])->name('events.public.picklist.progress');
 
 Route::get('/email/track/{token}', [EmailTrackController::class, 'track'])->name('events.public.email.track');
+
+Route::get('/feedback/{token}', [PublicFeedbackController::class, 'show'])->name('events.public.feedback');
+Route::post('/feedback/{token}', [PublicFeedbackController::class, 'submit'])->name('events.public.feedback.submit');
