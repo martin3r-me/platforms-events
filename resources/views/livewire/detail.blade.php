@@ -17,24 +17,21 @@
         $statusClass   = $statusBadge[$currentStatus] ?? 'bg-slate-100 text-slate-600';
 
         $tabs = [
-            'basis'        => ['label' => 'Basis',       'icon' => 'heroicon-o-identification'],
-            'details'      => ['label' => 'Details',     'icon' => 'heroicon-o-document-text'],
-            'tage'         => ['label' => 'Tage',        'icon' => 'heroicon-o-calendar'],
-            'buchungen'    => ['label' => 'Räume',       'icon' => 'heroicon-o-building-office-2'],
-            'ablauf'       => ['label' => 'Ablauf',      'icon' => 'heroicon-o-clock'],
-            'aktivitaeten' => ['label' => 'Aktivitäten', 'icon' => 'heroicon-o-bolt'],
-            'kalkulation'  => ['label' => 'Kalkulation', 'icon' => 'heroicon-o-calculator'],
-            'projekt'      => ['label' => 'Projekt-Function', 'icon' => 'heroicon-o-document-check'],
-            'vertraege'    => ['label' => 'Verträge',    'icon' => 'heroicon-o-document'],
-            'packliste'    => ['label' => 'Packliste',   'icon' => 'heroicon-o-cube'],
-            'kommunikation'=> ['label' => 'Kommunikation','icon' => 'heroicon-o-envelope'],
-            'angebote'     => ['label' => 'Angebote',    'icon' => 'heroicon-o-document-duplicate'],
-            'bestellungen' => ['label' => 'Bestellungen','icon' => 'heroicon-o-shopping-cart'],
-            'rechnungen'   => ['label' => 'Rechnungen',  'icon' => 'heroicon-o-receipt-percent'],
-            'schluss'      => ['label' => 'Schlussbericht','icon' => 'heroicon-o-presentation-chart-line'],
-            'feedback'     => ['label' => 'Feedback',    'icon' => 'heroicon-o-chat-bubble-left-right'],
-            'notizen'      => ['label' => 'Notizen',     'icon' => 'heroicon-o-pencil-square'],
-            'mr'           => ['label' => 'Mgmt-Report', 'icon' => 'heroicon-o-clipboard-document-check'],
+            'basis'        => ['label' => 'Basis',             'icon' => 'heroicon-o-identification'],
+            'details'      => ['label' => 'Details',           'icon' => 'heroicon-o-document-text'],
+            'buchungen'    => ['label' => 'Räume',             'icon' => 'heroicon-o-building-office-2'],
+            'ablauf'       => ['label' => 'Ablauf',            'icon' => 'heroicon-o-clock'],
+            'aktivitaeten' => ['label' => 'Aktivitäten',       'icon' => 'heroicon-o-bolt'],
+            'kalkulation'  => ['label' => 'Kalkulation',       'icon' => 'heroicon-o-calculator'],
+            'projekt'      => ['label' => 'Projekt Function',  'icon' => 'heroicon-o-document-check'],
+            'vertraege'    => ['label' => 'Verträge',          'icon' => 'heroicon-o-document'],
+            'packliste'    => ['label' => 'Packliste',         'icon' => 'heroicon-o-cube'],
+            'kommunikation'=> ['label' => 'Kommunikation',     'icon' => 'heroicon-o-envelope'],
+            'angebote'     => ['label' => 'Angebote',          'icon' => 'heroicon-o-document-duplicate'],
+            'bestellungen' => ['label' => 'Bestellungen',      'icon' => 'heroicon-o-shopping-cart'],
+            'rechnungen'   => ['label' => 'Rechnungen',        'icon' => 'heroicon-o-receipt-percent'],
+            'schluss'      => ['label' => 'Schlussbericht',    'icon' => 'heroicon-o-presentation-chart-line'],
+            'feedback'     => ['label' => 'Feedback',          'icon' => 'heroicon-o-chat-bubble-left-right'],
         ];
     @endphp
 
@@ -65,7 +62,6 @@
                     ['key' => 'basis',        'label' => 'Basis',            'icon' => 'heroicon-o-identification'],
                     ['key' => 'details',      'label' => 'Details',          'icon' => 'heroicon-o-document-text'],
                     ['key' => 'buchungen',    'label' => 'Räume',            'icon' => 'heroicon-o-building-office-2', 'badge' => $counts['buchungen']],
-                    ['key' => 'tage',         'label' => 'Tage',             'icon' => 'heroicon-o-calendar',          'badge' => $counts['tage']],
                     ['key' => 'ablauf',       'label' => 'Ablauf',           'icon' => 'heroicon-o-clock',             'badge' => $counts['ablauf']],
                     ['key' => 'aktivitaeten', 'label' => 'Aktivitäten',      'icon' => 'heroicon-o-bolt',              'badge' => $counts['aktivitaeten']],
                     ['key' => 'kalkulation',  'label' => 'Kalkulation',      'icon' => 'heroicon-o-calculator'],
@@ -79,8 +75,6 @@
                     ['key' => 'rechnungen', 'label' => 'Rechnungen',    'icon' => 'heroicon-o-receipt-percent',          'badge' => $counts['rechnungen']],
                     ['key' => 'schluss',    'label' => 'Schlussbericht','icon' => 'heroicon-o-presentation-chart-line'],
                     ['key' => 'feedback',   'label' => 'Feedback',      'icon' => 'heroicon-o-chat-bubble-left-right',   'badge' => $counts['feedback']],
-                    ['key' => 'notizen',    'label' => 'Notizen',       'icon' => 'heroicon-o-pencil-square',            'badge' => $counts['notizen']],
-                    ['key' => 'mr',         'label' => 'Mgmt-Report',   'icon' => 'heroicon-o-clipboard-document-check'],
                 ];
             @endphp
 
@@ -663,154 +657,88 @@
                         </div>
                     </x-ui-panel>
 
-                    <x-ui-panel title="Veranstalter" subtitle="Ansprechpartner und Zielgruppe">
-                        <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Ansprechpartner</label>
-                                <input wire:model="event.organizer_contact" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                    {{-- Management Report – Status-Cockpit --}}
+                    @php
+                        $mrTotal = 0; $mrDone = 0;
+                        foreach ($mrFields as $group => $fields) {
+                            foreach ($fields as $f) {
+                                $mrTotal++;
+                                $val = $event->mr_data[$f['key']] ?? null;
+                                if ($val && !in_array(strtolower($val), ['', 'fehlende eingabe', 'noch nicht erstellt', 'unbekannt (pl)', 'keine rechnung', 'n/a', 'nicht benötigt'], true)) {
+                                    $mrDone++;
+                                }
+                            }
+                        }
+                        $mrProgress = $mrTotal > 0 ? round(($mrDone / $mrTotal) * 100) : 0;
+
+                        // Farblogik fuer Status-Badges (first option = rot, letzte = gruen)
+                        $badgeFor = function ($options, $value) {
+                            $count = count($options);
+                            if (!$value) return 'bg-slate-200 text-slate-700';
+                            $idx = array_search($value, $options, true);
+                            if ($idx === false) return 'bg-slate-200 text-slate-700';
+                            if ($idx === 0) return 'bg-red-100 text-red-700';
+                            if ($idx === $count - 1) return 'bg-green-100 text-green-700';
+                            return 'bg-yellow-100 text-yellow-800';
+                        };
+                    @endphp
+
+                    <x-ui-panel>
+                        <div class="p-4 flex items-center justify-between flex-wrap gap-3 border-b border-[var(--ui-border)]">
+                            <div class="flex items-center gap-2">
+                                <span class="w-1 h-4 rounded-full" style="background: #f59e0b"></span>
+                                <h3 class="text-sm font-bold text-[var(--ui-secondary)]">Management Report</h3>
                             </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Kontakt vor Ort</label>
-                                <input wire:model="event.organizer_contact_onsite" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Für wen</label>
-                                <input wire:model="event.organizer_for_whom" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-2 text-[0.6rem] text-[var(--ui-muted)]">
+                                    <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>offen</span>
+                                    <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>läuft</span>
+                                    <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>erledigt</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-20 h-1.5 bg-[var(--ui-muted-5)] rounded-full overflow-hidden">
+                                        <div class="h-full bg-green-500 rounded-full transition-all" style="width: {{ $mrProgress }}%"></div>
+                                    </div>
+                                    <span class="text-[0.62rem] font-bold text-[var(--ui-muted)] font-mono">{{ $mrDone }}/{{ $mrTotal }}</span>
+                                </div>
                             </div>
                         </div>
-                    </x-ui-panel>
 
-                    <x-ui-panel title="Besteller" subtitle="Wer beauftragt die Veranstaltung">
-                        <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Firma</label>
-                                <input wire:model="event.orderer_company" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Ansprechpartner</label>
-                                <input wire:model="event.orderer_contact" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Anfrage über</label>
-                                <select wire:model="event.orderer_via"
-                                        class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                                    <option value="mail">E-Mail</option>
-                                    <option value="phone">Telefon</option>
-                                    <option value="meeting">Termin</option>
-                                    <option value="referral">Empfehlung</option>
-                                    <option value="other">Sonstiges</option>
-                                </select>
-                            </div>
+                        <div class="p-4 space-y-4">
+                            @foreach($mrFields as $group => $fields)
+                                <div>
+                                    <p class="text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] mb-2">{{ $group }}</p>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        @foreach($fields as $f)
+                                            @php $value = $event->mr_data[$f['key']] ?? $f['options'][0]; @endphp
+                                            <div x-data="{ open: false }" class="relative">
+                                                <button type="button" @click="open = !open"
+                                                        class="w-full flex items-center justify-between gap-2 px-3 py-2 bg-white border border-[var(--ui-border)] rounded-md hover:border-[var(--ui-primary)]/40 text-left">
+                                                    <span class="text-[0.62rem] font-semibold text-[var(--ui-secondary)] leading-tight flex-1 truncate">{{ $f['label'] }}</span>
+                                                    <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full {{ $badgeFor($f['options'], $value) }} flex-shrink-0 truncate max-w-[100px]" title="{{ $value }}">{{ $value }}</span>
+                                                </button>
+                                                <div x-show="open" x-cloak @click.outside="open = false"
+                                                     class="absolute top-full left-0 right-0 mt-1 z-50 bg-white border border-[var(--ui-border)] rounded-md shadow-lg p-1">
+                                                    @foreach($f['options'] as $opt)
+                                                        <button type="button"
+                                                                wire:click="setMrField('{{ $f['key'] }}', @js($opt))"
+                                                                @click="open = false"
+                                                                class="w-full flex items-center gap-2 px-2 py-1.5 text-[0.68rem] text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)] rounded text-left">
+                                                            <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 {{ $badgeFor($f['options'], $opt) }}"></span>
+                                                            <span class="flex-1 truncate">{{ $opt }}</span>
+                                                            @if($opt === $value)
+                                                                @svg('heroicon-o-check', 'w-3 h-3 text-[var(--ui-primary)] flex-shrink-0')
+                                                            @endif
+                                                        </button>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
                     </x-ui-panel>
-
-                    <x-ui-panel title="Rechnung" subtitle="Abrechnungsadresse und Zeitpunkt">
-                        <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Rechnungsempfänger</label>
-                                <input wire:model="event.invoice_to" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Ansprechpartner</label>
-                                <input wire:model="event.invoice_contact" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Rechnungsdatum</label>
-                                <input wire:model="event.invoice_date_type" type="text" placeholder="vor Event / nach Event"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                        </div>
-                    </x-ui-panel>
-
-                    <x-ui-panel title="Eingang" subtitle="Anfrage-Details und Potenzial">
-                        <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Anfrage-Datum</label>
-                                <input wire:model="event.inquiry_date" type="date"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Uhrzeit</label>
-                                <input wire:model="event.inquiry_time" type="text" placeholder="10:00"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Potenzial</label>
-                                <input wire:model="event.potential" type="text" placeholder="hoch / mittel / niedrig"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div class="md:col-span-3">
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Notiz zur Anfrage</label>
-                                <input wire:model="event.inquiry_note" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                        </div>
-                    </x-ui-panel>
-
-                    <x-ui-panel title="Wiedervorlage & Lieferung">
-                        <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Wiedervorlage am</label>
-                                <input wire:model="event.follow_up_date" type="date"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Lieferant</label>
-                                <input wire:model="event.delivery_supplier" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Lieferkontakt</label>
-                                <input wire:model="event.delivery_contact" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Wiedervorlage-Notiz</label>
-                                <textarea wire:model="event.follow_up_note" rows="2"
-                                          class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30"></textarea>
-                            </div>
-                        </div>
-                    </x-ui-panel>
-
-                    <x-ui-panel title="Weiterleitung" subtitle="Falls extern übergeben">
-                        <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div class="flex items-center">
-                                <label class="flex items-center gap-2 cursor-pointer select-none">
-                                    <input wire:model="event.forwarded" type="checkbox"
-                                           class="w-4 h-4 accent-[var(--ui-primary)] cursor-pointer">
-                                    <span class="text-xs font-medium text-[var(--ui-secondary)]">Weitergeleitet</span>
-                                </label>
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Datum</label>
-                                <input wire:model="event.forwarding_date" type="date"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Uhrzeit</label>
-                                <input wire:model="event.forwarding_time" type="text" placeholder="14:30"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                        </div>
-                    </x-ui-panel>
-
-                    <div class="sticky bottom-4 z-10 flex justify-end gap-2 p-3 bg-white/95 backdrop-blur border border-[var(--ui-border)] rounded-lg shadow-md">
-                        <x-ui-button type="submit" variant="primary" size="sm">
-                            <span wire:loading.remove wire:target="saveEvent">
-                                @svg('heroicon-o-check', 'w-4 h-4 mr-1 inline')
-                                Details speichern
-                            </span>
-                            <span wire:loading wire:target="saveEvent">Speichert …</span>
-                        </x-ui-button>
-                    </div>
-                </form>
                 </div>
             </div>
         @endif
@@ -892,81 +820,9 @@
             </div>
         @endif
 
-        {{-- ================= Tab: Tage ================= --}}
-        @if($activeTab === 'tage')
-            <div class="pt-6 space-y-4">
-                <x-ui-panel title="Event-Tage" subtitle="Tagesstruktur der Veranstaltung">
-                    <div class="p-4 flex justify-between items-center border-b border-[var(--ui-border)]">
-                        <p class="text-xs text-[var(--ui-muted)]">{{ $days->count() }} Tag(e)</p>
-                        <x-ui-button variant="primary" size="sm" wire:click="openDayCreate">
-                            <span class="flex items-center gap-1.5">
-                                @svg('heroicon-o-plus', 'w-3.5 h-3.5')
-                                Tag
-                            </span>
-                        </x-ui-button>
-                    </div>
-
-                    @if($days->isEmpty())
-                        <div class="p-12 text-center">
-                            @svg('heroicon-o-calendar', 'w-12 h-12 text-[var(--ui-muted)] mx-auto mb-3')
-                            <p class="text-sm font-semibold text-[var(--ui-secondary)] mb-1">Noch keine Tage</p>
-                            <p class="text-xs text-[var(--ui-muted)]">Lege den ersten Veranstaltungstag an.</p>
-                        </div>
-                    @else
-                        <div class="overflow-x-auto">
-                            <table class="w-full border-collapse">
-                                <thead>
-                                    <tr class="border-b border-[var(--ui-border)] bg-[var(--ui-muted-5)]">
-                                        <th class="px-3 py-2 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Label</th>
-                                        <th class="px-3 py-2 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Datum</th>
-                                        <th class="px-3 py-2 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Wtg</th>
-                                        <th class="px-3 py-2 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Von–Bis</th>
-                                        <th class="px-3 py-2 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Pers.</th>
-                                        <th class="px-3 py-2 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Status</th>
-                                        <th class="px-3 py-2 w-20"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($days as $day)
-                                        <tr class="border-b border-[var(--ui-border)]/60 hover:bg-[var(--ui-muted-5)]/60">
-                                            <td class="px-3 py-2">
-                                                <div class="flex items-center gap-2">
-                                                    <span class="w-2.5 h-2.5 rounded-full" style="background:{{ $day->color }}"></span>
-                                                    <span class="text-xs font-semibold text-[var(--ui-secondary)]">{{ $day->label }}</span>
-                                                </div>
-                                            </td>
-                                            <td class="px-3 py-2 text-xs font-mono text-[var(--ui-muted)]">
-                                                {{ $day->datum?->format('d.m.Y') ?: '—' }}
-                                            </td>
-                                            <td class="px-3 py-2 text-xs text-[var(--ui-muted)]">{{ $day->day_of_week ?: '—' }}</td>
-                                            <td class="px-3 py-2 text-xs font-mono text-[var(--ui-muted)]">
-                                                {{ $day->von ?: '—' }}{{ $day->bis ? ' – ' . $day->bis : '' }}
-                                            </td>
-                                            <td class="px-3 py-2 text-xs font-mono text-[var(--ui-muted)]">
-                                                {{ $day->pers_von ?: '' }}{{ $day->pers_bis ? ' – ' . $day->pers_bis : '' }}
-                                            </td>
-                                            <td class="px-3 py-2 text-xs text-[var(--ui-muted)]">{{ $day->day_status }}</td>
-                                            <td class="px-3 py-2">
-                                                <div class="flex items-center justify-end gap-1">
-                                                    <x-ui-button variant="secondary-outline" size="sm" wire:click="openDayEdit('{{ $day->uuid }}')">
-                                                        @svg('heroicon-o-pencil', 'w-3.5 h-3.5')
-                                                    </x-ui-button>
-                                                    <x-ui-button variant="danger-outline" size="sm"
-                                                                 wire:click="deleteDay('{{ $day->uuid }}')"
-                                                                 wire:confirm="Tag „{{ $day->label }}“ löschen?">
-                                                        @svg('heroicon-o-trash', 'w-3.5 h-3.5')
-                                                    </x-ui-button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    @endif
-                </x-ui-panel>
-            </div>
-        @endif
+        {{-- Tage-Tab entfernt: Termine werden im Basis-Tab inline verwaltet. --}}
+        {{-- Die openDayCreate/openDayEdit/deleteDay-Actions bleiben unveraendert verfuegbar
+             ueber die Basis-Spalte 1 und das weiter unten definierte Day-Modal. --}}
 
         {{-- ================= Tab: Buchungen ================= --}}
         @if($activeTab === 'buchungen')
@@ -1109,85 +965,9 @@
             </div>
         @endif
 
-        {{-- ================= Tab: Notizen ================= --}}
-        @if($activeTab === 'notizen')
-            <div class="pt-6 space-y-4">
-                <x-ui-panel title="Notizen" subtitle="Liefertexte, Absprachen und Vereinbarungen">
-                    <div class="p-4 flex justify-between items-center border-b border-[var(--ui-border)]">
-                        <p class="text-xs text-[var(--ui-muted)]">{{ $notes->count() }} Notiz(en)</p>
-                        <div class="flex gap-1">
-                            @foreach($noteTypes as $val => $label)
-                                <x-ui-button variant="secondary-outline" size="sm" wire:click="openNoteCreate('{{ $val }}')">
-                                    <span class="flex items-center gap-1">
-                                        @svg('heroicon-o-plus', 'w-3 h-3')
-                                        {{ $label }}
-                                    </span>
-                                </x-ui-button>
-                            @endforeach
-                        </div>
-                    </div>
-
-                    @if($notes->isEmpty())
-                        <div class="p-12 text-center">
-                            @svg('heroicon-o-pencil-square', 'w-12 h-12 text-[var(--ui-muted)] mx-auto mb-3')
-                            <p class="text-sm font-semibold text-[var(--ui-secondary)] mb-1">Noch keine Notizen</p>
-                            <p class="text-xs text-[var(--ui-muted)]">Lege die erste Absprache oder Vereinbarung an.</p>
-                        </div>
-                    @else
-                        <div class="p-4 space-y-3">
-                            @foreach($notes as $n)
-                                <div class="border border-[var(--ui-border)] rounded-lg p-3 bg-white">
-                                    <div class="flex items-start justify-between gap-3 mb-2">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-[0.62rem] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                                                {{ $noteTypes[$n->type] ?? $n->type }}
-                                            </span>
-                                            <span class="text-[0.62rem] text-[var(--ui-muted)]">{{ $n->user_name }}</span>
-                                            <span class="text-[0.62rem] text-[var(--ui-muted)] font-mono">{{ $n->created_at->format('d.m.Y H:i') }}</span>
-                                        </div>
-                                        <div class="flex gap-1">
-                                            <x-ui-button variant="secondary-outline" size="sm" wire:click="openNoteEdit('{{ $n->uuid }}')">
-                                                @svg('heroicon-o-pencil', 'w-3 h-3')
-                                            </x-ui-button>
-                                            <x-ui-button variant="danger-outline" size="sm"
-                                                         wire:click="deleteNote('{{ $n->uuid }}')"
-                                                         wire:confirm="Notiz löschen?">
-                                                @svg('heroicon-o-trash', 'w-3 h-3')
-                                            </x-ui-button>
-                                        </div>
-                                    </div>
-                                    <p class="text-xs text-[var(--ui-secondary)] whitespace-pre-wrap">{{ $n->text }}</p>
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
-                </x-ui-panel>
-            </div>
-        @endif
-
-        {{-- ================= Tab: Management Report ================= --}}
-        @if($activeTab === 'mr')
-            <div class="pt-6 space-y-4">
-                @foreach($mrFields as $group => $fields)
-                    <x-ui-panel title="{{ $group }}">
-                        <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            @foreach($fields as $f)
-                                @php $value = $event->mr_data[$f['key']] ?? $f['options'][0]; @endphp
-                                <div>
-                                    <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">{{ $f['label'] }}</label>
-                                    <select wire:change="setMrField('{{ $f['key'] }}', $event.target.value)"
-                                            class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                                        @foreach($f['options'] as $opt)
-                                            <option value="{{ $opt }}" @if($opt === $value) selected @endif>{{ $opt }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            @endforeach
-                        </div>
-                    </x-ui-panel>
-                @endforeach
-            </div>
-        @endif
+        {{-- Notizen-Tab entfernt: Notizen werden inline in Basis (liefertext/absprache)
+             und in Details (intern) als Streams verwaltet. --}}
+        {{-- MR-Tab entfernt: Management-Report liegt jetzt im Details-Tab (Status-Cockpit). --}}
 
         {{-- ================= Modal: Day ================= --}}
         <x-ui-modal wire:model="showDayModal" size="md" :hideFooter="true">
