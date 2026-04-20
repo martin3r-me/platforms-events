@@ -41,5 +41,15 @@ return [
                 ],
             ],
         ],
+        [
+            'group' => 'Stammdaten',
+            'items' => [
+                [
+                    'label' => 'Artikel',
+                    'route' => 'events.articles',
+                    'icon'  => 'heroicon-o-squares-2x2',
+                ],
+            ],
+        ],
     ],
 ];
