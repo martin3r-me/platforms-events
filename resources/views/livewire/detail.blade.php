@@ -365,12 +365,12 @@
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
                                     <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Start</label>
-                                    <input wire:model.blur="event.start_date" type="date"
+                                    <input wire:model.live="event.start_date" type="date"
                                            class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                                 </div>
                                 <div>
                                     <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Ende</label>
-                                    <input wire:model.blur="event.end_date" type="date"
+                                    <input wire:model.live="event.end_date" type="date"
                                            class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                                 </div>
                             </div>
@@ -440,7 +440,7 @@
                                 </div>
                                 <div>
                                     <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Rechnungsdatum</label>
-                                    <select wire:model.blur="event.invoice_date_type"
+                                    <select wire:model.live="event.invoice_date_type"
                                             class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                                         <option value="">— wählen —</option>
                                         @foreach($days as $d)
@@ -515,7 +515,7 @@
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
                                     <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Datum</label>
-                                    <input wire:model.blur="event.inquiry_date" type="date"
+                                    <input wire:model.live="event.inquiry_date" type="date"
                                            class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                                 </div>
                                 <div>
@@ -560,7 +560,7 @@
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
                                     <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Wiedervorlage am</label>
-                                    <input wire:model.blur="event.follow_up_date" type="date"
+                                    <input wire:model.live="event.follow_up_date" type="date"
                                            class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                                 </div>
                                 <div>
@@ -588,7 +588,7 @@
                             </div>
                             <div>
                                 <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Datum</label>
-                                <input wire:model.blur="event.forwarding_date" type="date"
+                                <input wire:model.live="event.forwarding_date" type="date"
                                        class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                             </div>
                             <div>
@@ -605,6 +605,10 @@
 
                     <x-ui-panel title="Erste Absprache">
                         @include('events::partials.note-stream', ['type' => 'absprache', 'notes' => $notesByType->get('absprache', collect())])
+                    </x-ui-panel>
+
+                    <x-ui-panel title="Vereinbarung">
+                        @include('events::partials.note-stream', ['type' => 'vereinbarung', 'notes' => $notesByType->get('vereinbarung', collect())])
                     </x-ui-panel>
                 </div>
             </div>

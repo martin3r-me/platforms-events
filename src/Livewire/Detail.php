@@ -644,7 +644,27 @@ class Detail extends Component
 
     public function deleteNote(string $uuid): void
     {
-        $this->event->notes()->where('uuid', $uuid)->delete();
+        $userId = Auth::id();
+        // Nur eigene Notizen loeschen
+        $note = $this->event->notes()->where('uuid', $uuid)->first();
+        if (!$note || $note->user_id !== $userId) {
+            return;
+        }
+        $note->delete();
+    }
+
+    public function updateInlineNote(string $uuid, string $text): void
+    {
+        $userId = Auth::id();
+        $note = $this->event->notes()->where('uuid', $uuid)->first();
+        if (!$note || $note->user_id !== $userId) {
+            return;
+        }
+        $text = trim($text);
+        if ($text === '') {
+            return;
+        }
+        $note->update(['text' => $text]);
     }
 
     // ========== Render ==========
