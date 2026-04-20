@@ -9,6 +9,7 @@ use Livewire\Component;
 use Platform\Events\Models\Activity;
 use Platform\Events\Models\Booking;
 use Platform\Events\Models\Contract;
+use Platform\Events\Models\DocumentSignature;
 use Platform\Events\Models\EmailLog;
 use Platform\Events\Models\Event;
 use Platform\Events\Models\EventDay;
@@ -19,6 +20,7 @@ use Platform\Events\Models\OrderItem;
 use Platform\Events\Models\PickList;
 use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\ScheduleItem;
+use Platform\Events\Services\SettingsService;
 use Platform\Locations\Models\Location;
 
 class Detail extends Component
@@ -554,6 +556,21 @@ class Detail extends Component
         // MR-Gruppen für das Template
         $mrFields = collect(self::mrDefaults())->groupBy('group')->toArray();
 
+        // Settings-Dropdowns (team-scoped mit Defaults)
+        $teamId = $team?->id;
+        $settings = [
+            'cost_centers'  => SettingsService::costCenters($teamId),
+            'cost_carriers' => SettingsService::costCarriers($teamId),
+            'event_types'   => SettingsService::eventTypes($teamId),
+            'bestuhlung'    => SettingsService::bestuhlungOptions($teamId),
+        ];
+
+        // Signaturen pro role
+        $signatures = DocumentSignature::where('event_id', $this->event->id)
+            ->with('user:id,name')
+            ->get()
+            ->keyBy('role');
+
         return view('events::livewire.detail', [
             'days'           => $days,
             'bookings'       => $bookings,
@@ -567,6 +584,8 @@ class Detail extends Component
             'counts'         => $counts,
             'quoteTree'      => $quoteTree,
             'orderTree'      => $orderTree,
+            'settings'       => $settings,
+            'signatures'     => $signatures,
         ])->layout('platform::layouts.app');
     }
 }

@@ -325,8 +325,24 @@
                             </div>
                             <div>
                                 <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Anlass</label>
-                                <input wire:model="event.event_type" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                @if(!empty($settings['event_types']))
+                                    <div class="flex gap-1">
+                                        <select wire:model="event.event_type"
+                                                class="flex-1 border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                            <option value="">—</option>
+                                            @foreach($settings['event_types'] as $type)
+                                                <option value="{{ $type }}">{{ $type }}</option>
+                                            @endforeach
+                                        </select>
+                                        <a href="{{ route('events.settings', ['tab' => 'event_types']) }}" target="_blank"
+                                           class="text-[var(--ui-muted)] hover:text-[var(--ui-primary)] p-2" title="Anlass-Typen pflegen">
+                                            @svg('heroicon-o-cog-6-tooth', 'w-4 h-4')
+                                        </a>
+                                    </div>
+                                @else
+                                    <input wire:model="event.event_type" type="text" placeholder="— kein Typ definiert, siehe Einstellungen —"
+                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                @endif
                             </div>
                             <div>
                                 <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Start</label>
@@ -359,23 +375,79 @@
                             </div>
                             <div>
                                 <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Kostenstelle</label>
-                                <input wire:model="event.cost_center" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                @if(!empty($settings['cost_centers']))
+                                    <div class="flex gap-1">
+                                        <select wire:model="event.cost_center"
+                                                class="flex-1 border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                            <option value="">—</option>
+                                            @foreach($settings['cost_centers'] as $cc)
+                                                <option value="{{ $cc }}">{{ $cc }}</option>
+                                            @endforeach
+                                        </select>
+                                        <a href="{{ route('events.settings', ['tab' => 'cost_centers']) }}" target="_blank"
+                                           class="text-[var(--ui-muted)] hover:text-[var(--ui-primary)] p-2" title="Kostenstellen pflegen">
+                                            @svg('heroicon-o-cog-6-tooth', 'w-4 h-4')
+                                        </a>
+                                    </div>
+                                @else
+                                    <input wire:model="event.cost_center" type="text" placeholder="— keine Kostenstellen definiert —"
+                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                @endif
                             </div>
                             <div>
                                 <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Kostenträger</label>
-                                <input wire:model="event.cost_carrier" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                @if(!empty($settings['cost_carriers']))
+                                    <select wire:model="event.cost_carrier"
+                                            class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                        <option value="">—</option>
+                                        @foreach($settings['cost_carriers'] as $cc)
+                                            <option value="{{ $cc }}">{{ $cc }}</option>
+                                        @endforeach
+                                    </select>
+                                @else
+                                    <input wire:model="event.cost_carrier" type="text"
+                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                @endif
                             </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Unterschrift links</label>
-                                <input wire:model="event.sign_left" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            </div>
-                            <div>
-                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Unterschrift rechts</label>
-                                <input wire:model="event.sign_right" type="text"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            <div class="md:col-span-3">
+                                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-2">Unterschriften</label>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    @foreach(['left' => 'Auftraggeber (links)', 'right' => 'Auftragnehmer (rechts)'] as $role => $roleLabel)
+                                        @php $sig = $signatures->get($role); @endphp
+                                        <div class="border border-[var(--ui-border)] rounded-md p-3 bg-[var(--ui-muted-5)]/40">
+                                            <div class="flex items-center justify-between mb-2">
+                                                <span class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">{{ $roleLabel }}</span>
+                                                @if($sig)
+                                                    <span class="text-[0.62rem] text-green-600 font-semibold">✓ unterzeichnet</span>
+                                                @endif
+                                            </div>
+                                            <label class="text-[0.62rem] text-[var(--ui-muted)] block mb-1">Name</label>
+                                            <input wire:model="event.sign_{{ $role }}" type="text" placeholder="Max Mustermann"
+                                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                            @if($sig)
+                                                <div class="mt-2">
+                                                    <img src="{{ $sig->signature_image }}" alt="Unterschrift" class="max-h-16 border border-[var(--ui-border)] rounded-md bg-white">
+                                                    <p class="text-[0.58rem] text-[var(--ui-muted)] font-mono mt-1">
+                                                        {{ $sig->user?->name ?? '—' }} · {{ $sig->signed_at?->format('d.m.Y H:i') }}
+                                                    </p>
+                                                    <p class="text-[0.58rem] text-[var(--ui-muted)] font-mono truncate" title="{{ $sig->document_hash }}">
+                                                        Hash: {{ substr($sig->document_hash, 0, 16) }}…
+                                                    </p>
+                                                    <button type="button" onclick="resetSignature('{{ $event->slug }}', '{{ $role }}')"
+                                                            class="mt-1 text-[0.6rem] text-red-600 hover:underline">
+                                                        Unterschrift zurücksetzen
+                                                    </button>
+                                                </div>
+                                            @else
+                                                <button type="button"
+                                                        onclick="openSignaturePad('{{ $event->slug }}', '{{ $role }}')"
+                                                        class="mt-2 w-full px-3 py-2 text-xs font-semibold bg-[var(--ui-primary)] text-white rounded-md hover:opacity-90">
+                                                    @svg('heroicon-o-pencil-square', 'w-3.5 h-3.5 inline') Jetzt unterschreiben
+                                                </button>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
                             </div>
                         </div>
                     </x-ui-panel>
@@ -1034,8 +1106,18 @@
                     </div>
                     <div>
                         <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Bestuhlung</label>
-                        <input wire:model="bookingForm.bestuhlung" type="text" placeholder="Reihen / Bankett / …"
-                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        @if(!empty($settings['bestuhlung']))
+                            <select wire:model="bookingForm.bestuhlung"
+                                    class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                <option value="">—</option>
+                                @foreach($settings['bestuhlung'] as $b)
+                                    <option value="{{ $b }}">{{ $b }}</option>
+                                @endforeach
+                            </select>
+                        @else
+                            <input wire:model="bookingForm.bestuhlung" type="text" placeholder="Reihen / Bankett / …"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        @endif
                     </div>
                     <div>
                         <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Optionsrang</label>
@@ -1146,5 +1228,158 @@
                 </div>
             </form>
         </x-ui-modal>
+
+        {{-- ================= Signatur-Pad (nativ, ohne Livewire) ================= --}}
+        <div id="signature-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.6); z-index:9999; align-items:center; justify-content:center;">
+            <div style="background:white; border-radius:10px; padding:20px; width:95%; max-width:560px; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h3 style="font-size:1rem; font-weight:700; color:#1e293b; margin:0;" id="signature-title">Unterschrift</h3>
+                    <button type="button" onclick="closeSignaturePad()" style="font-size:1.3rem; line-height:1; color:#64748b; background:none; border:none; cursor:pointer;">×</button>
+                </div>
+                <p style="font-size:0.75rem; color:#64748b; margin:0 0 10px 0;">Zeichnen Sie mit Maus oder Touch in das Feld. Der SHA-256 Hash des Events wird automatisch erfasst.</p>
+                <canvas id="signature-canvas" width="520" height="180" style="border:1px solid #cbd5e1; border-radius:6px; background:#f8fafc; touch-action:none; width:100%; height:180px; cursor:crosshair;"></canvas>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; gap:8px;">
+                    <button type="button" onclick="clearSignature()" style="padding:8px 14px; border:1px solid #cbd5e1; background:white; color:#475569; border-radius:6px; font-size:0.75rem; cursor:pointer;">
+                        Löschen
+                    </button>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" onclick="closeSignaturePad()" style="padding:8px 14px; border:1px solid #cbd5e1; background:white; color:#475569; border-radius:6px; font-size:0.75rem; cursor:pointer;">
+                            Abbrechen
+                        </button>
+                        <button type="button" onclick="submitSignature()" style="padding:8px 18px; background:#16a34a; color:white; border:none; border-radius:6px; font-size:0.75rem; font-weight:600; cursor:pointer;">
+                            Unterschrift speichern
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @once
+        <script>
+            (function () {
+                const state = { eventSlug: null, role: null, drawing: false, lastX: 0, lastY: 0, canvas: null, ctx: null };
+
+                function getCsrfToken() {
+                    const meta = document.querySelector('meta[name="csrf-token"]');
+                    return meta ? meta.getAttribute('content') : '';
+                }
+
+                function initCanvas() {
+                    const canvas = document.getElementById('signature-canvas');
+                    if (!canvas) return null;
+                    const ctx = canvas.getContext('2d');
+                    ctx.lineWidth = 2.2;
+                    ctx.lineCap = 'round';
+                    ctx.strokeStyle = '#1e293b';
+                    return { canvas, ctx };
+                }
+
+                function pointerPos(e) {
+                    const rect = state.canvas.getBoundingClientRect();
+                    const scaleX = state.canvas.width / rect.width;
+                    const scaleY = state.canvas.height / rect.height;
+                    const x = (e.clientX ?? (e.touches && e.touches[0].clientX) ?? 0) - rect.left;
+                    const y = (e.clientY ?? (e.touches && e.touches[0].clientY) ?? 0) - rect.top;
+                    return { x: x * scaleX, y: y * scaleY };
+                }
+
+                function startDraw(e) {
+                    e.preventDefault();
+                    state.drawing = true;
+                    const p = pointerPos(e);
+                    state.lastX = p.x; state.lastY = p.y;
+                }
+
+                function draw(e) {
+                    if (!state.drawing) return;
+                    e.preventDefault();
+                    const p = pointerPos(e);
+                    state.ctx.beginPath();
+                    state.ctx.moveTo(state.lastX, state.lastY);
+                    state.ctx.lineTo(p.x, p.y);
+                    state.ctx.stroke();
+                    state.lastX = p.x; state.lastY = p.y;
+                }
+
+                function stopDraw() { state.drawing = false; }
+
+                window.openSignaturePad = function (eventSlug, role) {
+                    state.eventSlug = eventSlug;
+                    state.role = role;
+                    const modal = document.getElementById('signature-modal');
+                    modal.style.display = 'flex';
+                    document.getElementById('signature-title').textContent = role === 'left'
+                        ? 'Unterschrift Auftraggeber (links)'
+                        : 'Unterschrift Auftragnehmer (rechts)';
+
+                    setTimeout(() => {
+                        const init = initCanvas();
+                        if (!init) return;
+                        state.canvas = init.canvas;
+                        state.ctx = init.ctx;
+                        clearSignature();
+
+                        state.canvas.addEventListener('mousedown', startDraw);
+                        state.canvas.addEventListener('mousemove', draw);
+                        state.canvas.addEventListener('mouseup', stopDraw);
+                        state.canvas.addEventListener('mouseleave', stopDraw);
+                        state.canvas.addEventListener('touchstart', startDraw, { passive: false });
+                        state.canvas.addEventListener('touchmove', draw, { passive: false });
+                        state.canvas.addEventListener('touchend', stopDraw);
+                    }, 30);
+                };
+
+                window.closeSignaturePad = function () {
+                    document.getElementById('signature-modal').style.display = 'none';
+                };
+
+                window.clearSignature = function () {
+                    if (!state.ctx) return;
+                    state.ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
+                };
+
+                window.submitSignature = function () {
+                    if (!state.canvas || !state.eventSlug || !state.role) return;
+                    const dataUrl = state.canvas.toDataURL('image/png');
+
+                    fetch(`/events/va/${state.eventSlug}/sign`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': getCsrfToken(),
+                        },
+                        body: JSON.stringify({ role: state.role, signature: dataUrl }),
+                    })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.ok) {
+                            closeSignaturePad();
+                            window.location.reload();
+                        } else {
+                            alert('Fehler beim Speichern der Unterschrift.');
+                        }
+                    })
+                    .catch(() => alert('Netzwerkfehler beim Speichern.'));
+                };
+
+                window.resetSignature = function (eventSlug, role) {
+                    if (!confirm('Unterschrift wirklich zurücksetzen?')) return;
+
+                    fetch(`/events/va/${eventSlug}/sign/${role}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': getCsrfToken(),
+                        },
+                    })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.ok) window.location.reload();
+                    });
+                };
+            })();
+        </script>
+        @endonce
     </x-ui-page-container>
 </x-ui-page>

@@ -51,5 +51,15 @@ return [
                 ],
             ],
         ],
+        [
+            'group' => 'Verwaltung',
+            'items' => [
+                [
+                    'label' => 'Einstellungen',
+                    'route' => 'events.settings',
+                    'icon'  => 'heroicon-o-cog-6-tooth',
+                ],
+            ],
+        ],
     ],
 ];
