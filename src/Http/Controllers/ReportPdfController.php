@@ -13,9 +13,11 @@ class ReportPdfController extends Controller
     public function projektFunction(Request $request, string $event)
     {
         $e = $this->resolveEvent($event);
+        $mode = $request->query('mode') === 'manager' ? 'manager' : 'kitchen';
         return PdfService::render('events::pdf.projekt-function', [
             'event' => $e,
-        ], 'ProjektFunction-' . $e->slug . '.pdf');
+            'mode'  => $mode,
+        ], 'ProjektFunction-' . $e->slug . '-' . $mode . '.pdf');
     }
 
     public function finalReport(Request $request, string $event)
