@@ -524,10 +524,49 @@
                                            class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                                 </div>
                             </div>
-                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Potenzial</label>
-                            <input wire:model.blur="event.potential" type="text" placeholder="hoch / mittel / niedrig"
-                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Notiz zur Anfrage</label>
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block">Potenzialanalyse</label>
+                            @php
+                                $pct = (int) preg_replace('/[^0-9]/', '', (string) ($event->potential ?? ''));
+                                $potentialBarBg = match(true) {
+                                    $pct >= 70 => 'bg-green-100',
+                                    $pct >= 50 => 'bg-yellow-100',
+                                    $pct >= 30 => 'bg-orange-100',
+                                    $pct >= 10 => 'bg-red-100',
+                                    default    => 'bg-slate-100',
+                                };
+                                $potentialBarFill = match(true) {
+                                    $pct >= 90 => 'bg-green-600',
+                                    $pct >= 70 => 'bg-green-500',
+                                    $pct >= 50 => 'bg-yellow-500',
+                                    $pct >= 30 => 'bg-orange-500',
+                                    $pct >= 10 => 'bg-red-500',
+                                    default    => 'bg-slate-300',
+                                };
+                                $potentialText = match(true) {
+                                    $pct >= 90 => 'text-green-700',
+                                    $pct >= 70 => 'text-green-600',
+                                    $pct >= 50 => 'text-yellow-700',
+                                    $pct >= 30 => 'text-orange-600',
+                                    $pct >= 10 => 'text-red-600',
+                                    default    => 'text-slate-400',
+                                };
+                            @endphp
+                            <div class="flex items-center gap-2 mb-1">
+                                <div class="flex-1 h-2 rounded-full overflow-hidden {{ $potentialBarBg }}">
+                                    <div class="h-full rounded-full transition-all duration-300 {{ $potentialBarFill }}" style="width: {{ $pct }}%"></div>
+                                </div>
+                                <span class="text-xs font-bold font-mono min-w-[2.5rem] text-right {{ $potentialText }}">{{ $pct ? $pct.'%' : '—' }}</span>
+                            </div>
+                            <select wire:model.blur="event.potential"
+                                    class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                <option value="">— bitte wählen —</option>
+                                <option value="10% (unwahrscheinlich)">10% (unwahrscheinlich)</option>
+                                <option value="30% (unverbindliche Anfrage)">30% (unverbindliche Anfrage)</option>
+                                <option value="50% (Tendenz offen)">50% (Tendenz offen)</option>
+                                <option value="70% (deutliche Tendenz zur Buchung)">70% (deutliche Tendenz zur Buchung)</option>
+                                <option value="90% (ziemlich definitiv)">90% (ziemlich definitiv)</option>
+                            </select>
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mt-2">Notiz zur Anfrage</label>
                             <input wire:model.blur="event.inquiry_note" type="text"
                                    class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                         </div>
