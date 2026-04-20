@@ -135,6 +135,67 @@ class Event extends Model
         return $this->hasMany(EventNote::class)->latest();
     }
 
+    public function quotes(): HasMany
+    {
+        return $this->hasMany(Quote::class)->latest();
+    }
+
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(Contract::class)->latest();
+    }
+
+    public function pickLists(): HasMany
+    {
+        return $this->hasMany(PickList::class)->latest();
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class)->latest();
+    }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(Activity::class)->latest();
+    }
+
+    public function signatures(): HasMany
+    {
+        return $this->hasMany(DocumentSignature::class);
+    }
+
+    public function feedbackLinks(): HasMany
+    {
+        return $this->hasMany(FeedbackLink::class);
+    }
+
+    public function feedbackEntries(): HasMany
+    {
+        return $this->hasMany(FeedbackEntry::class);
+    }
+
+    public function emails(): HasMany
+    {
+        return $this->hasMany(EmailLog::class);
+    }
+
+    /**
+     * Aggregierter Umsatz aus QuoteItems ueber alle Tage.
+     */
+    public function quoteItems(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(QuoteItem::class, EventDay::class);
+    }
+
+    /**
+     * Aggregierte Bestellung aus OrderItems ueber alle Tage.
+     */
+    public function orderItems(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(OrderItem::class, EventDay::class);
+    }
+
     public function scopeForTeam($query, $teamId)
     {
         return $query->where('team_id', $teamId);
