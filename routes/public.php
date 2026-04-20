@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Platform\Events\Http\Controllers\PublicContractController;
 use Platform\Events\Http\Controllers\PublicInvoiceController;
+use Platform\Events\Http\Controllers\PublicPickListController;
 use Platform\Events\Http\Controllers\PublicQuoteController;
 
 /*
@@ -22,3 +23,7 @@ Route::get('/vertrag/{token}', [PublicContractController::class, 'show'])->name(
 Route::post('/vertrag/{token}/respond', [PublicContractController::class, 'respond'])->name('events.public.contract.respond');
 
 Route::get('/rechnung/{token}', [PublicInvoiceController::class, 'show'])->name('events.public.invoice');
+
+Route::get('/picking/{token}', [PublicPickListController::class, 'show'])->name('events.public.picklist');
+Route::patch('/picking/{token}/items/{itemId}', [PublicPickListController::class, 'updateItem'])->name('events.public.picklist.item');
+Route::get('/picking/{token}/progress', [PublicPickListController::class, 'progress'])->name('events.public.picklist.progress');

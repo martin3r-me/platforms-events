@@ -409,6 +409,13 @@
             </div>
         @endif
 
+        {{-- ================= Tab: Packliste ================= --}}
+        @if($activeTab === 'packliste')
+            <div class="pt-6">
+                <livewire:events.detail.pick-lists :event-id="$event->id" :key="'picklists-'.$event->id" />
+            </div>
+        @endif
+
         {{-- ================= Tab: Tage ================= --}}
         @if($activeTab === 'tage')
             <div class="pt-6 space-y-4">
