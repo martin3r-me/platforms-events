@@ -395,6 +395,13 @@
             </div>
         @endif
 
+        {{-- ================= Tab: Verträge ================= --}}
+        @if($activeTab === 'vertraege')
+            <div class="pt-6">
+                <livewire:events.detail.contracts :event-id="$event->id" :key="'contracts-'.$event->id" />
+            </div>
+        @endif
+
         {{-- ================= Tab: Tage ================= --}}
         @if($activeTab === 'tage')
             <div class="pt-6 space-y-4">
