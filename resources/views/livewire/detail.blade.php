@@ -38,31 +38,192 @@
         ];
     @endphp
 
-    {{-- Event-Detail-Sidebar (Tab-Navigation) --}}
+    {{-- Event-Detail-Sidebar (Tab-Navigation + Drilldown) --}}
     <x-slot name="sidebar">
-        <x-ui-page-sidebar title="{{ $event->event_number }}" width="w-64" :defaultOpen="true">
-            <div class="p-3 border-b border-[var(--ui-border)]">
-                <p class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Event</p>
-                <p class="text-xs font-semibold text-[var(--ui-secondary)] truncate mt-0.5" title="{{ $event->name }}">{{ $event->name }}</p>
-                @if($event->customer)
-                    <p class="text-[0.62rem] text-[var(--ui-muted)] truncate mt-0.5">{{ $event->customer }}</p>
-                @endif
-                @if($event->start_date)
-                    <p class="text-[0.62rem] text-[var(--ui-muted)] font-mono mt-1">
-                        {{ $event->start_date->format('d.m.Y') }}@if($event->end_date && $event->end_date != $event->start_date) – {{ $event->end_date->format('d.m.Y') }} @endif
-                    </p>
-                @endif
+        <x-ui-page-sidebar title="Event-Modul" width="w-72" :defaultOpen="true">
+            {{-- Event-Header --}}
+            <div class="p-4 border-b border-[var(--ui-border)] flex items-start gap-2">
+                @svg('heroicon-o-calendar-days', 'w-5 h-5 text-[var(--ui-primary)] flex-shrink-0 mt-0.5')
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-bold text-[var(--ui-secondary)] truncate" title="{{ $event->name }}">{{ $event->name }}</p>
+                    <p class="text-[0.68rem] text-[var(--ui-muted)] font-mono">{{ $event->event_number }}</p>
+                </div>
             </div>
 
-            <nav class="p-2 space-y-0.5">
-                @foreach($tabs as $key => $meta)
-                    <button wire:click="$set('activeTab', '{{ $key }}')" type="button"
-                            class="w-full flex items-center gap-2 px-3 py-2 text-xs rounded-md transition text-left
-                                   {{ $activeTab === $key
+            @php
+                $badgeClass = fn ($n, $color = 'slate') => $n > 0
+                    ? match ($color) {
+                        'primary' => 'bg-[var(--ui-primary)]/20 text-[var(--ui-primary)]',
+                        'purple'  => 'bg-purple-100 text-purple-700',
+                        'blue'    => 'bg-blue-100 text-blue-700',
+                        'green'   => 'bg-green-100 text-green-700',
+                        default   => 'bg-slate-200 text-slate-700',
+                    }
+                    : 'hidden';
+
+                $primaryTabs = [
+                    ['key' => 'basis',        'label' => 'Basis',            'icon' => 'heroicon-o-identification'],
+                    ['key' => 'details',      'label' => 'Details',          'icon' => 'heroicon-o-document-text'],
+                    ['key' => 'buchungen',    'label' => 'Räume',            'icon' => 'heroicon-o-building-office-2', 'badge' => $counts['buchungen']],
+                    ['key' => 'tage',         'label' => 'Tage',             'icon' => 'heroicon-o-calendar',          'badge' => $counts['tage']],
+                    ['key' => 'ablauf',       'label' => 'Ablauf',           'icon' => 'heroicon-o-clock',             'badge' => $counts['ablauf']],
+                    ['key' => 'aktivitaeten', 'label' => 'Aktivitäten',      'icon' => 'heroicon-o-bolt',              'badge' => $counts['aktivitaeten']],
+                    ['key' => 'kalkulation',  'label' => 'Kalkulation',      'icon' => 'heroicon-o-calculator'],
+                    ['key' => 'projekt',      'label' => 'Projekt Function', 'icon' => 'heroicon-o-document-check'],
+                    ['key' => 'vertraege',    'label' => 'Verträge',         'icon' => 'heroicon-o-document',          'badge' => $counts['vertraege'],    'badgeColor' => 'purple'],
+                    ['key' => 'packliste',    'label' => 'Packliste',        'icon' => 'heroicon-o-cube',              'badge' => $counts['packliste']],
+                    ['key' => 'kommunikation','label' => 'Kommunikation',    'icon' => 'heroicon-o-envelope',          'badge' => $counts['kommunikation'], 'badgeColor' => 'blue'],
+                ];
+
+                $tailTabs = [
+                    ['key' => 'rechnungen', 'label' => 'Rechnungen',    'icon' => 'heroicon-o-receipt-percent',          'badge' => $counts['rechnungen']],
+                    ['key' => 'schluss',    'label' => 'Schlussbericht','icon' => 'heroicon-o-presentation-chart-line'],
+                    ['key' => 'feedback',   'label' => 'Feedback',      'icon' => 'heroicon-o-chat-bubble-left-right',   'badge' => $counts['feedback']],
+                    ['key' => 'notizen',    'label' => 'Notizen',       'icon' => 'heroicon-o-pencil-square',            'badge' => $counts['notizen']],
+                    ['key' => 'mr',         'label' => 'Mgmt-Report',   'icon' => 'heroicon-o-clipboard-document-check'],
+                ];
+            @endphp
+
+            <nav class="p-2 space-y-0.5 text-xs">
+                @foreach($primaryTabs as $t)
+                    <button wire:click="$set('activeTab', '{{ $t['key'] }}')" type="button"
+                            class="w-full flex items-center gap-2 px-3 py-2 rounded-md transition text-left
+                                   {{ $activeTab === $t['key']
                                       ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold'
                                       : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
-                        @svg($meta['icon'], 'w-4 h-4 flex-shrink-0')
-                        <span class="truncate">{{ $meta['label'] }}</span>
+                        @svg($t['icon'], 'w-4 h-4 flex-shrink-0')
+                        <span class="flex-1 truncate">{{ $t['label'] }}</span>
+                        @if(!empty($t['badge']) && $t['badge'] > 0)
+                            <span class="text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full {{ $badgeClass($t['badge'], $t['badgeColor'] ?? 'slate') }}">{{ $t['badge'] }}</span>
+                        @endif
+                    </button>
+                @endforeach
+
+                {{-- ===== Angebote mit Drilldown ===== --}}
+                <div x-data="{ open: @js($activeTab === 'angebote') }">
+                    <button type="button" @click="open = !open" x-on:dblclick="$wire.set('activeTab', 'angebote')"
+                            wire:click="$set('activeTab', 'angebote')"
+                            class="w-full flex items-center gap-2 px-3 py-2 rounded-md transition text-left
+                                   {{ $activeTab === 'angebote' ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
+                        @svg('heroicon-o-document-duplicate', 'w-4 h-4 flex-shrink-0')
+                        <span class="flex-1 truncate">Angebote</span>
+                        @if($counts['angebote_items'] > 0)
+                            <span class="text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-[var(--ui-primary)]/20 text-[var(--ui-primary)]">{{ $counts['angebote_items'] }}</span>
+                        @endif
+                        <svg :class="open ? 'rotate-90' : ''" class="w-3 h-3 transition-transform text-[var(--ui-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+
+                    <div x-show="open" x-cloak class="ml-3 border-l border-[var(--ui-border)]/40 pl-2 space-y-0.5 mt-0.5">
+                        <button type="button" wire:click="$set('activeTab', 'angebote')"
+                                class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[0.72rem] text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]">
+                            @svg('heroicon-o-list-bullet', 'w-3.5 h-3.5 flex-shrink-0')
+                            <span class="flex-1 text-left">Alle Artikel</span>
+                            @if($counts['angebote_positionen'] > 0)
+                                <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">{{ $counts['angebote_positionen'] }}</span>
+                            @endif
+                        </button>
+
+                        @foreach($quoteTree as $dayNode)
+                            <div x-data="{ sub: false }">
+                                <button type="button" @click="sub = !sub"
+                                        wire:click="$set('activeTab', 'angebote')"
+                                        class="w-full flex items-center gap-1.5 px-2 py-1 rounded-md text-[0.72rem] text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]">
+                                    <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: {{ $dayNode['color'] }}"></span>
+                                    <span class="flex-1 text-left truncate font-mono text-[0.68rem]">{{ $dayNode['datum'] ?? $dayNode['label'] }}</span>
+                                    @if($dayNode['positions'] > 0)
+                                        <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-700">{{ $dayNode['positions'] }}</span>
+                                    @endif
+                                    @if(count($dayNode['types']) > 0)
+                                        <svg :class="sub ? 'rotate-90' : ''" class="w-2.5 h-2.5 transition-transform text-[var(--ui-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                                    @endif
+                                </button>
+                                @if(count($dayNode['types']) > 0)
+                                    <div x-show="sub" x-cloak class="ml-4 space-y-0.5 mt-0.5">
+                                        @foreach($dayNode['types'] as $type)
+                                            <button type="button" wire:click="$set('activeTab', 'angebote')"
+                                                    class="w-full flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[0.66rem] text-[var(--ui-muted)] hover:bg-[var(--ui-muted-5)]">
+                                                <span class="w-1 h-1 rounded-full bg-[var(--ui-muted)] flex-shrink-0"></span>
+                                                <span class="flex-1 text-left truncate">{{ $type['typ'] }}</span>
+                                                @if($type['positions'] > 0)
+                                                    <span class="text-[0.58rem] text-[var(--ui-muted)]">{{ $type['positions'] }}</span>
+                                                @endif
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- ===== Bestellungen mit Drilldown ===== --}}
+                <div x-data="{ open: @js($activeTab === 'bestellungen') }">
+                    <button type="button" @click="open = !open"
+                            wire:click="$set('activeTab', 'bestellungen')"
+                            class="w-full flex items-center gap-2 px-3 py-2 rounded-md transition text-left
+                                   {{ $activeTab === 'bestellungen' ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
+                        @svg('heroicon-o-shopping-cart', 'w-4 h-4 flex-shrink-0')
+                        <span class="flex-1 truncate">Bestellungen</span>
+                        @if($counts['bestellungen_items'] > 0)
+                            <span class="text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-[var(--ui-primary)]/20 text-[var(--ui-primary)]">{{ $counts['bestellungen_items'] }}</span>
+                        @endif
+                        <svg :class="open ? 'rotate-90' : ''" class="w-3 h-3 transition-transform text-[var(--ui-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+
+                    <div x-show="open" x-cloak class="ml-3 border-l border-[var(--ui-border)]/40 pl-2 space-y-0.5 mt-0.5">
+                        <button type="button" wire:click="$set('activeTab', 'bestellungen')"
+                                class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[0.72rem] text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]">
+                            @svg('heroicon-o-list-bullet', 'w-3.5 h-3.5 flex-shrink-0')
+                            <span class="flex-1 text-left">Alle Positionen</span>
+                            @if($counts['bestellungen_positionen'] > 0)
+                                <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">{{ $counts['bestellungen_positionen'] }}</span>
+                            @endif
+                        </button>
+
+                        @foreach($orderTree as $dayNode)
+                            <div x-data="{ sub: false }">
+                                <button type="button" @click="sub = !sub"
+                                        wire:click="$set('activeTab', 'bestellungen')"
+                                        class="w-full flex items-center gap-1.5 px-2 py-1 rounded-md text-[0.72rem] text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]">
+                                    <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: {{ $dayNode['color'] }}"></span>
+                                    <span class="flex-1 text-left truncate font-mono text-[0.68rem]">{{ $dayNode['datum'] ?? $dayNode['label'] }}</span>
+                                    @if($dayNode['positions'] > 0)
+                                        <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-700">{{ $dayNode['positions'] }}</span>
+                                    @endif
+                                    @if(count($dayNode['types']) > 0)
+                                        <svg :class="sub ? 'rotate-90' : ''" class="w-2.5 h-2.5 transition-transform text-[var(--ui-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                                    @endif
+                                </button>
+                                @if(count($dayNode['types']) > 0)
+                                    <div x-show="sub" x-cloak class="ml-4 space-y-0.5 mt-0.5">
+                                        @foreach($dayNode['types'] as $type)
+                                            <button type="button" wire:click="$set('activeTab', 'bestellungen')"
+                                                    class="w-full flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[0.66rem] text-[var(--ui-muted)] hover:bg-[var(--ui-muted-5)]">
+                                                <span class="w-1 h-1 rounded-full bg-[var(--ui-muted)] flex-shrink-0"></span>
+                                                <span class="flex-1 text-left truncate">{{ $type['typ'] }}</span>
+                                                @if($type['positions'] > 0)
+                                                    <span class="text-[0.58rem] text-[var(--ui-muted)]">{{ $type['positions'] }}</span>
+                                                @endif
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                @foreach($tailTabs as $t)
+                    <button wire:click="$set('activeTab', '{{ $t['key'] }}')" type="button"
+                            class="w-full flex items-center gap-2 px-3 py-2 rounded-md transition text-left
+                                   {{ $activeTab === $t['key']
+                                      ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold'
+                                      : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
+                        @svg($t['icon'], 'w-4 h-4 flex-shrink-0')
+                        <span class="flex-1 truncate">{{ $t['label'] }}</span>
+                        @if(!empty($t['badge']) && $t['badge'] > 0)
+                            <span class="text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full {{ $badgeClass($t['badge'], $t['badgeColor'] ?? 'slate') }}">{{ $t['badge'] }}</span>
+                        @endif
                     </button>
                 @endforeach
             </nav>

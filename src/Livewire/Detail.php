@@ -6,10 +6,18 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Platform\Events\Models\Activity;
 use Platform\Events\Models\Booking;
+use Platform\Events\Models\Contract;
+use Platform\Events\Models\EmailLog;
 use Platform\Events\Models\Event;
 use Platform\Events\Models\EventDay;
 use Platform\Events\Models\EventNote;
+use Platform\Events\Models\FeedbackEntry;
+use Platform\Events\Models\Invoice;
+use Platform\Events\Models\OrderItem;
+use Platform\Events\Models\PickList;
+use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\ScheduleItem;
 use Platform\Locations\Models\Location;
 
@@ -489,6 +497,60 @@ class Detail extends Component
         $notes     = $this->event->notes()->orderByDesc('created_at')->get();
         $locations = Location::where('team_id', $team->id)->orderBy('sort_order')->orderBy('name')->get();
 
+        // Sidebar-Counts + Drilldown-Baum
+        $dayIds = $days->pluck('id');
+        $quoteItems = QuoteItem::whereIn('event_day_id', $dayIds)->orderBy('sort_order')->get();
+        $orderItems = OrderItem::whereIn('event_day_id', $dayIds)->orderBy('sort_order')->get();
+
+        $quoteTree = $days->map(function (EventDay $day) use ($quoteItems) {
+            $dayItems = $quoteItems->where('event_day_id', $day->id)->values();
+            return [
+                'day_id'       => $day->id,
+                'label'        => $day->label,
+                'datum'        => $day->datum?->format('Y-m-d'),
+                'color'        => $day->color ?: '#6366f1',
+                'positions'    => (int) $dayItems->sum('positionen'),
+                'types'        => $dayItems->map(fn ($i) => [
+                    'id'         => $i->id,
+                    'typ'        => $i->typ,
+                    'positions'  => (int) $i->positionen,
+                ])->values()->all(),
+            ];
+        })->values();
+
+        $orderTree = $days->map(function (EventDay $day) use ($orderItems) {
+            $dayItems = $orderItems->where('event_day_id', $day->id)->values();
+            return [
+                'day_id'       => $day->id,
+                'label'        => $day->label,
+                'datum'        => $day->datum?->format('Y-m-d'),
+                'color'        => $day->color ?: '#6366f1',
+                'positions'    => (int) $dayItems->sum('positionen'),
+                'types'        => $dayItems->map(fn ($i) => [
+                    'id'        => $i->id,
+                    'typ'       => $i->typ,
+                    'positions' => (int) $i->positionen,
+                ])->values()->all(),
+            ];
+        })->values();
+
+        $counts = [
+            'ablauf'                => $schedule->count(),
+            'aktivitaeten'          => Activity::where('event_id', $this->event->id)->count(),
+            'vertraege'             => Contract::where('event_id', $this->event->id)->count(),
+            'packliste'             => PickList::where('event_id', $this->event->id)->count(),
+            'kommunikation'         => EmailLog::where('event_id', $this->event->id)->count(),
+            'angebote_items'        => $quoteItems->count(),
+            'angebote_positionen'   => (int) $quoteItems->sum('positionen'),
+            'bestellungen_items'    => $orderItems->count(),
+            'bestellungen_positionen'=> (int) $orderItems->sum('positionen'),
+            'rechnungen'            => Invoice::where('event_id', $this->event->id)->count(),
+            'feedback'              => FeedbackEntry::where('event_id', $this->event->id)->count(),
+            'notizen'               => $notes->count(),
+            'buchungen'             => $bookings->count(),
+            'tage'                  => $days->count(),
+        ];
+
         // MR-Gruppen für das Template
         $mrFields = collect(self::mrDefaults())->groupBy('group')->toArray();
 
@@ -502,6 +564,9 @@ class Detail extends Component
             'bookingRangs'   => self::BOOKING_RANGS,
             'noteTypes'      => self::NOTE_TYPES,
             'mrFields'       => $mrFields,
+            'counts'         => $counts,
+            'quoteTree'      => $quoteTree,
+            'orderTree'      => $orderTree,
         ])->layout('platform::layouts.app');
     }
 }
