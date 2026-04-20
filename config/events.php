@@ -31,5 +31,15 @@ return [
                 ],
             ],
         ],
+        [
+            'group' => 'Planung',
+            'items' => [
+                [
+                    'label' => 'Veranstaltungen',
+                    'route' => 'events.manage',
+                    'icon'  => 'heroicon-o-calendar-days',
+                ],
+            ],
+        ],
     ],
 ];
