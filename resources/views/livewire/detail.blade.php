@@ -423,6 +423,27 @@
             </div>
         @endif
 
+        {{-- ================= Tab: Kalkulation ================= --}}
+        @if($activeTab === 'kalkulation')
+            <div class="pt-6">
+                <livewire:events.detail.calculation :event-id="$event->id" :key="'calc-'.$event->id" />
+            </div>
+        @endif
+
+        {{-- ================= Tab: Projekt-Function ================= --}}
+        @if($activeTab === 'projekt')
+            <div class="pt-6">
+                <livewire:events.detail.projekt-function :event-id="$event->id" :key="'pf-'.$event->id" />
+            </div>
+        @endif
+
+        {{-- ================= Tab: Schlussbericht ================= --}}
+        @if($activeTab === 'schluss')
+            <div class="pt-6">
+                <livewire:events.detail.final-report :event-id="$event->id" :key="'fr-'.$event->id" />
+            </div>
+        @endif
+
         {{-- ================= Tab: Tage ================= --}}
         @if($activeTab === 'tage')
             <div class="pt-6 space-y-4">
