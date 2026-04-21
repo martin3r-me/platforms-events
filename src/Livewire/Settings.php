@@ -275,54 +275,21 @@ class Settings extends Component
         $this->tplModal = true;
     }
 
-    public function convertTplToMarkdown(): void
-    {
-        $current = (string) ($this->tplForm['html_content'] ?? '');
-        $this->tplForm['html_content'] = $this->htmlToMarkdown($current);
-    }
-
     /**
      * Liefert HTML fuer den TinyMCE-Editor. Wenn der gespeicherte Inhalt noch
-     * Markdown/Plaintext ist (alte Vorlagen), wird einmal Markdown -> HTML
-     * konvertiert, damit der Editor Absaetze, Listen etc. korrekt anzeigt.
+     * Markdown/Plaintext ist (alte Vorlagen vor der TinyMCE-Umstellung), wird
+     * einmalig Markdown -> HTML konvertiert. Wird der Text gespeichert, liegt
+     * er danach dauerhaft als HTML vor. events-asset://-Schemes werden zu
+     * frischen signierten URLs aufgeloest, damit TinyMCE Bilder anzeigt.
      */
     protected function ensureHtml(?string $content): string
     {
         $content = (string) $content;
         if ($content === '') return '';
-        $html = $this->looksLikeHtml($content)
+        $html = preg_match('/<\/?[a-z][a-z0-9]*\b[^>]*>/i', $content)
             ? $content
             : \Platform\Events\Services\ContractRenderer::markdownToHtml($content);
-        // events-asset://-Schemes zu frischen signierten URLs aufloesen,
-        // damit TinyMCE Bilder im Editor anzeigt.
         return \Platform\Events\Services\ContractRenderer::resolveForEditor($html);
-    }
-
-    protected function htmlToMarkdown(string $content): string
-    {
-        $trim = trim($content);
-        if ($trim === '') return '';
-        if (!$this->looksLikeHtml($trim)) return $content;
-
-        try {
-            $converter = new \League\HTMLToMarkdown\HtmlConverter([
-                'strip_tags'                 => true,
-                'remove_nodes'               => 'script style',
-                'hard_break'                 => true,
-                'use_autolinks'              => false,
-                'header_style'               => 'atx',
-                'bold_style'                 => '**',
-                'italic_style'               => '_',
-            ]);
-            return trim($converter->convert($trim));
-        } catch (\Throwable $e) {
-            return $content;
-        }
-    }
-
-    protected function looksLikeHtml(string $s): bool
-    {
-        return (bool) preg_match('/<\/?[a-z][a-z0-9]*\b[^>]*>/i', $s);
     }
 
     public function saveTemplate(): void

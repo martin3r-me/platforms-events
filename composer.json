@@ -10,8 +10,7 @@
         }
     ],
     "require": {
-        "barryvdh/laravel-dompdf": "^3.0",
-        "league/html-to-markdown": "^5.0"
+        "barryvdh/laravel-dompdf": "^3.0"
     },
     "autoload": {
         "psr-4": {
