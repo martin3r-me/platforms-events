@@ -91,13 +91,20 @@ class FinalReport extends Component
 
         $dayIds = $event->days->pluck('id');
 
-        // Umsatz pro Quote
-        $quotes = Quote::where('event_id', $event->id)->get();
-        $quoteSums = [];
-        foreach ($quotes as $q) {
-            $quoteSums[$q->id] = (float) QuoteItem::where('quote_id', $q->id)->sum('gesamt');
-        }
-        $totalRevenue = array_sum($quoteSums);
+        // Umsatz pro Event-Tag (QuoteItem haengt am event_day, nicht am Quote-Dokument)
+        $quoteItems = QuoteItem::whereIn('event_day_id', $dayIds)->get();
+        $umsatzPerDay = $quoteItems->groupBy('event_day_id')
+            ->map(fn ($items) => (float) $items->sum('umsatz'));
+
+        // Zeilen fuer die Umsatztabelle (pro Tag mit Label + Summe)
+        $quotes = $event->days->map(function ($day) use ($umsatzPerDay) {
+            return (object) [
+                'id'    => $day->id,
+                'title' => ($day->label ?: $day->day_of_week) . ' · ' . ($day->datum?->format('d.m.Y') ?: '—'),
+            ];
+        });
+        $quoteSums = $umsatzPerDay->toArray();
+        $totalRevenue = (float) $quoteItems->sum('umsatz');
 
         // Rechnungsstatus
         $invoices = Invoice::where('event_id', $event->id)->orderBy('invoice_number')->get();
