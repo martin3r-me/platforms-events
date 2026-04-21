@@ -4,6 +4,7 @@
     'contacts'      => [],
     'currentId'     => null,
     'currentLabel'  => null,
+    'currentUrl'    => null,
     'hasCompany'    => false,
     'fallbackField' => null,
     'placeholder'   => '— Kontakt wählen —',
@@ -75,6 +76,12 @@
                     <span class="text-[0.7rem] text-slate-400">{{ $placeholder }}</span>
                 @endif
             </button>
+            @if($currentUrl && $currentLabel)
+                <a href="{{ $currentUrl }}" target="_blank" title="Kontakt im CRM öffnen"
+                   class="p-0.5 text-blue-500 hover:text-blue-700 flex-shrink-0">
+                    @svg('heroicon-o-arrow-top-right-on-square', 'w-3 h-3')
+                </a>
+            @endif
             @if($currentId)
                 <button type="button" wire:click="clearCrmContact('{{ $slot }}')"
                         class="p-0.5 text-slate-400 hover:text-red-500 flex-shrink-0" title="Auswahl löschen">

@@ -895,6 +895,9 @@ class Detail extends Component
         // Kontakt-Slots: Kontakte der jeweils gebundenen Firma ueber CrmCompanyContactsProviderInterface.
         $crmContactAvailable = app()->bound(\Platform\Core\Contracts\CrmCompanyContactsProviderInterface::class);
         $contactsProvider = $crmContactAvailable ? app(\Platform\Core\Contracts\CrmCompanyContactsProviderInterface::class) : null;
+        $contactResolver  = app()->bound(\Platform\Core\Contracts\CrmContactResolverInterface::class)
+            ? app(\Platform\Core\Contracts\CrmContactResolverInterface::class)
+            : null;
         $crmContactSlots = [];
         foreach (self::CRM_CONTACT_SLOTS as $slot => $cfg) {
             $companyCfg = self::CRM_SLOTS[$cfg['company_slot']];
@@ -915,10 +918,13 @@ class Detail extends Component
                 }
             }
 
+            $currentUrl = $currentId && $contactResolver ? $contactResolver->url((int) $currentId) : null;
+
             $crmContactSlots[$slot] = [
                 'contacts'     => $contacts,
                 'currentId'    => $currentId,
                 'currentLabel' => $currentLabel ?: $this->event?->{$cfg['label']},
+                'currentUrl'   => $currentUrl,
                 'hasCompany'   => (bool) $companyId,
                 'fallback'     => $this->event?->{$cfg['label']},
             ];
