@@ -28,15 +28,47 @@ window.tinymceEditor = function (opts) {
             const wireEl = rootEl.closest('[wire\\:id]');
             this._wireId = wireEl ? wireEl.getAttribute('wire:id') : null;
 
-            const waitForTiny = (attempts = 40) => {
-                if (typeof window.tinymce !== 'undefined') return this._boot();
+            this._waitForTinyAndObserve(rootEl);
+        },
+
+        _waitForTinyAndObserve(rootEl) {
+            const self = this;
+            const ensureTiny = (attempts = 80) => {
+                if (typeof window.tinymce !== 'undefined') return self._observe(rootEl);
                 if (attempts <= 0) {
                     console.error('[tinymceEditor] TinyMCE CDN nicht geladen');
                     return;
                 }
-                setTimeout(() => waitForTiny(attempts - 1), 100);
+                setTimeout(() => ensureTiny(attempts - 1), 100);
             };
-            waitForTiny();
+            ensureTiny();
+        },
+
+        _observe(rootEl) {
+            const self = this;
+            // Sofort bootn wenn bereits sichtbar
+            if (rootEl.offsetParent !== null) return self._boot();
+
+            // Sonst auf Sichtbarkeits-Change warten (Modal-Open)
+            if (typeof window.IntersectionObserver !== 'undefined') {
+                const observer = new IntersectionObserver(function (entries) {
+                    if (entries[0].isIntersecting && !self._editor) {
+                        observer.disconnect();
+                        self._boot();
+                    }
+                });
+                observer.observe(rootEl);
+            } else {
+                // Fallback: Polling
+                const poll = () => {
+                    if (rootEl.offsetParent !== null) {
+                        if (!self._editor) self._boot();
+                        return;
+                    }
+                    setTimeout(poll, 200);
+                };
+                poll();
+            }
         },
 
         _boot() {
