@@ -188,9 +188,42 @@
                 </select>
             </div>
             <div>
-                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Text (Markdown/Plain erlaubt)</label>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)]">Text (Markdown)</label>
+                    <label class="flex items-center gap-1 px-2 py-0.5 border border-slate-200 rounded bg-white hover:bg-slate-50 text-[0.6rem] font-semibold text-slate-600 cursor-pointer">
+                        @svg('heroicon-o-photo', 'w-3 h-3')
+                        Bild einfügen
+                        <input type="file" wire:model="contractImage" accept="image/*" class="hidden">
+                    </label>
+                </div>
+                <div wire:loading wire:target="contractImage" class="text-[0.6rem] text-slate-500 mb-1">Bild wird hochgeladen …</div>
+                @if(session('contractImageError'))
+                    <div class="text-[0.6rem] text-red-500 mb-1">{{ session('contractImageError') }}</div>
+                @endif
                 <textarea wire:model="contractText" rows="20"
                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono"></textarea>
+                <p class="text-[0.58rem] text-[var(--ui-muted)] mt-1">
+                    Markdown wird im PDF &amp; der öffentlichen Ansicht formatiert. Platzhalter wie <code class="text-purple-600">{EVENT_NUMBER}</code>, <code class="text-purple-600">{CUSTOMER_COMPANY}</code> etc. werden beim Rendern mit Event-Daten ersetzt.
+                </p>
+
+                <div class="mt-2" x-data="{ open: false }">
+                    <button type="button" @click="open = !open"
+                            class="flex items-center gap-1 text-[0.62rem] font-semibold text-purple-600 hover:text-purple-700 border-0 bg-transparent p-0 cursor-pointer">
+                        <svg class="w-2.5 h-2.5 transition-transform" :class="open ? 'rotate-90' : ''"
+                             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                        </svg>
+                        Verfügbare Platzhalter
+                    </button>
+                    <div x-show="open" x-cloak class="grid grid-cols-2 gap-1 mt-2 p-2 bg-slate-50 rounded border border-slate-100">
+                        @foreach(\Platform\Events\Services\ContractRenderer::availablePlaceholders() as $key => $desc)
+                            <div class="flex items-center gap-1.5 text-[0.6rem]">
+                                <code class="px-1 py-0.5 bg-white border border-slate-200 rounded text-purple-600 font-mono">{{ $key }}</code>
+                                <span class="text-slate-500 truncate">{{ $desc }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
             </div>
             <div class="flex justify-end gap-2 pt-4 border-t border-[var(--ui-border)]">
                 <x-ui-button type="button" variant="secondary-outline" size="sm" wire:click="$set('showEditModal', false)">Abbrechen</x-ui-button>

@@ -308,16 +308,47 @@
                     <div>
                         <div class="flex items-center justify-between mb-1">
                             <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Inhalt (Markdown)</label>
-                            <button type="button" wire:click="convertTplToMarkdown"
-                                    class="flex items-center gap-1 px-2 py-0.5 border border-slate-200 rounded bg-white hover:bg-slate-50 text-[0.58rem] font-semibold text-slate-600 cursor-pointer">
-                                @svg('heroicon-o-arrow-path', 'w-2.5 h-2.5')
-                                HTML → Markdown konvertieren
-                            </button>
+                            <div class="flex items-center gap-1.5">
+                                <label class="flex items-center gap-1 px-2 py-0.5 border border-slate-200 rounded bg-white hover:bg-slate-50 text-[0.58rem] font-semibold text-slate-600 cursor-pointer">
+                                    @svg('heroicon-o-photo', 'w-2.5 h-2.5')
+                                    Bild einfügen
+                                    <input type="file" wire:model="contractImage" accept="image/*" class="hidden">
+                                </label>
+                                <button type="button" wire:click="convertTplToMarkdown"
+                                        class="flex items-center gap-1 px-2 py-0.5 border border-slate-200 rounded bg-white hover:bg-slate-50 text-[0.58rem] font-semibold text-slate-600 cursor-pointer">
+                                    @svg('heroicon-o-arrow-path', 'w-2.5 h-2.5')
+                                    HTML → Markdown
+                                </button>
+                            </div>
                         </div>
+                        <div wire:loading wire:target="contractImage" class="text-[0.6rem] text-slate-500 mb-1">Bild wird hochgeladen …</div>
+                        @if(session('contractImageError'))
+                            <div class="text-[0.6rem] text-red-500 mb-1">{{ session('contractImageError') }}</div>
+                        @endif
                         <textarea wire:model="tplForm.html_content" rows="14"
                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono"
-                                  placeholder="# Nutzungsvertrag&#10;&#10;Platzhalter wie @{{customer_company}} werden beim Erstellen ersetzt.&#10;&#10;Du kannst auch HTML einfuegen und danach auf „HTML → Markdown konvertieren" klicken."></textarea>
-                        <p class="text-[0.56rem] text-[var(--ui-muted)] mt-1">Markdown empfohlen (passt zum Vertrags-Editor). HTML wird beim Speichern automatisch nach Markdown konvertiert.</p>
+                                  placeholder="# Nutzungsvertrag&#10;&#10;Platzhalter wie {CUSTOMER_COMPANY}, {EVENT_NUMBER} etc. werden beim PDF-Export ersetzt.&#10;&#10;Auch HTML moeglich - beim Speichern automatisch nach Markdown konvertiert."></textarea>
+                        <p class="text-[0.56rem] text-[var(--ui-muted)] mt-1">Markdown empfohlen. Platzhalter in geschweiften Klammern (siehe unten) werden beim Rendern mit Event-Daten gefüllt.</p>
+
+                        {{-- Platzhalter-Liste --}}
+                        <div class="mt-2" x-data="{ open: false }">
+                            <button type="button" @click="open = !open"
+                                    class="flex items-center gap-1 text-[0.6rem] font-semibold text-purple-600 hover:text-purple-700 border-0 bg-transparent p-0 cursor-pointer">
+                                <svg class="w-2.5 h-2.5 transition-transform" :class="open ? 'rotate-90' : ''"
+                                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                </svg>
+                                Verfügbare Platzhalter
+                            </button>
+                            <div x-show="open" x-cloak class="grid grid-cols-2 gap-1 mt-2 p-2 bg-slate-50 rounded border border-slate-100">
+                                @foreach(\Platform\Events\Services\ContractRenderer::availablePlaceholders() as $key => $desc)
+                                    <div class="flex items-center gap-1.5 text-[0.58rem]">
+                                        <code class="px-1 py-0.5 bg-white border border-slate-200 rounded text-purple-600 font-mono">{{ $key }}</code>
+                                        <span class="text-slate-500 truncate">{{ $desc }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
                     </div>
                     <label class="flex items-center gap-2 text-[0.68rem]">
                         <input type="checkbox" wire:model="tplForm.is_active">

@@ -9,7 +9,17 @@
         .card { background: white; border-radius: 8px; padding: 28px; margin-bottom: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
         h1 { font-size: 1.4rem; margin: 0 0 8px 0; }
         .meta { color: #64748b; font-size: 0.85rem; margin-bottom: 20px; }
-        .body { white-space: pre-wrap; font-size: 0.9rem; line-height: 1.6; border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 10px; }
+        .body { font-size: 0.9rem; line-height: 1.6; border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 10px; }
+        .body h1 { font-size: 1.4rem; margin: 14px 0 8px; }
+        .body h2 { font-size: 1.15rem; margin: 12px 0 6px; }
+        .body h3 { font-size: 1rem; margin: 10px 0 4px; }
+        .body p { margin: 6px 0; }
+        .body ul, .body ol { margin: 6px 0 6px 20px; }
+        .body table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+        .body th, .body td { border: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; }
+        .body img { max-width: 100%; height: auto; }
+        .body code { background: #f1f5f9; padding: 1px 4px; border-radius: 3px; }
+        .body hr { border: 0; border-top: 1px solid #e2e8f0; margin: 10px 0; }
         .btn { display: inline-block; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; border: none; margin-right: 8px; }
         .btn-primary { background: #16a34a; color: white; }
         .btn-danger { background: #ef4444; color: white; }
@@ -41,7 +51,7 @@
                 </div>
             @endif
 
-            <div class="body">{{ $contract->content['text'] ?? '' }}</div>
+            <div class="body">{!! \Platform\Events\Services\ContractRenderer::renderHtml($contract, $event) !!}</div>
 
             @if($contract->status === 'sent')
                 <form method="POST" action="{{ route('events.public.contract.respond', ['token' => $contract->token]) }}" style="margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 20px;">

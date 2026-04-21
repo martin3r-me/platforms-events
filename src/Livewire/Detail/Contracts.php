@@ -5,6 +5,8 @@ namespace Platform\Events\Livewire\Detail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Component;
+use Livewire\WithFileUploads;
+use Platform\Events\Livewire\Concerns\HasContractImageUpload;
 use Platform\Events\Models\Contract;
 use Platform\Events\Models\DocumentTemplate;
 use Platform\Events\Models\Event;
@@ -12,12 +14,20 @@ use Platform\Events\Services\ActivityLogger;
 
 class Contracts extends Component
 {
+    use WithFileUploads;
+    use HasContractImageUpload;
+
     public int $eventId;
     public ?int $activeContractId = null;
 
     public bool $showEditModal = false;
     public string $contractType = 'nutzungsvertrag';
     public string $contractText = '';
+
+    public function insertImageMarkdown(string $markdown): void
+    {
+        $this->contractText = ($this->contractText ?? '') . $markdown;
+    }
 
     public function mount(int $eventId): void
     {

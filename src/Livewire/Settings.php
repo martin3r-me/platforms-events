@@ -6,12 +6,22 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithFileUploads;
+use Platform\Events\Livewire\Concerns\HasContractImageUpload;
 use Platform\Events\Models\DocumentTemplate;
 use Platform\Events\Models\MrFieldConfig;
 use Platform\Events\Services\SettingsService;
 
 class Settings extends Component
 {
+    use WithFileUploads;
+    use HasContractImageUpload;
+
+    public function insertImageMarkdown(string $markdown): void
+    {
+        $this->tplForm['html_content'] = (string) ($this->tplForm['html_content'] ?? '') . $markdown;
+    }
+
     #[Url(as: 'tab', except: 'cost_centers')]
     public string $activeTab = 'cost_centers';
 
