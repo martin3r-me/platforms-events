@@ -933,7 +933,9 @@ class Detail extends Component
         $notesByType = $notes->groupBy('type');
 
         // Räume, die beim Event tatsaechlich gebucht sind → Auswahlliste fuer Ablaufplan.
-        // value = was gespeichert wird (bevorzugt Kuerzel), label = Anzeige "Kuerzel — Name"
+        // value = was gespeichert wird (bevorzugt Kuerzel)
+        // short = kurze Anzeige (Kuerzel) in Closed-State
+        // label = Lange Anzeige (Kuerzel — Name) im Dropdown
         $eventRooms = $bookings
             ->map(function ($b) {
                 $kuerzel = trim((string) ($b->location?->kuerzel ?? ''));
@@ -941,13 +943,14 @@ class Detail extends Component
                 $raum    = trim((string) ($b->raum ?? ''));
                 $value   = $kuerzel !== '' ? $kuerzel : ($name !== '' ? $name : $raum);
                 if ($value === '') return null;
+                $short = $value;
                 $label = $value;
                 if ($kuerzel !== '' && $name !== '' && $kuerzel !== $name) {
                     $label = $kuerzel . ' — ' . $name;
                 } elseif ($kuerzel === '' && $name !== '' && $raum !== '' && $name !== $raum) {
                     $label = $name . ' — ' . $raum;
                 }
-                return ['value' => $value, 'label' => $label];
+                return ['value' => $value, 'short' => $short, 'label' => $label];
             })
             ->filter()
             ->unique(fn ($r) => $r['value'])

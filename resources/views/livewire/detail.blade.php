@@ -781,18 +781,19 @@
                                             @php
                                                 $currentRaum = $inlineSchedule[$item->uuid]['raum'] ?? '';
                                                 $knownValues = array_column($eventRooms, 'value');
+                                                $roomsForPicker = $eventRooms;
+                                                if ($currentRaum && !in_array($currentRaum, $knownValues, true)) {
+                                                    $roomsForPicker[] = ['value' => $currentRaum, 'short' => $currentRaum, 'label' => $currentRaum . ' (nicht mehr gebucht)'];
+                                                }
                                             @endphp
-                                            <select wire:model.blur="inlineSchedule.{{ $item->uuid }}.raum"
-                                                    class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs bg-transparent focus:bg-white {{ empty($eventRooms) ? 'opacity-60' : '' }}"
-                                                    @disabled(empty($eventRooms))>
-                                                <option value="">— wählen —</option>
-                                                @foreach($eventRooms as $room)
-                                                    <option value="{{ $room['value'] }}">{{ $room['label'] }}</option>
-                                                @endforeach
-                                                @if($currentRaum && !in_array($currentRaum, $knownValues, true))
-                                                    <option value="{{ $currentRaum }}">{{ $currentRaum }} (nicht mehr gebucht)</option>
-                                                @endif
-                                            </select>
+                                            @include('events::partials.room-picker', [
+                                                'model'       => 'inlineSchedule.'.$item->uuid.'.raum',
+                                                'rooms'       => $roomsForPicker,
+                                                'current'     => $currentRaum,
+                                                'disabled'    => empty($eventRooms),
+                                                'placeholder' => '—',
+                                                'compact'     => true,
+                                            ])
                                         </td>
                                         <td class="px-2 py-1.5">
                                             <input wire:model.blur="inlineSchedule.{{ $item->uuid }}.bemerkung" type="text" placeholder="Bemerkung…"
@@ -831,15 +832,14 @@
                                        class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                             </div>
                             <div class="col-span-2">
-                                <select wire:model.defer="newScheduleInline.raum"
-                                        class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30 {{ empty($eventRooms) ? 'opacity-60' : '' }}"
-                                        @disabled(empty($eventRooms))
-                                        title="{{ empty($eventRooms) ? 'Zuerst im Räume-Tab Räume hinzufügen' : 'Raum aus den gebuchten Räumen wählen' }}">
-                                    <option value="">{{ empty($eventRooms) ? '— erst Räume anlegen —' : 'Raum wählen …' }}</option>
-                                    @foreach($eventRooms as $room)
-                                        <option value="{{ $room['value'] }}">{{ $room['label'] }}</option>
-                                    @endforeach
-                                </select>
+                                @include('events::partials.room-picker', [
+                                    'model'       => 'newScheduleInline.raum',
+                                    'rooms'       => $eventRooms,
+                                    'current'     => $newScheduleInline['raum'] ?? '',
+                                    'disabled'    => empty($eventRooms),
+                                    'placeholder' => empty($eventRooms) ? '— erst Räume anlegen —' : 'Raum wählen …',
+                                    'compact'     => false,
+                                ])
                             </div>
                             <div class="col-span-1">
                                 <input wire:model.defer="newScheduleInline.bemerkung" type="text" placeholder="Bemerk."
