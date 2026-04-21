@@ -64,7 +64,7 @@
                 <span x-show="pfMode === 'manager'" x-cloak class="text-[0.55rem] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">Projektleiter</span>
             </div>
         </div>
-        <iframe :src="'{{ route('events.projekt-function.pdf', ['event' => $event->slug]) }}?mode=' + pfMode"
+        <iframe :src="'{{ route('events.projekt-function.pdf', ['event' => $event->slug]) }}?preview=1&mode=' + pfMode"
                 class="w-full h-[600px] border-0 bg-white"
                 loading="lazy"></iframe>
     </div>

@@ -14,18 +14,25 @@ class ReportPdfController extends Controller
     {
         $e = $this->resolveEvent($event);
         $mode = $request->query('mode') === 'manager' ? 'manager' : 'kitchen';
-        return PdfService::render('events::pdf.projekt-function', [
-            'event' => $e,
-            'mode'  => $mode,
-        ], 'ProjektFunction-' . $e->slug . '-' . $mode . '.pdf');
+        $data = ['event' => $e, 'mode' => $mode];
+        $filename = 'ProjektFunction-' . $e->slug . '-' . $mode . '.pdf';
+
+        if ($request->boolean('preview')) {
+            return PdfService::stream('events::pdf.projekt-function', $data, $filename);
+        }
+        return PdfService::render('events::pdf.projekt-function', $data, $filename);
     }
 
     public function finalReport(Request $request, string $event)
     {
         $e = $this->resolveEvent($event);
-        return PdfService::render('events::pdf.final-report', [
-            'event' => $e,
-        ], 'Schlussbericht-' . $e->slug . '.pdf');
+        $data = ['event' => $e];
+        $filename = 'Schlussbericht-' . $e->slug . '.pdf';
+
+        if ($request->boolean('preview')) {
+            return PdfService::stream('events::pdf.final-report', $data, $filename);
+        }
+        return PdfService::render('events::pdf.final-report', $data, $filename);
     }
 
     protected function resolveEvent(string $slug): Event
