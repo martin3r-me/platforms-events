@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Platform\Events\Http\Controllers\ContractAssetController;
 use Platform\Events\Http\Controllers\EmailTrackController;
 use Platform\Events\Http\Controllers\PublicContractController;
 use Platform\Events\Http\Controllers\PublicFeedbackController;
@@ -34,3 +35,7 @@ Route::get('/email/track/{token}', [EmailTrackController::class, 'track'])->name
 
 Route::get('/feedback/{token}', [PublicFeedbackController::class, 'show'])->name('events.public.feedback');
 Route::post('/feedback/{token}', [PublicFeedbackController::class, 'submit'])->name('events.public.feedback.submit');
+
+Route::get('/events/asset/{disk}', [ContractAssetController::class, 'show'])
+    ->middleware('signed')
+    ->name('events.public.asset');

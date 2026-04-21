@@ -5,6 +5,7 @@ namespace Platform\Events\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
 use League\CommonMark\Extension\GithubFlavoredMarkdownExtension;
 use League\CommonMark\MarkdownConverter;
@@ -54,7 +55,21 @@ class ContractRenderer
                     if ($storage->providesTemporaryUrls()) {
                         return (string) $storage->temporaryUrl($path, now()->addHours(24));
                     }
-                    return (string) $storage->url($path);
+
+                    // Disks ohne native URL (local) oder wenn ->url() nicht konfiguriert
+                    // ist -> ueber signierte Route ausliefern.
+                    try {
+                        $nativeUrl = $storage->url($path);
+                        if ($nativeUrl) return (string) $nativeUrl;
+                    } catch (\Throwable $e) {
+                        // faellt auf signierte Route
+                    }
+
+                    return (string) URL::temporarySignedRoute(
+                        'events.public.asset',
+                        now()->addHours(24),
+                        ['disk' => $disk, 'path' => $path]
+                    );
                 } catch (\Throwable $e) {
                     return $m[0];
                 }
