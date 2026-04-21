@@ -258,6 +258,7 @@
                     <input wire:model="newItem.gebinde" type="text" placeholder="Gebinde" class="border border-slate-200 rounded-md px-2 py-1.5 text-xs">
                     <input wire:model="newItem.unit_price" type="number" step="0.01" placeholder="Einzelpr." class="border border-slate-200 rounded-md px-2 py-1.5 text-xs font-mono">
                     <select wire:model="newItem.mwst_rate" class="border border-slate-200 rounded-md px-2 py-1.5 text-xs">
+                        <option value="0">0%</option>
                         <option value="7">7%</option>
                         <option value="19">19%</option>
                     </select>

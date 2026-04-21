@@ -113,6 +113,22 @@ class Orders extends Component
         if ($item) $item->delete();
     }
 
+    public function updateItemStatus(string $status): void
+    {
+        if (!$this->activeItemId) return;
+        $event = $this->event();
+        $item = OrderItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($this->activeItemId);
+        if ($item) $item->update(['status' => $status]);
+    }
+
+    public function updateItemLieferant(string $lieferant): void
+    {
+        if (!$this->activeItemId) return;
+        $event = $this->event();
+        $item = OrderItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($this->activeItemId);
+        if ($item) $item->update(['lieferant' => $lieferant ?: null]);
+    }
+
     public function convertFromQuote(int $quoteItemId): void
     {
         $event = $this->event();

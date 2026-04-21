@@ -224,6 +224,32 @@ class Quotes extends Component
         }
     }
 
+    /**
+     * Status des aktiven Vorgangs wechseln (aus Editor-Header).
+     */
+    public function updateItemStatus(string $status): void
+    {
+        if (!$this->activeItemId) return;
+        $event = $this->event();
+        $item = QuoteItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($this->activeItemId);
+        if ($item) {
+            $item->update(['status' => $status]);
+        }
+    }
+
+    /**
+     * Mwst-Satz des aktiven Vorgangs wechseln.
+     */
+    public function updateItemMwst(string $mwst): void
+    {
+        if (!$this->activeItemId) return;
+        $event = $this->event();
+        $item = QuoteItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($this->activeItemId);
+        if ($item) {
+            $item->update(['mwst' => $mwst]);
+        }
+    }
+
     // ========== QuotePosition ==========
 
     public function openPositions(int $itemId): void
