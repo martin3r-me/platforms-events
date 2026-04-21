@@ -27,11 +27,13 @@ class Event extends Model
         'status', 'status_changed_at',
 
         // Veranstalter
-        'organizer_contact', 'organizer_contact_onsite', 'organizer_for_whom',
+        'organizer_contact', 'organizer_crm_contact_id',
+        'organizer_contact_onsite', 'organizer_onsite_crm_contact_id',
+        'organizer_for_whom',
         // Besteller
         'orderer_company', 'orderer_contact', 'orderer_via',
         // Rechnung
-        'invoice_to', 'invoice_crm_company_id', 'invoice_contact', 'invoice_date_type',
+        'invoice_to', 'invoice_crm_company_id', 'invoice_contact', 'invoice_crm_contact_id', 'invoice_date_type',
         // Zuständigkeit
         'responsible', 'cost_center', 'cost_carrier',
         // Anlass
@@ -45,7 +47,7 @@ class Event extends Model
         // Wiedervorlage
         'follow_up_date', 'follow_up_note',
         // Lieferung
-        'delivery_supplier', 'delivery_crm_company_id', 'delivery_contact',
+        'delivery_supplier', 'delivery_crm_company_id', 'delivery_contact', 'delivery_crm_contact_id',
         // Eingang
         'inquiry_date', 'inquiry_time', 'inquiry_note', 'potential',
         // Weiterleitung

@@ -85,11 +85,31 @@
                 <div class="grid grid-cols-2 gap-1.5">
                     <div>
                         <label class="{{ $lbl }}">Ansprechpartner</label>
-                        <input wire:model.blur="event.organizer_contact" type="text" class="{{ $in }}">
+                        @php $c = ($crmContactSlots ?? [])['organizer'] ?? []; @endphp
+                        @include('events::partials.crm-contact-picker', [
+                            'slot'          => 'organizer',
+                            'available'     => $crmContactAvailable ?? false,
+                            'contacts'      => $c['contacts']     ?? [],
+                            'currentId'     => $c['currentId']    ?? null,
+                            'currentLabel'  => $c['currentLabel'] ?? $event->organizer_contact,
+                            'hasCompany'    => $c['hasCompany']   ?? false,
+                            'fallbackField' => 'organizer_contact',
+                            'placeholder'   => '— Kontakt wählen —',
+                        ])
                     </div>
                     <div>
                         <label class="{{ $lbl }}">Asp. vor Ort</label>
-                        <input wire:model.blur="event.organizer_contact_onsite" type="text" class="{{ $in }}">
+                        @php $c = ($crmContactSlots ?? [])['organizer_onsite'] ?? []; @endphp
+                        @include('events::partials.crm-contact-picker', [
+                            'slot'          => 'organizer_onsite',
+                            'available'     => $crmContactAvailable ?? false,
+                            'contacts'      => $c['contacts']     ?? [],
+                            'currentId'     => $c['currentId']    ?? null,
+                            'currentLabel'  => $c['currentLabel'] ?? $event->organizer_contact_onsite,
+                            'hasCompany'    => $c['hasCompany']   ?? false,
+                            'fallbackField' => 'organizer_contact_onsite',
+                            'placeholder'   => '— Kontakt wählen —',
+                        ])
                     </div>
                 </div>
                 <div>
@@ -160,7 +180,17 @@
                 <div class="grid grid-cols-2 gap-1.5">
                     <div>
                         <label class="{{ $lbl }}">Ansprechpartner</label>
-                        <input wire:model.blur="event.invoice_contact" type="text" class="{{ $in }}">
+                        @php $c = ($crmContactSlots ?? [])['invoice'] ?? []; @endphp
+                        @include('events::partials.crm-contact-picker', [
+                            'slot'          => 'invoice',
+                            'available'     => $crmContactAvailable ?? false,
+                            'contacts'      => $c['contacts']     ?? [],
+                            'currentId'     => $c['currentId']    ?? null,
+                            'currentLabel'  => $c['currentLabel'] ?? $event->invoice_contact,
+                            'hasCompany'    => $c['hasCompany']   ?? false,
+                            'fallbackField' => 'invoice_contact',
+                            'placeholder'   => '— Kontakt wählen —',
+                        ])
                     </div>
                     <div>
                         <label class="{{ $lbl }}">Rechnungsdatum</label>
@@ -264,7 +294,17 @@
                 </div>
                 <div>
                     <label class="{{ $lbl }}">Ansprechpartner</label>
-                    <input wire:model.blur="event.delivery_contact" type="text" class="{{ $in }}">
+                    @php $c = ($crmContactSlots ?? [])['delivery'] ?? []; @endphp
+                    @include('events::partials.crm-contact-picker', [
+                        'slot'          => 'delivery',
+                        'available'     => $crmContactAvailable ?? false,
+                        'contacts'      => $c['contacts']     ?? [],
+                        'currentId'     => $c['currentId']    ?? null,
+                        'currentLabel'  => $c['currentLabel'] ?? $event->delivery_contact,
+                        'hasCompany'    => $c['hasCompany']   ?? false,
+                        'fallbackField' => 'delivery_contact',
+                        'placeholder'   => '— Kontakt wählen —',
+                    ])
                 </div>
             </div>
         </x-ui-panel>

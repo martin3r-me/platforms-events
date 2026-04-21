@@ -91,6 +91,17 @@ class Detail extends Component
         'delivery'  => ['id' => 'delivery_crm_company_id','label' => 'delivery_supplier'],
     ];
 
+    /**
+     * Kontakt-Slots sind an einen Company-Slot gebunden. Die Kontakt-Liste wird
+     * serverseitig anhand der jeweiligen crm_company_id gefiltert.
+     */
+    protected const CRM_CONTACT_SLOTS = [
+        'organizer'        => ['company_slot' => 'organizer', 'id' => 'organizer_crm_contact_id',        'label' => 'organizer_contact'],
+        'organizer_onsite' => ['company_slot' => 'organizer', 'id' => 'organizer_onsite_crm_contact_id', 'label' => 'organizer_contact_onsite'],
+        'invoice'          => ['company_slot' => 'invoice',   'id' => 'invoice_crm_contact_id',          'label' => 'invoice_contact'],
+        'delivery'         => ['company_slot' => 'delivery',  'id' => 'delivery_crm_contact_id',         'label' => 'delivery_contact'],
+    ];
+
     public function pickCrmCompany(string $slot, ?int $companyId, ?string $label = null): void
     {
         if (!$this->event) return;
@@ -101,6 +112,14 @@ class Detail extends Component
         if ($label !== null && $label !== '') {
             $this->event->{$cfg['label']} = $label;
         }
+
+        // Wechselt die Firma, sind die bisherigen Kontakt-Bindungen nicht mehr gueltig.
+        foreach (self::CRM_CONTACT_SLOTS as $contactSlot => $contactCfg) {
+            if ($contactCfg['company_slot'] === $slot) {
+                $this->event->{$contactCfg['id']} = null;
+            }
+        }
+
         $this->event->save();
         $this->crmSearch[$slot] = '';
     }
@@ -110,16 +129,42 @@ class Detail extends Component
         $this->pickCrmCompany($slot, null);
     }
 
+    public function pickCrmContact(string $slot, ?int $contactId, ?string $label = null): void
+    {
+        if (!$this->event) return;
+        $cfg = self::CRM_CONTACT_SLOTS[$slot] ?? null;
+        if (!$cfg) return;
+
+        $this->event->{$cfg['id']} = $contactId ?: null;
+        if ($label !== null && $label !== '') {
+            $this->event->{$cfg['label']} = $label;
+        }
+        $this->event->save();
+    }
+
+    public function clearCrmContact(string $slot): void
+    {
+        $this->pickCrmContact($slot, null);
+    }
+
     protected function rules(): array
     {
         return [
             'event.name'                     => 'required|string|max:255',
             'event.customer'                 => 'nullable|string|max:255',
             'event.crm_company_id'           => 'nullable|integer',
-            'event.invoice_to'               => 'nullable|string|max:255',
-            'event.invoice_crm_company_id'   => 'nullable|integer',
-            'event.delivery_supplier'        => 'nullable|string|max:255',
-            'event.delivery_crm_company_id'  => 'nullable|integer',
+            'event.invoice_to'                    => 'nullable|string|max:255',
+            'event.invoice_crm_company_id'        => 'nullable|integer',
+            'event.invoice_contact'               => 'nullable|string|max:255',
+            'event.invoice_crm_contact_id'        => 'nullable|integer',
+            'event.delivery_supplier'             => 'nullable|string|max:255',
+            'event.delivery_crm_company_id'       => 'nullable|integer',
+            'event.delivery_contact'              => 'nullable|string|max:255',
+            'event.delivery_crm_contact_id'       => 'nullable|integer',
+            'event.organizer_contact'             => 'nullable|string|max:255',
+            'event.organizer_crm_contact_id'      => 'nullable|integer',
+            'event.organizer_contact_onsite'      => 'nullable|string|max:255',
+            'event.organizer_onsite_crm_contact_id' => 'nullable|integer',
             'event.group'                    => 'nullable|string|max:255',
             'event.location'                 => 'nullable|string|max:255',
             'event.start_date'               => 'nullable|date',
@@ -847,6 +892,38 @@ class Detail extends Component
             ];
         }
 
+        // Kontakt-Slots: Kontakte der jeweils gebundenen Firma ueber CrmCompanyContactsProviderInterface.
+        $crmContactAvailable = app()->bound(\Platform\Core\Contracts\CrmCompanyContactsProviderInterface::class);
+        $contactsProvider = $crmContactAvailable ? app(\Platform\Core\Contracts\CrmCompanyContactsProviderInterface::class) : null;
+        $crmContactSlots = [];
+        foreach (self::CRM_CONTACT_SLOTS as $slot => $cfg) {
+            $companyCfg = self::CRM_SLOTS[$cfg['company_slot']];
+            $companyId = $this->event?->{$companyCfg['id']};
+            $currentId = $this->event?->{$cfg['id']};
+            $contacts = [];
+            $currentLabel = null;
+
+            if ($contactsProvider && $companyId) {
+                $contacts = $contactsProvider->contacts((int) $companyId);
+                if ($currentId) {
+                    foreach ($contacts as $c) {
+                        if ((int) ($c['id'] ?? 0) === (int) $currentId) {
+                            $currentLabel = $c['name'] ?? null;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            $crmContactSlots[$slot] = [
+                'contacts'     => $contacts,
+                'currentId'    => $currentId,
+                'currentLabel' => $currentLabel ?: $this->event?->{$cfg['label']},
+                'hasCompany'   => (bool) $companyId,
+                'fallback'     => $this->event?->{$cfg['label']},
+            ];
+        }
+
         $notesByType = $notes->groupBy('type');
 
         return view('events::livewire.detail', [
@@ -868,6 +945,8 @@ class Detail extends Component
             'teamUsers'      => $teamUsers,
             'crmCompanyAvailable' => $crmCompanyAvailable,
             'crmSlots'            => $crmSlots,
+            'crmContactAvailable' => $crmContactAvailable,
+            'crmContactSlots'     => $crmContactSlots,
         ])->layout('platform::layouts.app');
     }
 }
