@@ -325,9 +325,14 @@
                                 </div>
                             </div>
 
+                            @php $currentUserName = auth()->user()?->name; @endphp
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-[var(--ui-border)]">
                                 @foreach(['left' => 'Links (Projektverantwortlicher)', 'right' => 'Rechts (Vorgesetzter)'] as $role => $roleLabel)
-                                    @php $sig = $signatures->get($role); @endphp
+                                    @php
+                                        $sig = $signatures->get($role);
+                                        $assignedName = $role === 'left' ? $event->sign_left : $event->sign_right;
+                                        $mayBeSigned = $assignedName && $assignedName === $currentUserName;
+                                    @endphp
                                     <div class="border border-[var(--ui-border)] rounded-md p-3 bg-[var(--ui-muted-5)]/40">
                                         <div class="flex items-center justify-between mb-2">
                                             <span class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">{{ $roleLabel }}</span>
@@ -353,12 +358,29 @@
                                             </button>
                                         @else
                                             <div class="flex flex-col items-center justify-center gap-2 py-4 border border-dashed border-[var(--ui-border)] rounded-md bg-white">
-                                                <p class="text-[0.62rem] text-[var(--ui-muted)]">Noch nicht unterzeichnet</p>
-                                                <button type="button"
-                                                        onclick="openSignaturePad('{{ $event->slug }}', '{{ $role }}')"
-                                                        class="px-3 py-1.5 text-xs font-semibold bg-[var(--ui-primary)] text-white rounded-md hover:opacity-90 flex items-center gap-1.5">
-                                                    @svg('heroicon-o-pencil-square', 'w-3.5 h-3.5') Jetzt unterschreiben
-                                                </button>
+                                                @if(!$assignedName)
+                                                    <p class="text-[0.62rem] text-[var(--ui-muted)] text-center">Zuerst Verantwortliche/n oben auswählen</p>
+                                                    <button type="button" disabled
+                                                            class="px-3 py-1.5 text-xs font-semibold bg-slate-200 text-slate-400 rounded-md flex items-center gap-1.5 cursor-not-allowed">
+                                                        @svg('heroicon-o-pencil-square', 'w-3.5 h-3.5') Jetzt unterschreiben
+                                                    </button>
+                                                @elseif($mayBeSigned)
+                                                    <p class="text-[0.62rem] text-[var(--ui-muted)]">Noch nicht unterzeichnet</p>
+                                                    <button type="button"
+                                                            onclick="openSignaturePad('{{ $event->slug }}', '{{ $role }}')"
+                                                            class="px-3 py-1.5 text-xs font-semibold bg-[var(--ui-primary)] text-white rounded-md hover:opacity-90 flex items-center gap-1.5">
+                                                        @svg('heroicon-o-pencil-square', 'w-3.5 h-3.5') Jetzt unterschreiben
+                                                    </button>
+                                                @else
+                                                    <p class="text-[0.62rem] text-[var(--ui-muted)] text-center">
+                                                        Wartet auf <strong>{{ $assignedName }}</strong>
+                                                    </p>
+                                                    <button type="button" disabled
+                                                            title="Nur {{ $assignedName }} darf hier unterschreiben. Du bist als {{ $currentUserName ?: 'unbekannt' }} angemeldet."
+                                                            class="px-3 py-1.5 text-xs font-semibold bg-slate-200 text-slate-400 rounded-md flex items-center gap-1.5 cursor-not-allowed">
+                                                        @svg('heroicon-o-lock-closed', 'w-3.5 h-3.5') Nicht berechtigt
+                                                    </button>
+                                                @endif
                                             </div>
                                         @endif
                                     </div>

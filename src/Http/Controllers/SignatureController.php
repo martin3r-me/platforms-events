@@ -23,6 +23,21 @@ class SignatureController extends Controller
         $eventModel = Event::resolveFromSlug($event, $team?->id);
         if (!$eventModel) abort(404);
 
+        // Nur die im Event hinterlegte Person darf fuer die jeweilige Seite unterschreiben.
+        $assignedName = $data['role'] === 'left' ? $eventModel->sign_left : $eventModel->sign_right;
+        if (!$assignedName) {
+            return response()->json([
+                'ok'      => false,
+                'message' => 'Es ist kein/e Verantwortliche/r fuer diese Seite hinterlegt.',
+            ], 422);
+        }
+        if ($assignedName !== $user->name) {
+            return response()->json([
+                'ok'      => false,
+                'message' => "Nur {$assignedName} darf hier unterschreiben.",
+            ], 403);
+        }
+
         // Dokumenten-Hash aus dem relevanten Event-Snapshot (zum Zeitpunkt der Unterschrift).
         $hashData = json_encode([
             'event_id'     => $eventModel->id,
