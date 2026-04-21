@@ -31,7 +31,7 @@ class Event extends Model
         // Besteller
         'orderer_company', 'orderer_contact', 'orderer_via',
         // Rechnung
-        'invoice_to', 'invoice_contact', 'invoice_date_type',
+        'invoice_to', 'invoice_crm_company_id', 'invoice_contact', 'invoice_date_type',
         // Zuständigkeit
         'responsible', 'cost_center', 'cost_carrier',
         // Anlass
@@ -45,7 +45,7 @@ class Event extends Model
         // Wiedervorlage
         'follow_up_date', 'follow_up_note',
         // Lieferung
-        'delivery_supplier', 'delivery_contact',
+        'delivery_supplier', 'delivery_crm_company_id', 'delivery_contact',
         // Eingang
         'inquiry_date', 'inquiry_time', 'inquiry_note', 'potential',
         // Weiterleitung

@@ -70,13 +70,16 @@
             <div class="p-2 space-y-1.5">
                 <div>
                     <label class="{{ $lbl }}">Unternehmen</label>
+                    @php $s = ($crmSlots ?? [])['organizer'] ?? []; @endphp
                     @include('events::partials.crm-company-picker', [
-                        'available'   => $crmCompanyAvailable ?? false,
-                        'options'     => $crmCompanyOptions ?? [],
-                        'label'       => $crmCompanyLabel ?? $event->customer,
-                        'url'         => $crmCompanyUrl ?? null,
-                        'currentId'   => $event->crm_company_id,
-                        'placeholder' => '— CRM-Firma wählen —',
+                        'slot'          => 'organizer',
+                        'available'     => $crmCompanyAvailable ?? false,
+                        'options'       => $s['options']   ?? [],
+                        'label'         => ($s['label']     ?? null) ?: $event->customer,
+                        'url'           => $s['url']       ?? null,
+                        'currentId'     => $s['currentId'] ?? null,
+                        'fallbackField' => 'customer',
+                        'placeholder'   => '— CRM-Firma wählen —',
                     ])
                 </div>
                 <div class="grid grid-cols-2 gap-1.5">
@@ -142,7 +145,17 @@
             <div class="p-2 space-y-1.5">
                 <div>
                     <label class="{{ $lbl }}">Rechnung an</label>
-                    <input wire:model.blur="event.invoice_to" type="text" class="{{ $in }}">
+                    @php $s = ($crmSlots ?? [])['invoice'] ?? []; @endphp
+                    @include('events::partials.crm-company-picker', [
+                        'slot'          => 'invoice',
+                        'available'     => $crmCompanyAvailable ?? false,
+                        'options'       => $s['options']   ?? [],
+                        'label'         => ($s['label']     ?? null) ?: $event->invoice_to,
+                        'url'           => $s['url']       ?? null,
+                        'currentId'     => $s['currentId'] ?? null,
+                        'fallbackField' => 'invoice_to',
+                        'placeholder'   => '— CRM-Firma wählen —',
+                    ])
                 </div>
                 <div class="grid grid-cols-2 gap-1.5">
                     <div>
@@ -237,7 +250,17 @@
             <div class="p-2 space-y-1.5">
                 <div>
                     <label class="{{ $lbl }}">Lieferant</label>
-                    <input wire:model.blur="event.delivery_supplier" type="text" class="{{ $in }}">
+                    @php $s = ($crmSlots ?? [])['delivery'] ?? []; @endphp
+                    @include('events::partials.crm-company-picker', [
+                        'slot'          => 'delivery',
+                        'available'     => $crmCompanyAvailable ?? false,
+                        'options'       => $s['options']   ?? [],
+                        'label'         => ($s['label']     ?? null) ?: $event->delivery_supplier,
+                        'url'           => $s['url']       ?? null,
+                        'currentId'     => $s['currentId'] ?? null,
+                        'fallbackField' => 'delivery_supplier',
+                        'placeholder'   => '— CRM-Firma wählen —',
+                    ])
                 </div>
                 <div>
                     <label class="{{ $lbl }}">Ansprechpartner</label>

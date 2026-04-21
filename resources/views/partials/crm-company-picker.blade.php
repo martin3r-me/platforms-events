@@ -1,24 +1,28 @@
 @props([
+    'slot'        => 'organizer',
     'available'   => false,
     'options'     => [],
     'label'       => null,
     'url'         => null,
     'currentId'   => null,
-    'fallback'    => null,
+    'fallbackField' => null,   // Event-Feldname fuer Freitext-Fallback (wenn CRM nicht installiert)
     'placeholder' => '— CRM-Firma wählen —',
 ])
 
 {{--
-    Suchbarer CRM-Company-Picker (lose gekoppelt via CrmCompany{Options|Resolver}Interface).
-    Server-seitige Suche ueber Livewire-Property $crmCompanySearch mit 300ms Debounce.
-    Ohne gebundenen Contract (CRM-Modul nicht installiert) faellt der Picker auf einen
-    schlichten Freitext-Input (event.customer) zurueck.
+    Generischer CRM-Company-Picker (lose gekoppelt via CrmCompany{Options|Resolver}Interface).
+    Erwartet auf dem Livewire-Component:
+      - public array $crmSearch = ['<slot>' => ''];
+      - public function pickCrmCompany(string $slot, ?int $companyId, ?string $label = null)
+      - public function clearCrmCompany(string $slot)
 --}}
 @if(!$available)
     <div class="flex items-center gap-1.5">
-        <input wire:model.blur="event.customer" type="text"
-               placeholder="{{ $fallback ?? 'Unternehmen' }}"
-               class="flex-1 border border-[var(--ui-border)] rounded-md px-2 py-1 text-[0.7rem] focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+        @if($fallbackField)
+            <input wire:model.blur="event.{{ $fallbackField }}" type="text"
+                   placeholder="{{ $placeholder }}"
+                   class="flex-1 border border-[var(--ui-border)] rounded-md px-2 py-1 text-[0.7rem] focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+        @endif
         <span class="text-[0.55rem] text-[var(--ui-muted)] italic" title="CRM-Modul nicht installiert">
             @svg('heroicon-o-information-circle', 'w-3 h-3 inline')
         </span>
@@ -45,7 +49,7 @@
                 </a>
             @endif
             @if($currentId)
-                <button type="button" wire:click="clearCrmCompany"
+                <button type="button" wire:click="clearCrmCompany('{{ $slot }}')"
                         class="p-0.5 text-slate-400 hover:text-red-500 flex-shrink-0" title="Auswahl löschen">
                     @svg('heroicon-o-x-mark', 'w-3 h-3')
                 </button>
@@ -68,12 +72,12 @@
                 <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded px-2 py-1">
                     @svg('heroicon-o-magnifying-glass', 'w-3 h-3 text-slate-400 flex-shrink-0')
                     <input type="text"
-                           wire:model.live.debounce.300ms="crmCompanySearch"
+                           wire:model.live.debounce.300ms="crmSearch.{{ $slot }}"
                            placeholder="Firma suchen …"
                            @click.stop
                            class="flex-1 bg-transparent border-0 outline-none text-[0.7rem] placeholder:text-slate-400">
-                    @if(trim($crmCompanySearch ?? '') !== '')
-                        <button type="button" @click.stop wire:click="$set('crmCompanySearch', '')"
+                    @if(trim(data_get($crmSearch ?? [], $slot, '')) !== '')
+                        <button type="button" @click.stop wire:click="$set('crmSearch.{{ $slot }}', '')"
                                 class="p-0.5 text-slate-400 hover:text-slate-600">
                             @svg('heroicon-o-x-mark', 'w-2.5 h-2.5')
                         </button>
@@ -81,10 +85,10 @@
                 </div>
             </div>
 
-            <div class="max-h-64 overflow-y-auto py-1" wire:loading.class="opacity-50" wire:target="crmCompanySearch">
+            <div class="max-h-64 overflow-y-auto py-1" wire:loading.class="opacity-50" wire:target="crmSearch.{{ $slot }}">
                 @forelse($options as $opt)
                     <button type="button"
-                            wire:click="pickCrmCompany({{ $opt['value'] }}, @js($opt['label']))"
+                            wire:click="pickCrmCompany('{{ $slot }}', {{ $opt['value'] }}, @js($opt['label']))"
                             @click="open = false"
                             class="w-full flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-slate-50 transition {{ $currentId === ($opt['value'] ?? null) ? 'bg-blue-50' : '' }}">
                         @svg('heroicon-o-building-office-2', 'w-3 h-3 text-slate-400 flex-shrink-0')
@@ -94,9 +98,10 @@
                         @endif
                     </button>
                 @empty
+                    @php $q = trim(data_get($crmSearch ?? [], $slot, '')); @endphp
                     <div class="px-3 py-3 text-center text-[0.65rem] text-slate-400">
-                        @if(trim($crmCompanySearch ?? '') !== '')
-                            Keine Treffer für „{{ $crmCompanySearch }}"
+                        @if($q !== '')
+                            Keine Treffer für „{{ $q }}"
                         @else
                             Keine Firmen verfügbar
                         @endif

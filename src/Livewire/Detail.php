@@ -75,23 +75,39 @@ class Detail extends Component
     public ?string $editingNoteUuid = null;
     public array $noteForm = [];
 
-    // CRM-Company-Picker (Veranstalter)
-    public string $crmCompanySearch = '';
+    /**
+     * CRM-Company-Picker: Slot → Event-Spalten (FK + Display-Cache).
+     * organizer = Veranstalter, invoice = "Rechnung an", delivery = "Lieferung an".
+     */
+    public array $crmSearch = [
+        'organizer' => '',
+        'invoice'   => '',
+        'delivery'  => '',
+    ];
 
-    public function pickCrmCompany(?int $companyId, ?string $label = null): void
+    protected const CRM_SLOTS = [
+        'organizer' => ['id' => 'crm_company_id',         'label' => 'customer'],
+        'invoice'   => ['id' => 'invoice_crm_company_id', 'label' => 'invoice_to'],
+        'delivery'  => ['id' => 'delivery_crm_company_id','label' => 'delivery_supplier'],
+    ];
+
+    public function pickCrmCompany(string $slot, ?int $companyId, ?string $label = null): void
     {
         if (!$this->event) return;
-        $this->event->crm_company_id = $companyId ?: null;
+        $cfg = self::CRM_SLOTS[$slot] ?? null;
+        if (!$cfg) return;
+
+        $this->event->{$cfg['id']} = $companyId ?: null;
         if ($label !== null && $label !== '') {
-            $this->event->customer = $label;
+            $this->event->{$cfg['label']} = $label;
         }
         $this->event->save();
-        $this->crmCompanySearch = '';
+        $this->crmSearch[$slot] = '';
     }
 
-    public function clearCrmCompany(): void
+    public function clearCrmCompany(string $slot): void
     {
-        $this->pickCrmCompany(null);
+        $this->pickCrmCompany($slot, null);
     }
 
     protected function rules(): array
@@ -100,6 +116,10 @@ class Detail extends Component
             'event.name'                     => 'required|string|max:255',
             'event.customer'                 => 'nullable|string|max:255',
             'event.crm_company_id'           => 'nullable|integer',
+            'event.invoice_to'               => 'nullable|string|max:255',
+            'event.invoice_crm_company_id'   => 'nullable|integer',
+            'event.delivery_supplier'        => 'nullable|string|max:255',
+            'event.delivery_crm_company_id'  => 'nullable|integer',
             'event.group'                    => 'nullable|string|max:255',
             'event.location'                 => 'nullable|string|max:255',
             'event.start_date'               => 'nullable|date',
@@ -806,23 +826,25 @@ class Detail extends Component
                 ->all()
             : [];
 
-        // CRM-Company (Veranstalter) – lose gekoppelt via Contract aus platform-crm.
-        // Ist das CRM-Modul nicht installiert, bleibt die Liste leer und der Picker verhaelt sich neutral.
-        $crmCompanyOptions = [];
-        $crmCompanyLabel   = null;
-        $crmCompanyUrl     = null;
+        // CRM-Company-Slots (Veranstalter / Rechnung / Lieferung) – lose via Contracts aus platform-crm.
+        // Ohne CRM-Modul bleiben Listen leer und der Picker faellt auf den Freitext-Fallback zurueck.
         $crmCompanyAvailable = app()->bound(\Platform\Core\Contracts\CrmCompanyOptionsProviderInterface::class);
-        if ($crmCompanyAvailable) {
-            $provider = app(\Platform\Core\Contracts\CrmCompanyOptionsProviderInterface::class);
-            $crmCompanyOptions = $provider->options(
-                trim($this->crmCompanySearch) !== '' ? $this->crmCompanySearch : null,
-                30
-            );
-        }
-        if ($this->event?->crm_company_id && app()->bound(\Platform\Core\Contracts\CrmCompanyResolverInterface::class)) {
-            $resolver = app(\Platform\Core\Contracts\CrmCompanyResolverInterface::class);
-            $crmCompanyLabel = $resolver->displayName($this->event->crm_company_id);
-            $crmCompanyUrl   = $resolver->url($this->event->crm_company_id);
+        $crmProvider = $crmCompanyAvailable ? app(\Platform\Core\Contracts\CrmCompanyOptionsProviderInterface::class) : null;
+        $crmResolver = app()->bound(\Platform\Core\Contracts\CrmCompanyResolverInterface::class)
+            ? app(\Platform\Core\Contracts\CrmCompanyResolverInterface::class)
+            : null;
+
+        $crmSlots = [];
+        foreach (self::CRM_SLOTS as $slot => $cfg) {
+            $query = trim($this->crmSearch[$slot] ?? '');
+            $currentId = $this->event?->{$cfg['id']};
+            $crmSlots[$slot] = [
+                'options'   => $crmProvider ? $crmProvider->options($query !== '' ? $query : null, 30) : [],
+                'label'     => $currentId && $crmResolver ? $crmResolver->displayName($currentId) : null,
+                'url'       => $currentId && $crmResolver ? $crmResolver->url($currentId) : null,
+                'currentId' => $currentId,
+                'fallback'  => $this->event?->{$cfg['label']},
+            ];
         }
 
         $notesByType = $notes->groupBy('type');
@@ -845,9 +867,7 @@ class Detail extends Component
             'signatures'     => $signatures,
             'teamUsers'      => $teamUsers,
             'crmCompanyAvailable' => $crmCompanyAvailable,
-            'crmCompanyOptions'   => $crmCompanyOptions,
-            'crmCompanyLabel'     => $crmCompanyLabel,
-            'crmCompanyUrl'       => $crmCompanyUrl,
+            'crmSlots'            => $crmSlots,
         ])->layout('platform::layouts.app');
     }
 }
