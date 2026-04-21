@@ -210,12 +210,20 @@ class Manage extends Component
             'past'     => Event::where('team_id', $team->id)->where('end_date', '<', $today)->count(),
         ];
 
+        // MR-Felder fuer den Team (seeded beim ersten Zugriff)
+        \Platform\Events\Models\MrFieldConfig::seedDefaultsFor($team->id, $user->id);
+        $mrFields = \Platform\Events\Models\MrFieldConfig::where('team_id', $team->id)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
         return view('events::livewire.manage', [
             'events'         => $events,
             'stats'          => $stats,
             'periodStart'    => $periodStart,
             'periodEnd'      => $periodEnd,
             'statusOptions'  => self::STATUS_OPTIONS,
+            'mrFields'       => $mrFields,
         ])->layout('platform::layouts.app');
     }
 }

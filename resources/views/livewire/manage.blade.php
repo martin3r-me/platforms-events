@@ -96,13 +96,39 @@
                 </div>
             </x-ui-panel>
 
-            {{-- Tabelle --}}
-            <x-ui-panel title="Veranstaltungen" subtitle="Klick auf Name oder VA-Nr. öffnet die Detail-Ansicht">
-                @if($events->isEmpty())
+            {{-- Card-Liste --}}
+            @php
+                $statusDotMap = [
+                    'Vertrag'       => 'bg-green-500',
+                    'Definitiv'     => 'bg-green-400',
+                    'Option'        => 'bg-yellow-400',
+                    'Abgeschlossen' => 'bg-slate-400',
+                    'Storno'        => 'bg-red-500',
+                    'Warteliste'    => 'bg-orange-400',
+                    'Tendenz'       => 'bg-purple-400',
+                ];
+                $statusBorderMap = [
+                    'Vertrag'       => 'border-l-green-500',
+                    'Definitiv'     => 'border-l-green-400',
+                    'Option'        => 'border-l-yellow-400',
+                    'Abgeschlossen' => 'border-l-slate-400',
+                    'Storno'        => 'border-l-red-500',
+                    'Warteliste'    => 'border-l-orange-400',
+                    'Tendenz'       => 'border-l-purple-400',
+                ];
+                $monthShort = ['', 'Jan', 'Feb', 'Mrz', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+                $colorClass = [
+                    'red'    => ['bg' => '#fee2e2', 'fg' => '#dc2626', 'dot' => '#ef4444'],
+                    'yellow' => ['bg' => '#fef3c7', 'fg' => '#b45309', 'dot' => '#f59e0b'],
+                    'green'  => ['bg' => '#dcfce7', 'fg' => '#15803d', 'dot' => '#22c55e'],
+                    'gray'   => ['bg' => '#f1f5f9', 'fg' => '#475569', 'dot' => '#cbd5e1'],
+                ];
+            @endphp
+
+            @if($events->isEmpty())
+                <x-ui-panel>
                     <div class="p-12 text-center">
-                        <div class="mb-4">
-                            @svg('heroicon-o-calendar-days', 'w-12 h-12 text-[var(--ui-muted)] mx-auto')
-                        </div>
+                        @svg('heroicon-o-calendar-days', 'w-12 h-12 text-[var(--ui-muted)] mx-auto mb-4')
                         <p class="text-sm font-semibold text-[var(--ui-secondary)] mb-1">Keine Veranstaltungen gefunden</p>
                         <p class="text-xs text-[var(--ui-muted)] mb-4">
                             @if($search || $statusFilter)
@@ -118,82 +144,159 @@
                             </span>
                         </x-ui-button>
                     </div>
-                @else
-                    <div class="overflow-x-auto">
-                        <table class="w-full border-collapse">
-                            <thead>
-                                <tr class="border-b border-[var(--ui-border)] bg-[var(--ui-muted-5)]">
-                                    <th class="px-4 py-3 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">VA-Nr.</th>
-                                    <th class="px-4 py-3 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Name</th>
-                                    <th class="px-4 py-3 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Kunde</th>
-                                    <th class="px-4 py-3 text-left text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Zeitraum</th>
-                                    <th class="px-4 py-3 text-center text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Tage</th>
-                                    <th class="px-4 py-3 text-center text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Status</th>
-                                    <th class="px-4 py-3 w-24"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($events as $event)
-                                    @php $sc = $statusColor[$event->status] ?? ['bg' => 'bg-slate-100', 'text' => 'text-slate-600']; @endphp
-                                    <tr class="border-b border-[var(--ui-border)]/60 hover:bg-[var(--ui-muted-5)]/60 transition-colors">
-                                        <td class="px-4 py-3">
-                                            <a href="{{ route('events.show', ['slug' => $event->slug]) }}" wire:navigate
-                                               class="text-xs font-mono font-bold text-[var(--ui-primary)] hover:underline">
-                                                {{ $event->event_number }}
-                                            </a>
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <a href="{{ route('events.show', ['slug' => $event->slug]) }}" wire:navigate
-                                               class="text-sm font-semibold text-[var(--ui-secondary)] hover:text-[var(--ui-primary)]">
-                                                {{ $event->name }}
-                                            </a>
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <span class="text-xs text-[var(--ui-muted)]">{{ $event->customer ?: '—' }}</span>
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <span class="text-xs font-mono text-[var(--ui-muted)]">
-                                                {{ $event->start_date?->format('d.m.Y') ?: '—' }}
-                                                @if($event->end_date && $event->end_date != $event->start_date)
-                                                    – {{ $event->end_date->format('d.m.Y') }}
-                                                @endif
+                </x-ui-panel>
+            @else
+                <div class="space-y-2">
+                    @foreach($events as $event)
+                        @php
+                            $sc           = $statusColor[$event->status] ?? ['bg' => 'bg-slate-100', 'text' => 'text-slate-600'];
+                            $sBorder      = $statusBorderMap[$event->status] ?? 'border-l-slate-300';
+                            $sDot         = $statusDotMap[$event->status] ?? 'bg-slate-400';
+                            $mrData       = is_array($event->mr_data) ? $event->mr_data : [];
+
+                            // MR-Progress
+                            $mrTotal = $mrFields->count();
+                            $mrOpen  = 0;
+                            foreach ($mrFields as $f) {
+                                $val = $mrData['mrf_' . $f->id] ?? null;
+                                $first = $f->options[0]['label'] ?? null;
+                                if (!$val || (is_string($val) && (stripos($val, 'fehlende') !== false || stripos($val, 'noch nicht') !== false || stripos($val, 'unbekannt') !== false || $val === $first))) {
+                                    $mrOpen++;
+                                }
+                            }
+                            $mrDone = $mrTotal - $mrOpen;
+                            $dateDay = $event->start_date?->format('d');
+                            $dateMonth = $event->start_date ? $monthShort[(int) $event->start_date->format('m')] : '';
+                            $dateYear  = $event->start_date?->format('Y');
+                        @endphp
+
+                        <div x-data="{ open: false }" class="bg-white border border-[var(--ui-border)] border-l-4 {{ $sBorder }} rounded-lg overflow-hidden hover:shadow-sm transition">
+                            <div class="flex items-stretch">
+                                {{-- Datum-Block --}}
+                                <a href="{{ route('events.show', ['slug' => $event->slug]) }}" wire:navigate
+                                   class="flex flex-col items-center justify-center px-5 py-3 bg-slate-50/50 min-w-[82px] text-center hover:bg-slate-50 no-underline">
+                                    @if($dateDay)
+                                        <span class="text-[1.5rem] font-bold text-[var(--ui-secondary)] leading-none">{{ $dateDay }}</span>
+                                        <span class="text-[0.6rem] font-semibold text-[var(--ui-muted)] mt-0.5 uppercase tracking-wider">{{ $dateMonth }} {{ $dateYear }}</span>
+                                    @else
+                                        <span class="text-[0.65rem] text-[var(--ui-muted)] italic">kein Datum</span>
+                                    @endif
+                                </a>
+
+                                {{-- Mitte: Titel + Meta --}}
+                                <div class="flex-1 min-w-0 px-4 py-3 flex flex-col justify-center gap-0.5">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <a href="{{ route('events.show', ['slug' => $event->slug]) }}" wire:navigate
+                                           class="text-[0.6rem] font-mono font-bold text-[var(--ui-muted)] hover:text-[var(--ui-primary)] no-underline">
+                                            {{ $event->event_number }}
+                                        </a>
+                                        @if($event->event_type)
+                                            <span class="text-[0.55rem] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">{{ $event->event_type }}</span>
+                                        @endif
+                                    </div>
+                                    <a href="{{ route('events.show', ['slug' => $event->slug]) }}" wire:navigate
+                                       class="text-sm font-bold text-[var(--ui-secondary)] hover:text-[var(--ui-primary)] no-underline truncate">
+                                        {{ $event->name ?: 'Unbenannte Veranstaltung' }}
+                                    </a>
+                                    <div class="flex items-center gap-3 text-[0.65rem] text-[var(--ui-muted)] flex-wrap">
+                                        @if($event->customer)
+                                            <span class="flex items-center gap-1">
+                                                @svg('heroicon-o-user', 'w-3 h-3')
+                                                {{ $event->customer }}
                                             </span>
-                                        </td>
-                                        <td class="px-4 py-3 text-center">
-                                            <span class="text-xs font-mono text-[var(--ui-muted)]">{{ $event->days_count }}</span>
-                                        </td>
-                                        <td class="px-4 py-3 text-center">
-                                            <span class="text-[0.62rem] font-bold px-2 py-0.5 rounded-full {{ $sc['bg'] }} {{ $sc['text'] }}">
-                                                {{ $event->status ?: 'Option' }}
+                                        @endif
+                                        @if($event->location)
+                                            <span class="flex items-center gap-1">
+                                                @svg('heroicon-o-map-pin', 'w-3 h-3')
+                                                {{ $event->location }}
                                             </span>
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <div class="flex items-center justify-end gap-1">
-                                                <x-ui-button variant="secondary-outline" size="sm" :href="route('events.show', ['slug' => $event->slug])" wire:navigate>
-                                                    Öffnen
-                                                </x-ui-button>
-                                                <x-ui-button
-                                                    variant="danger-outline"
-                                                    size="sm"
-                                                    wire:click="delete('{{ $event->uuid }}')"
-                                                    wire:confirm="Veranstaltung „{{ $event->name }}“ wirklich löschen?"
-                                                >
-                                                    @svg('heroicon-o-trash', 'w-3.5 h-3.5')
-                                                </x-ui-button>
+                                        @endif
+                                        @if($event->end_date && $event->end_date != $event->start_date)
+                                            <span class="flex items-center gap-1 font-mono">
+                                                @svg('heroicon-o-calendar-days', 'w-3 h-3')
+                                                bis {{ $event->end_date->format('d.m.Y') }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                {{-- MR-Progress --}}
+                                @if($mrTotal > 0)
+                                    <div class="hidden md:flex items-center gap-2 px-4 py-3 flex-shrink-0">
+                                        <div class="w-16 h-1 bg-slate-200 rounded-full overflow-hidden">
+                                            <div class="h-full bg-green-500 transition-all" style="width: {{ $mrTotal > 0 ? ($mrDone / $mrTotal) * 100 : 0 }}%"></div>
+                                        </div>
+                                        <span class="text-[0.6rem] font-mono text-[var(--ui-muted)] whitespace-nowrap">
+                                            {{ $mrDone }}/{{ $mrTotal }}
+                                            @if($mrOpen > 0)
+                                                <span class="text-red-500 font-semibold">· {{ $mrOpen }} offen</span>
+                                            @endif
+                                        </span>
+                                    </div>
+                                @endif
+
+                                {{-- Status + Datum + Expand --}}
+                                <div class="flex items-center gap-3 px-4 py-3 flex-shrink-0">
+                                    <span class="text-[0.62rem] font-bold px-2 py-0.5 rounded-full whitespace-nowrap {{ $sc['bg'] }} {{ $sc['text'] }}">
+                                        {{ $event->status ?: 'Option' }}
+                                    </span>
+                                    @if($event->status_changed_at)
+                                        <span class="hidden lg:inline text-[0.58rem] font-mono text-slate-400">{{ $event->status_changed_at->format('d.m.Y') }}</span>
+                                    @endif
+                                    @if($mrTotal > 0)
+                                        <button type="button" @click="open = !open"
+                                                class="w-7 h-7 flex items-center justify-center rounded border border-[var(--ui-border)] text-[var(--ui-muted)] hover:border-[var(--ui-primary)] hover:text-[var(--ui-primary)] transition"
+                                                :class="open ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] border-[var(--ui-primary)]' : ''">
+                                            <svg class="w-3.5 h-3.5 transition-transform" :class="open ? 'rotate-180' : ''"
+                                                 fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                        </button>
+                                    @endif
+                                    <button type="button"
+                                            wire:click="delete('{{ $event->uuid }}')"
+                                            wire:confirm="Veranstaltung {{ $event->name }} wirklich löschen?"
+                                            class="w-7 h-7 flex items-center justify-center rounded border border-red-200 bg-red-50 hover:bg-red-100 text-red-500 transition">
+                                        @svg('heroicon-o-trash', 'w-3.5 h-3.5')
+                                    </button>
+                                </div>
+                            </div>
+
+                            {{-- MR-Kachel-Grid (expandable) --}}
+                            @if($mrTotal > 0)
+                                <div x-show="open" x-cloak class="border-t border-[var(--ui-border)]/60 bg-slate-50/50 px-4 py-3">
+                                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2">
+                                        @foreach($mrFields as $f)
+                                            @php
+                                                $val = $mrData['mrf_' . $f->id] ?? ($f->options[0]['label'] ?? '—');
+                                                $color = 'gray';
+                                                foreach (($f->options ?? []) as $opt) {
+                                                    if (is_array($opt) && ($opt['label'] ?? '') === $val) {
+                                                        $color = $opt['color'] ?? 'gray';
+                                                        break;
+                                                    }
+                                                }
+                                                $cc = $colorClass[$color] ?? $colorClass['gray'];
+                                            @endphp
+                                            <div class="bg-white border rounded-md px-2.5 py-1.5" style="border-color: {{ $cc['dot'] }}40;">
+                                                <p class="text-[0.55rem] text-[var(--ui-muted)] m-0 mb-0.5 truncate" title="{{ $f->label }}">{{ $f->label }}</p>
+                                                <span class="text-[0.55rem] font-semibold px-1.5 py-0.5 rounded-full"
+                                                      style="background: {{ $cc['bg'] }}; color: {{ $cc['fg'] }};">{{ $val }}</span>
                                             </div>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                    @if($events->hasPages())
-                        <div class="p-4 border-t border-[var(--ui-border)]">
-                            {{ $events->links() }}
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
                         </div>
-                    @endif
+                    @endforeach
+                </div>
+
+                @if($events->hasPages())
+                    <div class="pt-4">
+                        {{ $events->links() }}
+                    </div>
                 @endif
-            </x-ui-panel>
+            @endif
         </div>
 
         {{-- Create-Modal --}}
