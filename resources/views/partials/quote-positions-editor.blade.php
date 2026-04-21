@@ -116,56 +116,87 @@
                     </tr>
                 </tfoot>
             @endif
+            {{-- Add-Row: Spalten richten sich automatisch nach der Tabelle aus --}}
+            <tbody class="bg-slate-50 border-t-2 border-slate-300">
+                <tr>
+                    <td colspan="13" class="px-2.5 pt-2 pb-1">
+                        <div class="flex items-center gap-2">
+                            <div class="w-[3px] h-3 bg-blue-600 rounded-sm"></div>
+                            <span class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Neue Position</span>
+                            <span class="text-[0.55rem] text-slate-400">Gruppe „Headline" / „Speisentexte" / „Trenntext" erzeugt Text-Zeilen ohne Preis.</span>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="px-1.5 py-1.5 align-top">
+                        <input wire:model="newPosition.gruppe" type="text" placeholder="Gruppe / Typ"
+                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] bg-white">
+                    </td>
+                    <td class="px-1.5 py-1.5 align-top">
+                        <input wire:model="newPosition.name" type="text" placeholder="Bezeichnung"
+                               @keydown.enter="$wire.addPosition()"
+                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] bg-white">
+                    </td>
+                    <td class="px-1.5 py-1.5 align-top">
+                        <input wire:model="newPosition.anz" type="text" placeholder="0"
+                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
+                    </td>
+                    <td class="px-1.5 py-1.5 align-top">
+                        <input wire:model="newPosition.anz2" type="text" placeholder="0"
+                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
+                    </td>
+                    <td class="px-1.5 py-1.5 align-top">
+                        <input wire:model="newPosition.uhrzeit" type="text" placeholder="Von"
+                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono bg-white">
+                    </td>
+                    <td class="px-1.5 py-1.5 align-top">
+                        <input wire:model="newPosition.bis" type="text" placeholder="Bis"
+                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono bg-white">
+                    </td>
+                    <td class="px-1.5 py-1.5 align-top">
+                        <input wire:model="newPosition.gebinde" type="text" placeholder="1 Stk."
+                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] bg-white">
+                    </td>
+                    <td class="px-1.5 py-1.5 align-top">
+                        <input wire:model="newPosition.ek" type="number" step="0.01" placeholder="0,00"
+                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
+                    </td>
+                    <td class="px-1.5 py-1.5 align-top">
+                        <input wire:model="newPosition.preis" type="number" step="0.01" placeholder="0,00"
+                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
+                    </td>
+                    <td class="px-1.5 py-1.5 align-top">
+                        <select wire:model="newPosition.mwst"
+                                class="w-full border border-slate-200 rounded px-1 py-1 text-[0.65rem] bg-white">
+                            <option value="0%">0%</option>
+                            <option value="7%">7%</option>
+                            <option value="19%">19%</option>
+                        </select>
+                    </td>
+                    <td class="px-1.5 py-1.5 align-top">
+                        <input wire:model="newPosition.gesamt" type="number" step="0.01" placeholder="auto"
+                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
+                    </td>
+                    <td class="px-1.5 py-1.5 align-top">
+                        <input wire:model="newPosition.bemerkung" type="text" placeholder="Bemerkung"
+                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] bg-white">
+                    </td>
+                    <td class="px-1.5 py-1.5 align-top">
+                        <button wire:click="addPosition"
+                                class="w-full flex items-center justify-center gap-1 rounded bg-blue-600 hover:bg-blue-700 text-white border-0 cursor-pointer text-[0.65rem] font-semibold py-1 whitespace-nowrap"
+                                title="Position hinzufügen">
+                            @svg('heroicon-o-plus', 'w-3 h-3')
+                        </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="13" class="px-2.5 pt-0.5 pb-2">
+                        <p class="text-[0.52rem] text-slate-400 m-0">
+                            Enter im Bezeichnungs-Feld oder „+" zum Hinzufügen · Gesamt leer → Anz × Preis wird berechnet.
+                        </p>
+                    </td>
+                </tr>
+            </tbody>
         </table>
-    </div>
-
-    {{-- Add-Form mit allen Spalten --}}
-    <div class="px-4 py-3 bg-slate-50 border-t border-slate-200 space-y-2">
-        <div class="flex items-center gap-2 mb-1">
-            <div class="w-[3px] h-3 bg-blue-600 rounded-sm"></div>
-            <span class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Neue Position</span>
-            <span class="text-[0.55rem] text-slate-400">Gruppe „Headline" / „Speisentexte" / „Trenntext" erzeugt Text-Zeilen ohne Preis.</span>
-        </div>
-        <div class="grid grid-cols-12 gap-1">
-            <input wire:model="newPosition.gruppe" type="text" placeholder="Gruppe / Typ"
-                   class="col-span-2 border border-slate-200 rounded px-2 py-1.5 text-[0.65rem]">
-            <input wire:model="newPosition.name" type="text" placeholder="Bezeichnung"
-                   @keydown.enter="$wire.addPosition()"
-                   class="col-span-3 border border-slate-200 rounded px-2 py-1.5 text-[0.65rem]">
-            <input wire:model="newPosition.anz" type="text" placeholder="Anz"
-                   class="col-span-1 border border-slate-200 rounded px-1.5 py-1.5 text-[0.65rem] font-mono text-right">
-            <input wire:model="newPosition.anz2" type="text" placeholder="Anz.2"
-                   class="col-span-1 border border-slate-200 rounded px-1.5 py-1.5 text-[0.65rem] font-mono text-right">
-            <input wire:model="newPosition.uhrzeit" type="text" placeholder="Von"
-                   class="col-span-1 border border-slate-200 rounded px-1.5 py-1.5 text-[0.65rem] font-mono">
-            <input wire:model="newPosition.bis" type="text" placeholder="Bis"
-                   class="col-span-1 border border-slate-200 rounded px-1.5 py-1.5 text-[0.65rem] font-mono">
-            <input wire:model="newPosition.gebinde" type="text" placeholder="Gebinde"
-                   class="col-span-1 border border-slate-200 rounded px-1.5 py-1.5 text-[0.65rem]">
-            <input wire:model="newPosition.ek" type="number" step="0.01" placeholder="EK"
-                   class="col-span-1 border border-slate-200 rounded px-1.5 py-1.5 text-[0.65rem] font-mono text-right">
-            <input wire:model="newPosition.preis" type="number" step="0.01" placeholder="Preis"
-                   class="col-span-1 border border-slate-200 rounded px-1.5 py-1.5 text-[0.65rem] font-mono text-right">
-        </div>
-        <div class="grid grid-cols-12 gap-1">
-            <select wire:model="newPosition.mwst"
-                    class="col-span-1 border border-slate-200 rounded px-1.5 py-1.5 text-[0.65rem]">
-                <option value="0%">0%</option>
-                <option value="7%">7%</option>
-                <option value="19%">19%</option>
-            </select>
-            <input wire:model="newPosition.gesamt" type="number" step="0.01" placeholder="Gesamt (auto)"
-                   class="col-span-2 border border-slate-200 rounded px-1.5 py-1.5 text-[0.65rem] font-mono text-right">
-            <input wire:model="newPosition.bemerkung" type="text" placeholder="Bemerkung (optional)"
-                   class="col-span-8 border border-slate-200 rounded px-2 py-1.5 text-[0.65rem]">
-            <button wire:click="addPosition"
-                    class="col-span-1 flex items-center justify-center gap-1 rounded bg-blue-600 hover:bg-blue-700 text-white border-0 cursor-pointer text-[0.65rem] font-semibold whitespace-nowrap">
-                @svg('heroicon-o-plus', 'w-3 h-3')
-                Add
-            </button>
-        </div>
-        <p class="text-[0.55rem] text-slate-400">
-            Enter im Bezeichnungs-Feld oder Button „Add" zum Hinzufügen · Gesamt leer → Anz × Preis wird berechnet.
-        </p>
     </div>
 </div>

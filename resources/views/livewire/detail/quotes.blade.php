@@ -1,4 +1,4 @@
-<div class="space-y-4 max-w-[960px]">
+<div class="space-y-4 {{ ($view ?? 'overview') === 'editor' ? '' : 'max-w-[960px]' }}">
     @php
         $fmt = fn($v) => number_format((float)$v, 2, ',', '.');
         $quoteStatusMeta = [
