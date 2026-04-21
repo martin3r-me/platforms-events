@@ -168,19 +168,19 @@ window.tinymceEditor = function (opts) {
 @endonce
 
 <style>
-    .tox-tinymce { display: block !important; }
+    .tox-tinymce {
+        display: flex !important;
+        flex-direction: column !important;
+    }
     .tox-tinymce .tox-edit-area {
         flex: 1 1 auto !important;
-        min-height: 300px !important;
     }
     .tox-tinymce .tox-edit-area > iframe {
         height: 100% !important;
-        min-height: 300px !important;
     }
 </style>
 <div wire:ignore
      x-data="tinymceEditor({ uid: @js($uid), wireProperty: @js($wireProperty), initial: @js((string) $initial), height: {{ (int) $height }} })"
-     x-init="$nextTick(() => setTimeout(() => init(), 50))"
-     style="min-height: {{ (int) $height }}px;">
-    <textarea id="{{ $uid }}" style="width:100%; height:{{ (int) $height }}px; opacity:0; position:absolute; pointer-events:none;"></textarea>
+     x-init="$nextTick(() => setTimeout(() => init(), 50))">
+    <textarea id="{{ $uid }}" style="opacity:0; position:absolute; left:-9999px; pointer-events:none;"></textarea>
 </div>
