@@ -9,6 +9,7 @@ use Livewire\Component;
 use Platform\Events\Models\Activity;
 use Platform\Events\Models\Booking;
 use Platform\Events\Models\Contract;
+use Platform\Events\Models\MrFieldConfig;
 use Platform\Events\Models\DocumentSignature;
 use Platform\Events\Models\EmailLog;
 use Platform\Events\Models\Event;
@@ -921,8 +922,26 @@ class Detail extends Component
             'tage'                  => $days->count(),
         ];
 
-        // MR-Gruppen für das Template
-        $mrFields = collect(self::mrDefaults())->groupBy('group')->toArray();
+        // MR-Felder: team-spezifische Konfiguration aus DB (seeded einmalig mit Defaults)
+        if ($team) {
+            MrFieldConfig::seedDefaultsFor($team->id, Auth::id());
+        }
+        $mrConfigs = $team
+            ? MrFieldConfig::where('team_id', $team->id)
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get()
+            : collect();
+
+        $mrFields = $mrConfigs->map(fn ($c) => [
+            'group'   => $c->group_label,
+            'key'     => 'mrf_' . $c->id,
+            'label'   => $c->label,
+            'options' => array_map(fn ($o) => is_array($o) ? ($o['label'] ?? '') : (string) $o, $c->options ?? []),
+            'colors'  => collect($c->options ?? [])->mapWithKeys(fn ($o) => [
+                (is_array($o) ? ($o['label'] ?? '') : (string) $o) => (is_array($o) ? ($o['color'] ?? 'gray') : 'gray'),
+            ])->toArray(),
+        ])->groupBy('group')->toArray();
 
         // Settings-Dropdowns (team-scoped mit Defaults)
         $teamId = $team?->id;

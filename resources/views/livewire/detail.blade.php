@@ -468,10 +468,20 @@
                         }
                         $mrProgress = $mrTotal > 0 ? round(($mrDone / $mrTotal) * 100) : 0;
 
-                        // Farblogik fuer Status-Badges (first option = rot, letzte = gruen)
-                        $badgeFor = function ($options, $value) {
-                            $count = count($options);
+                        // Farblogik fuer Status-Badges: bevorzugt explizite Farbe pro Option aus MrFieldConfig,
+                        // Fallback: erste Option = rot, letzte = gruen, Mitte = gelb.
+                        $badgeFor = function ($options, $value, $colors = []) {
                             if (!$value) return 'bg-slate-200 text-slate-700';
+                            $c = $colors[$value] ?? null;
+                            $map = [
+                                'red'    => 'bg-red-100 text-red-700',
+                                'yellow' => 'bg-yellow-100 text-yellow-800',
+                                'green'  => 'bg-green-100 text-green-700',
+                                'gray'   => 'bg-slate-200 text-slate-700',
+                            ];
+                            if ($c && isset($map[$c])) return $map[$c];
+
+                            $count = count($options);
                             $idx = array_search($value, $options, true);
                             if ($idx === false) return 'bg-slate-200 text-slate-700';
                             if ($idx === 0) return 'bg-red-100 text-red-700';
@@ -512,7 +522,7 @@
                                                 <button type="button" @click="open = !open"
                                                         class="w-full flex items-center justify-between gap-2 px-3 py-2 bg-white border border-[var(--ui-border)] rounded-md hover:border-[var(--ui-primary)]/40 text-left">
                                                     <span class="text-[0.62rem] font-semibold text-[var(--ui-secondary)] leading-tight flex-1 truncate">{{ $f['label'] }}</span>
-                                                    <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full {{ $badgeFor($f['options'], $value) }} flex-shrink-0 truncate max-w-[100px]" title="{{ $value }}">{{ $value }}</span>
+                                                    <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full {{ $badgeFor($f['options'], $value, $f['colors'] ?? []) }} flex-shrink-0 truncate max-w-[100px]" title="{{ $value }}">{{ $value }}</span>
                                                 </button>
                                                 <div x-show="open" x-cloak @click.outside="open = false"
                                                      class="absolute top-full left-0 right-0 mt-1 z-50 bg-white border border-[var(--ui-border)] rounded-md shadow-lg p-1">

@@ -11,7 +11,9 @@
             'order_status'  => ['label' => 'Bestell-Status', 'icon' => 'heroicon-o-shopping-cart'],
             'event_types'   => ['label' => 'Anlass-Typen',   'icon' => 'heroicon-o-calendar-days'],
             'bestuhlung'    => ['label' => 'Bestuhlung',     'icon' => 'heroicon-o-table-cells'],
-            'bausteine'     => ['label' => 'Text-Bausteine', 'icon' => 'heroicon-o-puzzle-piece'],
+            'bausteine'     => ['label' => 'Text-Bausteine',    'icon' => 'heroicon-o-puzzle-piece'],
+            'mr_fields'     => ['label' => 'Management Report', 'icon' => 'heroicon-o-chart-bar-square'],
+            'templates'     => ['label' => 'Dokumentvorlagen',  'icon' => 'heroicon-o-document-text'],
         ];
     @endphp
 
@@ -127,6 +129,199 @@
                     @endif
                 </x-ui-panel>
             </div>
+        @endif
+
+        {{-- ===== Management-Report-Felder ===== --}}
+        @if($activeTab === 'mr_fields')
+            <div class="pt-4 space-y-4 max-w-[960px]">
+                <x-ui-panel>
+                    <div class="p-4 flex items-center justify-between border-b border-[var(--ui-border)] flex-wrap gap-2">
+                        <div>
+                            <h3 class="text-sm font-bold text-[var(--ui-secondary)]">Management Report — Felder</h3>
+                            <p class="text-[0.62rem] text-[var(--ui-muted)]">Felder, die im Event-Details-Tab als Status-Cockpit erscheinen.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <x-ui-button variant="secondary-outline" size="sm" wire:click="resetMrDefaults"
+                                         wire:confirm="Alle Felder löschen und Standardwerte neu laden?">
+                                Defaults wiederherstellen
+                            </x-ui-button>
+                            <x-ui-button variant="primary" size="sm" wire:click="openMrModal">
+                                @svg('heroicon-o-plus', 'w-3.5 h-3.5 inline') Neues Feld
+                            </x-ui-button>
+                        </div>
+                    </div>
+
+                    <div class="p-4 space-y-4">
+                        @if($mrFields->isEmpty())
+                            <p class="text-xs text-[var(--ui-muted)] text-center py-6">
+                                Noch keine Felder konfiguriert. Lege eines mit „Neues Feld" an oder nutze „Defaults wiederherstellen".
+                            </p>
+                        @else
+                            @php $groups = $mrFields->groupBy('group_label'); @endphp
+                            @foreach($groups as $groupLabel => $fields)
+                                <div>
+                                    <p class="text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] mb-2">{{ $groupLabel }}</p>
+                                    <div class="space-y-1">
+                                        @foreach($fields as $f)
+                                            @php $colorMap = ['red' => 'bg-red-100 text-red-700 border-red-200', 'yellow' => 'bg-yellow-100 text-yellow-700 border-yellow-200', 'green' => 'bg-green-100 text-green-700 border-green-200', 'gray' => 'bg-slate-100 text-slate-600 border-slate-200']; @endphp
+                                            <div class="flex items-center gap-2 px-3 py-2 bg-white border border-[var(--ui-border)] rounded-md {{ $f->is_active ? '' : 'opacity-60' }}">
+                                                <div class="flex flex-col gap-0.5 flex-shrink-0">
+                                                    <button wire:click="moveMrUp({{ $f->id }})" class="w-4 h-4 text-[0.55rem] text-slate-400 hover:text-slate-700 border border-slate-200 rounded" title="Hoch">▲</button>
+                                                    <button wire:click="moveMrDown({{ $f->id }})" class="w-4 h-4 text-[0.55rem] text-slate-400 hover:text-slate-700 border border-slate-200 rounded" title="Runter">▼</button>
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="text-[0.68rem] font-semibold text-[var(--ui-secondary)] m-0">{{ $f->label }}</p>
+                                                    <div class="flex flex-wrap gap-1 mt-1">
+                                                        @foreach($f->options ?? [] as $opt)
+                                                            @php $lbl = is_array($opt) ? ($opt['label'] ?? '') : $opt; $clr = is_array($opt) ? ($opt['color'] ?? 'gray') : 'gray'; @endphp
+                                                            <span class="text-[0.52rem] font-semibold px-1.5 py-0.5 rounded-full border {{ $colorMap[$clr] ?? $colorMap['gray'] }}">{{ $lbl }}</span>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                                <button wire:click="toggleMrActive({{ $f->id }})"
+                                                        class="flex-shrink-0 w-8 h-4 rounded-full relative transition {{ $f->is_active ? 'bg-green-500' : 'bg-slate-300' }}">
+                                                    <span class="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all {{ $f->is_active ? 'left-4' : 'left-0.5' }}"></span>
+                                                </button>
+                                                <button wire:click="openMrModal({{ $f->id }})"
+                                                        class="w-7 h-7 flex items-center justify-center border border-slate-200 rounded hover:bg-slate-50 text-slate-600" title="Bearbeiten">
+                                                    @svg('heroicon-o-pencil', 'w-3 h-3')
+                                                </button>
+                                                <button wire:click="deleteMrField({{ $f->id }})" wire:confirm="Feld löschen?"
+                                                        class="w-7 h-7 flex items-center justify-center border border-red-200 bg-red-50 rounded hover:bg-red-100 text-red-500" title="Löschen">
+                                                    @svg('heroicon-o-trash', 'w-3 h-3')
+                                                </button>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endforeach
+                        @endif
+                    </div>
+                </x-ui-panel>
+            </div>
+
+            <x-ui-modal wire:model="mrModal" size="md" :hideFooter="true">
+                <x-slot name="header">{{ $mrEditingId ? 'MR-Feld bearbeiten' : 'Neues MR-Feld' }}</x-slot>
+                <form wire:submit.prevent="saveMrField" class="space-y-3">
+                    <div>
+                        <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Gruppe</label>
+                        <input wire:model="mrForm.group_label" type="text" placeholder="z.B. Logistik & Personal"
+                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs">
+                    </div>
+                    <div>
+                        <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Feldname</label>
+                        <input wire:model="mrForm.label" type="text" placeholder="z.B. Küchenpersonal"
+                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs">
+                    </div>
+                    <div>
+                        <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Optionen (eine pro Zeile)</label>
+                        <textarea wire:model="mrForm.options" rows="6"
+                                  class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono"></textarea>
+                        <p class="text-[0.56rem] text-[var(--ui-muted)] mt-1">Farben werden automatisch vergeben: erste Option rot, letzte grün, „nicht benötigt"/„keine Rechnung" grau, dazwischen gelb.</p>
+                    </div>
+                    <label class="flex items-center gap-2 text-[0.68rem]">
+                        <input type="checkbox" wire:model="mrForm.is_active">
+                        <span>Aktiv (erscheint im Event-Cockpit)</span>
+                    </label>
+                    <div class="flex justify-end gap-2 pt-3 border-t border-[var(--ui-border)]">
+                        <x-ui-button type="button" variant="secondary-outline" size="sm" wire:click="$set('mrModal', false)">Abbrechen</x-ui-button>
+                        <x-ui-button type="submit" variant="primary" size="sm">Speichern</x-ui-button>
+                    </div>
+                </form>
+            </x-ui-modal>
+        @endif
+
+        {{-- ===== Dokumentvorlagen ===== --}}
+        @if($activeTab === 'templates')
+            <div class="pt-4 space-y-4 max-w-[960px]">
+                <x-ui-panel>
+                    <div class="p-4 flex items-center justify-between border-b border-[var(--ui-border)] flex-wrap gap-2">
+                        <div>
+                            <h3 class="text-sm font-bold text-[var(--ui-secondary)]">Dokumentvorlagen</h3>
+                            <p class="text-[0.62rem] text-[var(--ui-muted)]">Vorlagen für Verträge, Optionsbestätigungen etc. Werden beim Erstellen eines neuen Dokuments als Startpunkt geladen.</p>
+                        </div>
+                        <x-ui-button variant="primary" size="sm" wire:click="openTplModal">
+                            @svg('heroicon-o-plus', 'w-3.5 h-3.5 inline') Neue Vorlage
+                        </x-ui-button>
+                    </div>
+
+                    <div class="p-4 space-y-2">
+                        @if($templates->isEmpty())
+                            <p class="text-xs text-[var(--ui-muted)] text-center py-6">Noch keine Vorlagen angelegt.</p>
+                        @else
+                            @foreach($templates as $tpl)
+                                <div class="flex items-center gap-2 px-3 py-2 bg-white border border-[var(--ui-border)] rounded-md {{ $tpl->is_active ? '' : 'opacity-60' }}">
+                                    <span class="w-2 h-6 rounded-sm flex-shrink-0" style="background: {{ $tpl->color ?: '#7c3aed' }};"></span>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-[0.72rem] font-semibold text-[var(--ui-secondary)] m-0">{{ $tpl->label }}</p>
+                                        <p class="text-[0.58rem] text-[var(--ui-muted)] font-mono">{{ $tpl->slug }}</p>
+                                        @if($tpl->description)
+                                            <p class="text-[0.62rem] text-slate-500 mt-1">{{ \Illuminate\Support\Str::limit($tpl->description, 120) }}</p>
+                                        @endif
+                                    </div>
+                                    <button wire:click="toggleTemplateActive({{ $tpl->id }})"
+                                            class="flex-shrink-0 w-8 h-4 rounded-full relative transition {{ $tpl->is_active ? 'bg-green-500' : 'bg-slate-300' }}">
+                                        <span class="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all {{ $tpl->is_active ? 'left-4' : 'left-0.5' }}"></span>
+                                    </button>
+                                    <button wire:click="openTplModal({{ $tpl->id }})"
+                                            class="w-7 h-7 flex items-center justify-center border border-slate-200 rounded hover:bg-slate-50 text-slate-600" title="Bearbeiten">
+                                        @svg('heroicon-o-pencil', 'w-3 h-3')
+                                    </button>
+                                    <button wire:click="deleteTemplate({{ $tpl->id }})" wire:confirm="Vorlage löschen?"
+                                            class="w-7 h-7 flex items-center justify-center border border-red-200 bg-red-50 rounded hover:bg-red-100 text-red-500" title="Löschen">
+                                        @svg('heroicon-o-trash', 'w-3 h-3')
+                                    </button>
+                                </div>
+                            @endforeach
+                        @endif
+                    </div>
+                </x-ui-panel>
+            </div>
+
+            <x-ui-modal wire:model="tplModal" size="xl" :hideFooter="true">
+                <x-slot name="header">{{ $tplEditingId ? 'Vorlage bearbeiten' : 'Neue Dokumentvorlage' }}</x-slot>
+                <form wire:submit.prevent="saveTemplate" class="space-y-3">
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="col-span-2">
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Titel</label>
+                            <input wire:model="tplForm.label" type="text" placeholder="z.B. Nutzungsvertrag Standard"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs">
+                        </div>
+                        <div>
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Slug (optional)</label>
+                            <input wire:model="tplForm.slug" type="text" placeholder="nutzungsvertrag"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="col-span-2">
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Beschreibung</label>
+                            <input wire:model="tplForm.description" type="text" placeholder="Kurzbeschreibung"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs">
+                        </div>
+                        <div>
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Farbe</label>
+                            <input wire:model="tplForm.color" type="color"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-1 py-0.5 h-[34px] cursor-pointer">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">HTML-Inhalt</label>
+                        <textarea wire:model="tplForm.html_content" rows="14"
+                                  class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono"
+                                  placeholder="<h1>Nutzungsvertrag</h1>&#10;<p>Platzhalter wie {{customer_company}} werden beim Erstellen ersetzt.</p>"></textarea>
+                        <p class="text-[0.56rem] text-[var(--ui-muted)] mt-1">Unterstützt HTML. Platzhalter sind optional und werden im Dokument-Editor ersetzt.</p>
+                    </div>
+                    <label class="flex items-center gap-2 text-[0.68rem]">
+                        <input type="checkbox" wire:model="tplForm.is_active">
+                        <span>Aktiv (erscheint in der Vorlagenauswahl)</span>
+                    </label>
+                    <div class="flex justify-end gap-2 pt-3 border-t border-[var(--ui-border)]">
+                        <x-ui-button type="button" variant="secondary-outline" size="sm" wire:click="$set('tplModal', false)">Abbrechen</x-ui-button>
+                        <x-ui-button type="submit" variant="primary" size="sm">Speichern</x-ui-button>
+                    </div>
+                </form>
+            </x-ui-modal>
         @endif
     </x-ui-page-container>
 </x-ui-page>
