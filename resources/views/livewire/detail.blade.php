@@ -670,8 +670,24 @@
                                 @foreach($bookings as $b)
                                     <tr class="border-b border-[var(--ui-border)]/40 hover:bg-[var(--ui-muted-5)]/40 group">
                                         <td class="px-3 py-1.5">
-                                            <input wire:model.blur="inlineBookings.{{ $b->uuid }}.datum" type="date"
-                                                   class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-[0.68rem] font-mono bg-transparent focus:bg-white">
+                                            @php
+                                                $currentBookingDate = $inlineBookings[$b->uuid]['datum'] ?? null;
+                                                $knownDates = $days->pluck('datum')->map(fn($d) => $d?->format('Y-m-d'))->filter()->all();
+                                            @endphp
+                                            <select wire:model.blur="inlineBookings.{{ $b->uuid }}.datum"
+                                                    class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-[0.68rem] font-mono bg-transparent focus:bg-white {{ $days->isEmpty() ? 'opacity-60' : '' }}"
+                                                    @disabled($days->isEmpty())>
+                                                <option value="">— Tag wählen —</option>
+                                                @foreach($days as $d)
+                                                    @php $val = $d->datum?->format('Y-m-d'); @endphp
+                                                    @if($val)
+                                                        <option value="{{ $val }}">{{ $d->datum->format('d.m.Y') }}@if($d->day_of_week) ({{ $d->day_of_week }})@endif</option>
+                                                    @endif
+                                                @endforeach
+                                                @if($currentBookingDate && !in_array($currentBookingDate, $knownDates, true))
+                                                    <option value="{{ $currentBookingDate }}">{{ \Carbon\Carbon::parse($currentBookingDate)->format('d.m.Y') }} (kein Event-Tag)</option>
+                                                @endif
+                                            </select>
                                         </td>
                                         <td class="px-2 py-1.5">
                                             <input wire:model.blur="inlineBookings.{{ $b->uuid }}.beginn" type="text" placeholder="—"
@@ -736,9 +752,17 @@
                     <div class="p-3 bg-[var(--ui-muted-5)]/50 border-t border-[var(--ui-border)]">
                         <div class="grid grid-cols-12 gap-2 items-start">
                             <div class="col-span-2">
-                                <input wire:model.defer="newBookingInline.datum" type="date"
-                                       :disabled="@js($newBookingInline['taeglich'] ?? false)"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30 disabled:opacity-50">
+                                <select wire:model.defer="newBookingInline.datum"
+                                        :disabled="@js($newBookingInline['taeglich'] ?? false) || {{ $days->isEmpty() ? 'true' : 'false' }}"
+                                        class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30 disabled:opacity-50">
+                                    <option value="">{{ $days->isEmpty() ? '— erst Termine anlegen —' : '— Tag wählen —' }}</option>
+                                    @foreach($days as $d)
+                                        @php $val = $d->datum?->format('Y-m-d'); @endphp
+                                        @if($val)
+                                            <option value="{{ $val }}">{{ $d->datum->format('d.m.Y') }}@if($d->day_of_week) ({{ $d->day_of_week }})@endif</option>
+                                        @endif
+                                    @endforeach
+                                </select>
                                 <label class="flex items-center gap-1.5 mt-1 cursor-pointer select-none">
                                     <input wire:model.live="newBookingInline.taeglich" type="checkbox" class="w-3 h-3 accent-[var(--ui-primary)]">
                                     <span class="text-[0.6rem] text-[var(--ui-muted)]">täglich</span>
@@ -832,8 +856,24 @@
                                 @foreach($schedule as $item)
                                     <tr class="border-b border-[var(--ui-border)]/40 hover:bg-[var(--ui-muted-5)]/40 group">
                                         <td class="px-3 py-1.5">
-                                            <input wire:model.blur="inlineSchedule.{{ $item->uuid }}.datum" type="date"
-                                                   class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-[0.68rem] font-mono bg-transparent focus:bg-white">
+                                            @php
+                                                $currentScheduleDate = $inlineSchedule[$item->uuid]['datum'] ?? null;
+                                                $knownScheduleDates = $days->pluck('datum')->map(fn($d) => $d?->format('Y-m-d'))->filter()->all();
+                                            @endphp
+                                            <select wire:model.blur="inlineSchedule.{{ $item->uuid }}.datum"
+                                                    class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-[0.68rem] font-mono bg-transparent focus:bg-white {{ $days->isEmpty() ? 'opacity-60' : '' }}"
+                                                    @disabled($days->isEmpty())>
+                                                <option value="">— Tag wählen —</option>
+                                                @foreach($days as $d)
+                                                    @php $val = $d->datum?->format('Y-m-d'); @endphp
+                                                    @if($val)
+                                                        <option value="{{ $val }}">{{ $d->datum->format('d.m.Y') }}@if($d->day_of_week) ({{ $d->day_of_week }})@endif</option>
+                                                    @endif
+                                                @endforeach
+                                                @if($currentScheduleDate && !in_array($currentScheduleDate, $knownScheduleDates, true))
+                                                    <option value="{{ $currentScheduleDate }}">{{ \Carbon\Carbon::parse($currentScheduleDate)->format('d.m.Y') }} (kein Event-Tag)</option>
+                                                @endif
+                                            </select>
                                         </td>
                                         <td class="px-2 py-1.5">
                                             <input wire:model.blur="inlineSchedule.{{ $item->uuid }}.von" type="text" placeholder="—"
@@ -885,8 +925,17 @@
                     <div class="p-3 bg-[var(--ui-muted-5)]/50 border-t border-[var(--ui-border)]">
                         <div class="grid grid-cols-12 gap-2 items-center">
                             <div class="col-span-2">
-                                <input wire:model.defer="newScheduleInline.datum" type="date"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                <select wire:model.defer="newScheduleInline.datum"
+                                        class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30 {{ $days->isEmpty() ? 'opacity-60' : '' }}"
+                                        @disabled($days->isEmpty())>
+                                    <option value="">{{ $days->isEmpty() ? '— erst Termine anlegen —' : '— Tag wählen (leer = 1. Tag) —' }}</option>
+                                    @foreach($days as $d)
+                                        @php $val = $d->datum?->format('Y-m-d'); @endphp
+                                        @if($val)
+                                            <option value="{{ $val }}">{{ $d->datum->format('d.m.Y') }}@if($d->day_of_week) ({{ $d->day_of_week }})@endif</option>
+                                        @endif
+                                    @endforeach
+                                </select>
                             </div>
                             <div class="col-span-1">
                                 <input wire:model.defer="newScheduleInline.von" type="text" placeholder="Von"
