@@ -30,13 +30,18 @@ class Quotes extends Component
     public string $itemStatus = 'Entwurf';
     public string $itemMwst = '19%';
 
-    public function mount(int $eventId): void
+    public function mount(int $eventId, ?int $initialItemId = null): void
     {
         $this->eventId = $eventId;
         $this->activeQuoteId = Quote::where('event_id', $eventId)
             ->where('is_current', true)
             ->latest('version')
             ->value('id');
+
+        // Drilldown aus Sidebar: Vorgang direkt oeffnen.
+        if ($initialItemId) {
+            $this->openPositions($initialItemId);
+        }
     }
 
     protected function event(): Event

@@ -27,9 +27,12 @@ class Orders extends Component
         'gesamt' => 0, 'bemerkung' => '',
     ];
 
-    public function mount(int $eventId): void
+    public function mount(int $eventId, ?int $initialItemId = null): void
     {
         $this->eventId = $eventId;
+        if ($initialItemId) {
+            $this->openPositions($initialItemId);
+        }
     }
 
     protected function event(): Event

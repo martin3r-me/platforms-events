@@ -144,8 +144,8 @@
                                 @if(count($dayNode['types']) > 0)
                                     <div x-show="sub" x-cloak class="ml-4 space-y-0.5 mt-0.5">
                                         @foreach($dayNode['types'] as $type)
-                                            <button type="button" wire:click="$set('activeTab', 'angebote')"
-                                                    class="w-full flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[0.66rem] text-[var(--ui-muted)] hover:bg-[var(--ui-muted-5)]">
+                                            <button type="button" wire:click="openQuoteItem({{ $type['id'] }})"
+                                                    class="w-full flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[0.66rem] text-[var(--ui-muted)] hover:bg-[var(--ui-muted-5)] hover:text-[var(--ui-primary)]">
                                                 <span class="w-1 h-1 rounded-full bg-[var(--ui-muted)] flex-shrink-0"></span>
                                                 <span class="flex-1 text-left truncate">{{ $type['typ'] }}</span>
                                                 @if($type['positions'] > 0)
@@ -201,8 +201,8 @@
                                 @if(count($dayNode['types']) > 0)
                                     <div x-show="sub" x-cloak class="ml-4 space-y-0.5 mt-0.5">
                                         @foreach($dayNode['types'] as $type)
-                                            <button type="button" wire:click="$set('activeTab', 'bestellungen')"
-                                                    class="w-full flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[0.66rem] text-[var(--ui-muted)] hover:bg-[var(--ui-muted-5)]">
+                                            <button type="button" wire:click="openOrderItem({{ $type['id'] }})"
+                                                    class="w-full flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[0.66rem] text-[var(--ui-muted)] hover:bg-[var(--ui-muted-5)] hover:text-[var(--ui-primary)]">
                                                 <span class="w-1 h-1 rounded-full bg-[var(--ui-muted)] flex-shrink-0"></span>
                                                 <span class="flex-1 text-left truncate">{{ $type['typ'] }}</span>
                                                 @if($type['positions'] > 0)
@@ -499,14 +499,20 @@
         {{-- ================= Tab: Angebote ================= --}}
         @if($activeTab === 'angebote')
             <div class="pt-1">
-                <livewire:events.detail.quotes :event-id="$event->id" :key="'quotes-'.$event->id" />
+                <livewire:events.detail.quotes
+                    :event-id="$event->id"
+                    :initial-item-id="$pendingQuoteItemId"
+                    :key="'quotes-'.$event->id.'-'.($pendingQuoteItemId ?? '0')" />
             </div>
         @endif
 
         {{-- ================= Tab: Bestellungen ================= --}}
         @if($activeTab === 'bestellungen')
             <div class="pt-1">
-                <livewire:events.detail.orders :event-id="$event->id" :key="'orders-'.$event->id" />
+                <livewire:events.detail.orders
+                    :event-id="$event->id"
+                    :initial-item-id="$pendingOrderItemId"
+                    :key="'orders-'.$event->id.'-'.($pendingOrderItemId ?? '0')" />
             </div>
         @endif
 

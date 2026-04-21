@@ -75,6 +75,24 @@ class Detail extends Component
     public ?string $editingNoteUuid = null;
     public array $noteForm = [];
 
+    // Drilldown aus Sidebar: direkt zu einem Vorgang im Angebote-/Bestellungen-Tab springen.
+    public ?int $pendingQuoteItemId = null;
+    public ?int $pendingOrderItemId = null;
+
+    public function openQuoteItem(int $itemId): void
+    {
+        $this->pendingQuoteItemId = $itemId;
+        $this->pendingOrderItemId = null;
+        $this->activeTab = 'angebote';
+    }
+
+    public function openOrderItem(int $itemId): void
+    {
+        $this->pendingOrderItemId = $itemId;
+        $this->pendingQuoteItemId = null;
+        $this->activeTab = 'bestellungen';
+    }
+
     /**
      * CRM-Company-Picker: Slot → Event-Spalten (FK + Display-Cache).
      * organizer = Veranstalter, invoice = "Rechnung an", delivery = "Lieferung an".
