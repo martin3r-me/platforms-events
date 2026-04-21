@@ -27,6 +27,7 @@ window.tinymceEditor = function (opts) {
             const rootEl = this.$root;
             const wireEl = rootEl.closest('[wire\\:id]');
             this._wireId = wireEl ? wireEl.getAttribute('wire:id') : null;
+            console.log('[tinymceEditor] init called', { uid: this.uid, wireId: this._wireId });
 
             this._waitForTinyAndObserve(rootEl);
         },
@@ -46,38 +47,47 @@ window.tinymceEditor = function (opts) {
 
         _observe(rootEl) {
             const self = this;
-            // Sofort bootn wenn bereits sichtbar
-            if (rootEl.offsetParent !== null) return self._boot();
+            console.log('[tinymceEditor] observe start', { offsetParent: rootEl.offsetParent, offsetHeight: rootEl.offsetHeight });
+            if (rootEl.offsetParent !== null) {
+                console.log('[tinymceEditor] already visible, booting');
+                return self._boot();
+            }
 
-            // Sonst auf Sichtbarkeits-Change warten (Modal-Open)
             if (typeof window.IntersectionObserver !== 'undefined') {
                 const observer = new IntersectionObserver(function (entries) {
+                    console.log('[tinymceEditor] intersect', entries[0].isIntersecting);
                     if (entries[0].isIntersecting && !self._editor) {
                         observer.disconnect();
                         self._boot();
                     }
                 });
                 observer.observe(rootEl);
-            } else {
-                // Fallback: Polling
-                const poll = () => {
-                    if (rootEl.offsetParent !== null) {
-                        if (!self._editor) self._boot();
-                        return;
-                    }
-                    setTimeout(poll, 200);
-                };
-                poll();
             }
+
+            // Zusaetzliches Polling als Sicherheits-Netz
+            const poll = (attempts = 300) => {
+                if (self._editor || attempts <= 0) return;
+                if (rootEl.offsetParent !== null) {
+                    console.log('[tinymceEditor] poll detected visible, booting');
+                    self._boot();
+                    return;
+                }
+                setTimeout(() => poll(attempts - 1), 200);
+            };
+            poll();
         },
 
         _boot() {
             const self = this;
             const target = document.getElementById(this.uid);
+            console.log('[tinymceEditor] _boot', { uid: this.uid, targetFound: !!target });
             if (!target) {
                 console.error('[tinymceEditor] target not found:', this.uid);
                 return;
             }
+            // Entferne Placeholder
+            const placeholder = this.$root.querySelector('.tinymce-placeholder');
+            if (placeholder) placeholder.remove();
 
             window.tinymce.init({
                 target: target,
@@ -132,6 +142,10 @@ window.tinymceEditor = function (opts) {
 
 <div wire:ignore
      x-data="tinymceEditor({ uid: @js($uid), wireProperty: @js($wireProperty), initial: @js((string) $initial), height: {{ (int) $height }} })"
-     x-init="$nextTick(() => setTimeout(() => init(), 50))">
+     x-init="$nextTick(() => setTimeout(() => init(), 50))"
+     style="min-height: {{ (int) $height }}px; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 8px; background: #f8fafc;">
+    <div class="tinymce-placeholder" style="color: #64748b; font-size: 0.7rem; padding: 6px;">
+        Editor wird geladen (uid: {{ $uid }}) …
+    </div>
     <textarea id="{{ $uid }}" style="display:none;"></textarea>
 </div>
