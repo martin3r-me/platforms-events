@@ -702,13 +702,13 @@
                                                    class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-mono bg-transparent focus:bg-white text-center">
                                         </td>
                                         <td class="px-2 py-1.5">
-                                            <select wire:model.blur="inlineBookings.{{ $b->uuid }}.location_id"
-                                                    class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs bg-transparent focus:bg-white">
-                                                <option value="">— frei —</option>
-                                                @foreach($locations as $loc)
-                                                    <option value="{{ $loc->id }}">{{ $loc->kuerzel }} – {{ $loc->name }}</option>
-                                                @endforeach
-                                            </select>
+                                            @include('events::partials.location-picker', [
+                                                'model'       => 'inlineBookings.' . $b->uuid . '.location_id',
+                                                'locations'   => $locations,
+                                                'current'     => $inlineBookings[$b->uuid]['location_id'] ?? '',
+                                                'placeholder' => '— frei —',
+                                                'compact'     => true,
+                                            ])
                                         </td>
                                         <td class="px-2 py-1.5">
                                             @if(!empty($settings['bestuhlung']))
@@ -781,13 +781,12 @@
                                        class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30 text-center">
                             </div>
                             <div class="col-span-2">
-                                <select wire:model.defer="newBookingInline.location_id"
-                                        class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                                    <option value="">Raum</option>
-                                    @foreach($locations as $loc)
-                                        <option value="{{ $loc->id }}">{{ $loc->kuerzel }} – {{ $loc->name }}</option>
-                                    @endforeach
-                                </select>
+                                @include('events::partials.location-picker', [
+                                    'model'       => 'newBookingInline.location_id',
+                                    'locations'   => $locations,
+                                    'current'     => $newBookingInline['location_id'] ?? '',
+                                    'placeholder' => 'Raum',
+                                ])
                             </div>
                             <div class="col-span-2">
                                 @if(!empty($settings['bestuhlung']))
