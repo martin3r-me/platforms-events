@@ -28,6 +28,19 @@ window.tinymceEditor = function (opts) {
             const wireEl = rootEl.closest('[wire\\:id]');
             this._wireId = wireEl ? wireEl.getAttribute('wire:id') : null;
             this._waitForTinyAndObserve(rootEl);
+
+            // Livewire-Dispatch "tinymce-set-content" -> Content aktualisieren
+            // (z.B. wenn Modal mit anderem Datensatz wieder geoeffnet wird)
+            const self = this;
+            window.addEventListener('tinymce-set-content', function (e) {
+                if (!e.detail || e.detail.uid !== self.uid) return;
+                const content = e.detail.content || '';
+                if (self._editor && self._editor.initialized) {
+                    self._editor.setContent(content);
+                } else {
+                    self.initial = content;
+                }
+            });
         },
 
         _waitForTinyAndObserve(rootEl) {
@@ -42,24 +55,30 @@ window.tinymceEditor = function (opts) {
 
         _observe(rootEl) {
             const self = this;
-            if (rootEl.offsetParent !== null) return self._boot();
+            const editorIsAlive = () =>
+                self._editor && document.body.contains(self._editor.getContainer?.() || null);
+
+            if (rootEl.offsetParent !== null && !editorIsAlive()) return self._boot();
 
             if (typeof window.IntersectionObserver !== 'undefined') {
                 const observer = new IntersectionObserver(function (entries) {
-                    if (entries[0].isIntersecting && !self._editor) {
-                        observer.disconnect();
+                    if (entries[0].isIntersecting && !editorIsAlive()) {
                         self._boot();
                     }
                 });
                 observer.observe(rootEl);
+                // Observer bleibt persistent: falls Modal-DOM zerschossen wird
+                // (z.B. durch Livewire-Re-Render), koennen wir neu booten.
             }
 
-            const poll = (attempts = 300) => {
-                if (self._editor || attempts <= 0) return;
-                if (rootEl.offsetParent !== null) return self._boot();
-                setTimeout(() => poll(attempts - 1), 200);
+            // Zusaetzliches Polling als Sicherheitsnetz
+            const poll = () => {
+                if (rootEl.offsetParent !== null && !editorIsAlive()) {
+                    self._boot();
+                }
+                setTimeout(poll, 500);
             };
-            poll();
+            setTimeout(poll, 500);
         },
 
         _boot() {

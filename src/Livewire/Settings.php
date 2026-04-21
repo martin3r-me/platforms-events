@@ -273,6 +273,13 @@ class Settings extends Component
             ];
         }
         $this->tplModal = true;
+
+        // TinyMCE explizit auf den neuen Inhalt setzen (wire:ignore friert den
+        // initial-Wert ein, der Event sorgt fuer Refresh bei jedem Oeffnen).
+        $this->dispatch('tinymce-set-content',
+            uid: 'tiny-template',
+            content: $this->tplForm['html_content']
+        );
     }
 
     /**

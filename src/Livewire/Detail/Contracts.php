@@ -135,6 +135,11 @@ class Contracts extends Component
         $this->contractType = $c->type;
         $this->contractText = $this->ensureHtmlForEditor((string) ($c->content['text'] ?? ''));
         $this->showEditModal = true;
+
+        $this->dispatch('tinymce-set-content',
+            uid: 'tiny-contract',
+            content: $this->contractText
+        );
     }
 
     protected function ensureHtmlForEditor(string $content): string
