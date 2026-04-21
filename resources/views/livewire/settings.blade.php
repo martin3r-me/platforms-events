@@ -306,7 +306,18 @@
                         </div>
                     </div>
                     <div>
-                        <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Inhalt</label>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Inhalt</label>
+                            <label class="flex items-center gap-1 px-2 py-0.5 border border-slate-200 rounded bg-white hover:bg-slate-50 text-[0.58rem] font-semibold text-slate-600 cursor-pointer">
+                                @svg('heroicon-o-document-arrow-up', 'w-2.5 h-2.5')
+                                HTML-Datei laden
+                                <input type="file" wire:model="tplHtmlFile" accept=".html,.htm,text/html" class="hidden">
+                            </label>
+                        </div>
+                        <div wire:loading wire:target="tplHtmlFile" class="text-[0.6rem] text-slate-500 mb-1">HTML-Datei wird geladen …</div>
+                        @if(session('tplHtmlFileError'))
+                            <div class="text-[0.6rem] text-red-500 mb-1">{{ session('tplHtmlFileError') }}</div>
+                        @endif
                         @include('events::partials.tinymce-editor', [
                             'wireProperty' => 'tplForm.html_content',
                             'initial'      => $tplForm['html_content'] ?? '',

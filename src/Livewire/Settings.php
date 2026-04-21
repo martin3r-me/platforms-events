@@ -62,6 +62,7 @@ class Settings extends Component
         'html_content' => '',
         'is_active'    => true,
     ];
+    public $tplHtmlFile = null;
 
     public function mount(): void
     {
@@ -280,6 +281,38 @@ class Settings extends Component
             uid: 'tiny-template',
             content: $this->tplForm['html_content']
         );
+    }
+
+    public function updatedTplHtmlFile(): void
+    {
+        if (!$this->tplHtmlFile) return;
+        try {
+            $path = $this->tplHtmlFile->getRealPath();
+            $raw = @file_get_contents($path);
+            if ($raw === false) {
+                throw new \RuntimeException('Datei konnte nicht gelesen werden.');
+            }
+
+            // Nur den <body>-Inhalt uebernehmen, falls ein komplettes HTML-Dokument
+            if (preg_match('#<body\b[^>]*>(.*?)</body>#is', $raw, $m)) {
+                $raw = $m[1];
+            }
+
+            // Scripts/Styles entfernen
+            $raw = preg_replace('#<script\b[^>]*>.*?</script>#is', '', $raw);
+            $raw = preg_replace('#<style\b[^>]*>.*?</style>#is', '', $raw);
+
+            $this->tplForm['html_content'] = trim($raw);
+
+            $this->dispatch('tinymce-set-content',
+                uid: 'tiny-template',
+                content: \Platform\Events\Services\ContractRenderer::resolveForEditor($this->tplForm['html_content'])
+            );
+        } catch (\Throwable $e) {
+            session()->flash('tplHtmlFileError', 'HTML-Datei konnte nicht geladen werden: ' . $e->getMessage());
+        } finally {
+            $this->tplHtmlFile = null;
+        }
     }
 
     /**
