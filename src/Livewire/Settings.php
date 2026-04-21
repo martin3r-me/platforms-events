@@ -259,7 +259,7 @@ class Settings extends Component
                 'slug'         => $tpl->slug,
                 'description'  => $tpl->description,
                 'color'        => $tpl->color ?: '#7c3aed',
-                'html_content' => $tpl->html_content,
+                'html_content' => $this->ensureHtml($tpl->html_content),
                 'is_active'    => (bool) $tpl->is_active,
             ];
         } else {
@@ -279,6 +279,19 @@ class Settings extends Component
     {
         $current = (string) ($this->tplForm['html_content'] ?? '');
         $this->tplForm['html_content'] = $this->htmlToMarkdown($current);
+    }
+
+    /**
+     * Liefert HTML fuer den TinyMCE-Editor. Wenn der gespeicherte Inhalt noch
+     * Markdown/Plaintext ist (alte Vorlagen), wird einmal Markdown -> HTML
+     * konvertiert, damit der Editor Absaetze, Listen etc. korrekt anzeigt.
+     */
+    protected function ensureHtml(?string $content): string
+    {
+        $content = (string) $content;
+        if ($content === '') return '';
+        if ($this->looksLikeHtml($content)) return $content;
+        return \Platform\Events\Services\ContractRenderer::markdownToHtml($content);
     }
 
     protected function htmlToMarkdown(string $content): string

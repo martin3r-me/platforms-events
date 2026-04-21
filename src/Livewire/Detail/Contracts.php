@@ -133,8 +133,15 @@ class Contracts extends Component
         if (!$c) return;
 
         $this->contractType = $c->type;
-        $this->contractText = $c->content['text'] ?? '';
+        $this->contractText = $this->ensureHtmlForEditor((string) ($c->content['text'] ?? ''));
         $this->showEditModal = true;
+    }
+
+    protected function ensureHtmlForEditor(string $content): string
+    {
+        if ($content === '') return '';
+        if (preg_match('/<\/?[a-z][a-z0-9]*\b[^>]*>/i', $content)) return $content;
+        return \Platform\Events\Services\ContractRenderer::markdownToHtml($content);
     }
 
     public function saveContent(): void
