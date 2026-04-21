@@ -70,7 +70,14 @@
             <div class="p-2 space-y-1.5">
                 <div>
                     <label class="{{ $lbl }}">Unternehmen</label>
-                    <input wire:model.blur="event.customer" type="text" class="{{ $in }}">
+                    @include('events::partials.crm-company-picker', [
+                        'available'   => $crmCompanyAvailable ?? false,
+                        'options'     => $crmCompanyOptions ?? [],
+                        'label'       => $crmCompanyLabel ?? $event->customer,
+                        'url'         => $crmCompanyUrl ?? null,
+                        'currentId'   => $event->crm_company_id,
+                        'placeholder' => '— CRM-Firma wählen —',
+                    ])
                 </div>
                 <div class="grid grid-cols-2 gap-1.5">
                     <div>

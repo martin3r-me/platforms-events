@@ -22,7 +22,7 @@ class Event extends Model
         'user_id',
         'team_id',
 
-        'event_number', 'name', 'customer', 'group', 'location',
+        'event_number', 'name', 'customer', 'crm_company_id', 'group', 'location',
         'start_date', 'end_date',
         'status', 'status_changed_at',
 
