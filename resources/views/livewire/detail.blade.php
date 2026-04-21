@@ -927,7 +927,7 @@
                                 <select wire:model.defer="newScheduleInline.datum"
                                         class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30 {{ $days->isEmpty() ? 'opacity-60' : '' }}"
                                         @disabled($days->isEmpty())>
-                                    <option value="">{{ $days->isEmpty() ? '— erst Termine anlegen —' : '— Tag wählen (leer = 1. Tag) —' }}</option>
+                                    <option value="">{{ $days->isEmpty() ? '— erst Termine anlegen —' : '— Tag wählen —' }}</option>
                                     @foreach($days as $d)
                                         @php $val = $d->datum?->format('Y-m-d'); @endphp
                                         @if($val)
