@@ -89,7 +89,7 @@ window.tinymceEditor = function (opts) {
             const placeholder = this.$root.querySelector('.tinymce-placeholder');
             if (placeholder) placeholder.remove();
 
-            window.tinymce.init({
+            const initPromise = window.tinymce.init({
                 target: target,
                 license_key: 'gpl',
                 height: self.height,
@@ -112,7 +112,9 @@ window.tinymceEditor = function (opts) {
                 content_style: 'body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.6; color: #1a1a1a; margin: 16px; }',
                 setup: function (editor) {
                     self._editor = editor;
+                    console.log('[tinymceEditor] setup fired');
                     editor.on('init', function () {
+                        console.log('[tinymceEditor] editor init event, setting content');
                         editor.setContent(self.initial || '');
                     });
                     const sync = function () {
@@ -121,9 +123,18 @@ window.tinymceEditor = function (opts) {
                     };
                     editor.on('change keyup undo redo blur', sync);
                 },
-            }).catch(function (err) {
-                console.error('[tinymceEditor] init failed', err);
             });
+            if (initPromise && initPromise.then) {
+                initPromise
+                    .then(function (editors) {
+                        console.log('[tinymceEditor] init resolved', { editorCount: editors?.length });
+                    })
+                    .catch(function (err) {
+                        console.error('[tinymceEditor] init failed', err);
+                    });
+            } else {
+                console.log('[tinymceEditor] init returned (no promise)');
+            }
         },
 
         _syncToLivewire(html) {
