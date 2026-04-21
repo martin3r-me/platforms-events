@@ -86,6 +86,23 @@ window.tinymceEditor = function (opts) {
                 return;
             }
 
+            // Frische Initial-Daten aus Livewire holen (wire:ignore friert den
+            // Blade-interpolierten Wert auf der ersten Seitenrenderung ein).
+            try {
+                if (this._wireId && window.Livewire) {
+                    const wire = window.Livewire.find(this._wireId);
+                    const parts = this.wireProperty.split('.');
+                    let val = wire?.get(parts[0]);
+                    for (let i = 1; i < parts.length && val; i++) val = val[parts[i]];
+                    if (typeof val === 'string' && val.length > 0) {
+                        this.initial = val;
+                        console.log('[tinymceEditor] refreshed initial from Livewire', { length: val.length });
+                    }
+                }
+            } catch (e) {
+                console.warn('[tinymceEditor] could not refresh initial', e);
+            }
+
             const initPromise = window.tinymce.init({
                 target: target,
                 license_key: 'gpl',
