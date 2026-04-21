@@ -250,7 +250,7 @@
         </x-ui-page-actionbar>
 
         {{-- Spacer zur Breadcrumb-Leiste --}}
-        <div aria-hidden="true" style="height:2.5rem;"></div>
+        <div aria-hidden="true" style="height:1.25rem;"></div>
 
         {{-- Header --}}
         <div class="mb-4 bg-white border border-[var(--ui-border)] rounded-lg px-4 py-3.5"
