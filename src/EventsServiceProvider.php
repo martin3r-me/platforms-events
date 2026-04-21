@@ -115,6 +115,25 @@ class EventsServiceProvider extends ServiceProvider
             $registry->register(new \Platform\Events\Tools\CreateEventNoteTool());
             $registry->register(new \Platform\Events\Tools\UpdateEventNoteTool());
             $registry->register(new \Platform\Events\Tools\DeleteEventNoteTool());
+
+            // --- Angebote (Quotes) ---
+            $registry->register(new \Platform\Events\Tools\ListQuoteItemsTool());
+            $registry->register(new \Platform\Events\Tools\CreateQuoteItemTool());
+            $registry->register(new \Platform\Events\Tools\ListQuotePositionsTool());
+            $registry->register(new \Platform\Events\Tools\CreateQuotePositionTool());
+
+            // --- Bestellungen (Orders) ---
+            $registry->register(new \Platform\Events\Tools\ListOrderItemsTool());
+            $registry->register(new \Platform\Events\Tools\CreateOrderItemTool());
+            $registry->register(new \Platform\Events\Tools\ListOrderPositionsTool());
+            $registry->register(new \Platform\Events\Tools\CreateOrderPositionTool());
+
+            // --- Read-Tools für weitere Entitäten ---
+            $registry->register(new \Platform\Events\Tools\ListContractsTool());
+            $registry->register(new \Platform\Events\Tools\ListInvoicesTool());
+            $registry->register(new \Platform\Events\Tools\ListPickListsTool());
+            $registry->register(new \Platform\Events\Tools\ListFeedbackEntriesTool());
+            $registry->register(new \Platform\Events\Tools\ListEmailLogsTool());
         } catch (\Throwable $e) {
             // Silent fail – Tool-Registry ggf. noch nicht verfügbar
         }
