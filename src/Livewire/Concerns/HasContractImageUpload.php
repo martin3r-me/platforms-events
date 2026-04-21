@@ -17,6 +17,16 @@ trait HasContractImageUpload
     public $contractImage = null;
     public bool $uploadingImage = false;
 
+    /**
+     * Disk-Auswahl: S3 wenn konfiguriert, sonst public (braucht storage:link).
+     * Niemals local, denn der ist privat und hat keine URL-Config.
+     */
+    protected function pickStorageDisk(): string
+    {
+        if (config('filesystems.disks.s3.bucket')) return 's3';
+        return 'public';
+    }
+
     public function updatedContractImage(): void
     {
         if (!$this->contractImage) return;
@@ -26,7 +36,7 @@ trait HasContractImageUpload
             $user = Auth::user();
             $teamId = $user?->currentTeam?->id ?? 0;
 
-            $disk = config('filesystems.default', 'public');
+            $disk = $this->pickStorageDisk();
 
             $ext = strtolower($this->contractImage->getClientOriginalExtension() ?: 'png');
             if (!in_array($ext, ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'], true)) {

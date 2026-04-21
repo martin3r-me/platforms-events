@@ -19,29 +19,38 @@ class ContractRenderer
      * Rendert den Vertragstext nach HTML. Ersetzt Platzhalter mit Event-Daten
      * und laesst Markdown/GFM durch CommonMark laufen (inkl. Bildern).
      */
-    public static function renderHtml(Contract $contract, Event $event): string
+    public static function renderHtml(Contract $contract, Event $event, string $mode = 'web'): string
     {
         $raw = (string) ($contract->content['text'] ?? '');
         if ($raw === '') return '';
 
         $filled = self::replacePlaceholders($raw, $event, $contract);
-        $filled = self::resolveAssetUrls($filled);
+        $filled = self::resolveAssetUrls($filled, $mode);
         return self::markdownToHtml($filled);
     }
 
     /**
-     * Ersetzt events-asset://{disk}/{path} durch eine fuer das aktuelle
-     * Storage-Backend passende URL (presigned bei S3, direkt bei lokalem Disk).
+     * Ersetzt events-asset://{disk}/{path}:
+     * - mode='web': echte URL (temporaryUrl bei S3, ->url() sonst)
+     * - mode='pdf': base64-Data-URL (damit DomPDF nicht vom Netz abhaengig ist)
      */
-    public static function resolveAssetUrls(string $text): string
+    public static function resolveAssetUrls(string $text, string $mode = 'web'): string
     {
         return preg_replace_callback(
             '#events-asset://([a-z0-9_-]+)/([^\s\)]+)#i',
-            function ($m) {
+            function ($m) use ($mode) {
                 $disk = $m[1];
                 $path = $m[2];
                 try {
                     $storage = Storage::disk($disk);
+                    if (!$storage->exists($path)) return $m[0];
+
+                    if ($mode === 'pdf') {
+                        $bytes = $storage->get($path);
+                        $mime = $storage->mimeType($path) ?: self::guessMimeFromPath($path);
+                        return 'data:' . $mime . ';base64,' . base64_encode($bytes);
+                    }
+
                     if ($storage->providesTemporaryUrls()) {
                         return (string) $storage->temporaryUrl($path, now()->addHours(24));
                     }
@@ -52,6 +61,19 @@ class ContractRenderer
             },
             $text
         );
+    }
+
+    protected static function guessMimeFromPath(string $path): string
+    {
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        return match ($ext) {
+            'png'          => 'image/png',
+            'jpg', 'jpeg'  => 'image/jpeg',
+            'gif'          => 'image/gif',
+            'webp'         => 'image/webp',
+            'svg'          => 'image/svg+xml',
+            default        => 'application/octet-stream',
+        };
     }
 
     /**

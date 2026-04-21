@@ -36,7 +36,7 @@
         {{ $event->name }}@if($event->customer) · {{ $event->customer }} @endif
     </div>
 
-    <div class="body">{!! \Platform\Events\Services\ContractRenderer::renderHtml($contract, $event) !!}</div>
+    <div class="body">{!! \Platform\Events\Services\ContractRenderer::renderHtml($contract, $event, 'pdf') !!}</div>
 
     <div class="signatures">
         <div class="sig">
