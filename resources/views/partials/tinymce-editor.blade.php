@@ -107,6 +107,8 @@ window.tinymceEditor = function (opts) {
                 target: target,
                 license_key: 'gpl',
                 height: self.height,
+                min_height: self.height,
+                autoresize_bottom_margin: 16,
                 menubar: 'file edit view insert format table',
                 plugins: 'lists table pagebreak wordcount image link autolink code',
                 toolbar: 'undo redo | styles | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | link image table | pagebreak | removeformat | code',
@@ -167,6 +169,14 @@ window.tinymceEditor = function (opts) {
 
 <style>
     .tox-tinymce { display: block !important; }
+    .tox-tinymce .tox-edit-area {
+        flex: 1 1 auto !important;
+        min-height: 300px !important;
+    }
+    .tox-tinymce .tox-edit-area > iframe {
+        height: 100% !important;
+        min-height: 300px !important;
+    }
 </style>
 <div wire:ignore
      x-data="tinymceEditor({ uid: @js($uid), wireProperty: @js($wireProperty), initial: @js((string) $initial), height: {{ (int) $height }} })"
