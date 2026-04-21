@@ -15,6 +15,16 @@
         ];
         $currentStatus = $event->status ?: 'Option';
         $statusClass   = $statusBadge[$currentStatus] ?? 'bg-slate-100 text-slate-600';
+        $statusDotMap = [
+            'Vertrag'       => 'bg-green-500',
+            'Definitiv'     => 'bg-green-400',
+            'Option'        => 'bg-yellow-400',
+            'Abgeschlossen' => 'bg-slate-400',
+            'Storno'        => 'bg-red-500',
+            'Warteliste'    => 'bg-orange-400',
+            'Tendenz'       => 'bg-purple-400',
+        ];
+        $statusDotClass = $statusDotMap[$currentStatus] ?? 'bg-slate-400';
 
         $tabs = [
             'basis'        => ['label' => 'Basis',             'icon' => 'heroicon-o-identification'],
@@ -240,47 +250,48 @@
         </x-ui-page-actionbar>
 
         {{-- Header --}}
-        <div class="mt-4 bg-white border border-[var(--ui-border)] rounded-lg p-5">
-            <div class="flex items-start justify-between gap-4 flex-wrap">
-                <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-2 text-[0.68rem] font-mono text-[var(--ui-muted)] mb-1">
-                        <span class="font-bold text-[var(--ui-primary)]">{{ $event->event_number }}</span>
-                        @if($event->status_changed_at)
-                            <span>· Status geändert {{ $event->status_changed_at->diffForHumans() }}</span>
-                        @endif
-                    </div>
-                    <h1 class="text-xl font-bold text-[var(--ui-secondary)] truncate">{{ $event->name }}</h1>
-                    <div class="mt-1 flex items-center gap-3 text-xs text-[var(--ui-muted)] flex-wrap">
-                        @if($event->customer)
-                            <span class="flex items-center gap-1">
-                                @svg('heroicon-o-user', 'w-3.5 h-3.5')
-                                {{ $event->customer }}
-                            </span>
-                        @endif
-                        @if($event->start_date)
-                            <span class="flex items-center gap-1 font-mono">
-                                @svg('heroicon-o-calendar', 'w-3.5 h-3.5')
-                                {{ $event->start_date->format('d.m.Y') }}
-                                @if($event->end_date && $event->end_date != $event->start_date)
-                                    – {{ $event->end_date->format('d.m.Y') }}
-                                @endif
-                            </span>
-                        @endif
-                        @if($event->responsible)
-                            <span class="flex items-center gap-1">
-                                @svg('heroicon-o-user-circle', 'w-3.5 h-3.5')
-                                {{ $event->responsible }}
-                            </span>
-                        @endif
+        <div class="mt-4 bg-white border border-[var(--ui-border)] rounded-lg px-4 py-3">
+            <div class="flex items-center justify-between gap-4 flex-wrap">
+                <div class="min-w-0 flex-1 flex items-center gap-3">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 {{ $statusDotClass ?? 'bg-slate-400' }}"
+                          title="Status: {{ $currentStatus }}"></span>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h1 class="text-base font-bold text-[var(--ui-secondary)] truncate m-0 leading-tight">{{ $event->name ?: $event->event_number }}</h1>
+                            <span class="text-[0.62rem] font-bold font-mono text-[var(--ui-primary)] flex-shrink-0">{{ $event->event_number }}</span>
+                        </div>
+                        <div class="mt-0.5 flex items-center gap-2.5 text-[0.65rem] text-[var(--ui-muted)] flex-wrap leading-tight">
+                            @if($event->start_date)
+                                <span class="flex items-center gap-1 font-mono">
+                                    @svg('heroicon-o-calendar', 'w-3 h-3')
+                                    {{ $event->start_date->format('d.m.Y') }}@if($event->end_date && $event->end_date != $event->start_date) – {{ $event->end_date->format('d.m.Y') }}@endif
+                                </span>
+                            @endif
+                            @if($event->customer)
+                                <span class="flex items-center gap-1">
+                                    @svg('heroicon-o-user', 'w-3 h-3')
+                                    {{ $event->customer }}
+                                </span>
+                            @endif
+                            @if($event->responsible)
+                                <span class="flex items-center gap-1">
+                                    @svg('heroicon-o-user-circle', 'w-3 h-3')
+                                    {{ $event->responsible }}
+                                </span>
+                            @endif
+                            @if($event->status_changed_at)
+                                <span class="flex items-center gap-1 text-slate-400">
+                                    @svg('heroicon-o-arrow-path', 'w-3 h-3')
+                                    {{ $event->status_changed_at->diffForHumans() }}
+                                </span>
+                            @endif
+                        </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-[0.62rem] font-bold px-2 py-0.5 rounded-full {{ $statusClass }}">
-                        {{ $currentStatus }}
-                    </span>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <span class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Status</span>
                     <select wire:change="setStatus($event.target.value); $event.target.blur()"
-                            class="border border-[var(--ui-border)] rounded-md px-2 py-1 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                        <option value="">Status ändern …</option>
+                            class="border border-[var(--ui-border)] rounded-md px-2.5 py-1 text-[0.72rem] font-semibold bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30 {{ $statusClass }}">
                         @foreach($statusOptions as $s)
                             <option value="{{ $s }}" @if($currentStatus === $s) selected @endif>{{ $s }}</option>
                         @endforeach
