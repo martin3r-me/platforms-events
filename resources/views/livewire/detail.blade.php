@@ -778,8 +778,18 @@
                                                    class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-semibold text-[var(--ui-secondary)] bg-transparent focus:bg-white">
                                         </td>
                                         <td class="px-2 py-1.5">
-                                            <input wire:model.blur="inlineSchedule.{{ $item->uuid }}.raum" type="text" placeholder="—"
-                                                   class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs bg-transparent focus:bg-white">
+                                            @php $currentRaum = $inlineSchedule[$item->uuid]['raum'] ?? ''; @endphp
+                                            <select wire:model.blur="inlineSchedule.{{ $item->uuid }}.raum"
+                                                    class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs bg-transparent focus:bg-white {{ empty($eventRooms) ? 'opacity-60' : '' }}"
+                                                    @disabled(empty($eventRooms))>
+                                                <option value="">— wählen —</option>
+                                                @foreach($eventRooms as $room)
+                                                    <option value="{{ $room }}">{{ $room }}</option>
+                                                @endforeach
+                                                @if($currentRaum && !in_array($currentRaum, $eventRooms, true))
+                                                    <option value="{{ $currentRaum }}">{{ $currentRaum }} (nicht mehr gebucht)</option>
+                                                @endif
+                                            </select>
                                         </td>
                                         <td class="px-2 py-1.5">
                                             <input wire:model.blur="inlineSchedule.{{ $item->uuid }}.bemerkung" type="text" placeholder="Bemerkung…"
@@ -818,8 +828,15 @@
                                        class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                             </div>
                             <div class="col-span-2">
-                                <input wire:model.defer="newScheduleInline.raum" type="text" placeholder="Raum"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                <select wire:model.defer="newScheduleInline.raum"
+                                        class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30 {{ empty($eventRooms) ? 'opacity-60' : '' }}"
+                                        @disabled(empty($eventRooms))
+                                        title="{{ empty($eventRooms) ? 'Zuerst im Räume-Tab Räume hinzufügen' : 'Raum aus den gebuchten Räumen wählen' }}">
+                                    <option value="">{{ empty($eventRooms) ? '— erst Räume anlegen —' : 'Raum wählen …' }}</option>
+                                    @foreach($eventRooms as $room)
+                                        <option value="{{ $room }}">{{ $room }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                             <div class="col-span-1">
                                 <input wire:model.defer="newScheduleInline.bemerkung" type="text" placeholder="Bemerk."

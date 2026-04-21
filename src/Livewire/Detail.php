@@ -932,6 +932,16 @@ class Detail extends Component
 
         $notesByType = $notes->groupBy('type');
 
+        // Räume, die beim Event tatsaechlich gebucht sind → Auswahlliste fuer Ablaufplan.
+        $eventRooms = $bookings
+            ->map(fn ($b) => $b->location?->kuerzel ?: ($b->location?->name ?: $b->raum))
+            ->filter()
+            ->map(fn ($s) => trim((string) $s))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
         return view('events::livewire.detail', [
             'days'           => $days,
             'bookings'       => $bookings,
@@ -953,6 +963,7 @@ class Detail extends Component
             'crmSlots'            => $crmSlots,
             'crmContactAvailable' => $crmContactAvailable,
             'crmContactSlots'     => $crmContactSlots,
+            'eventRooms'          => $eventRooms,
         ])->layout('platform::layouts.app');
     }
 }
