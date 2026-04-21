@@ -35,7 +35,10 @@
             </x-ui-button>
         </x-ui-page-actionbar>
 
-        <div class="space-y-6 pt-4">
+        {{-- Spacer zur Breadcrumb-Leiste --}}
+        <div aria-hidden="true" style="height:0.625rem;"></div>
+
+        <div class="space-y-6">
 
             {{-- Stats --}}
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">

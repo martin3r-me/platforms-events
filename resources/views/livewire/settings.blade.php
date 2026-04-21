@@ -21,7 +21,10 @@
             ['label' => 'Einstellungen'],
         ]" />
 
-        <div class="mt-4 border-b border-[var(--ui-border)] overflow-x-auto">
+        {{-- Spacer zur Breadcrumb-Leiste --}}
+        <div aria-hidden="true" style="height:0.625rem;"></div>
+
+        <div class="border-b border-[var(--ui-border)] overflow-x-auto">
             <nav class="flex gap-1">
                 @foreach($tabs as $key => $meta)
                     <button wire:click="$set('activeTab', '{{ $key }}')" type="button"

@@ -37,8 +37,11 @@
             @endif
         </x-ui-page-actionbar>
 
+        {{-- Spacer zur Breadcrumb-Leiste --}}
+        <div aria-hidden="true" style="height:0.625rem;"></div>
+
         {{-- Tab-Navigation --}}
-        <div class="mt-4 border-b border-[var(--ui-border)]">
+        <div class="border-b border-[var(--ui-border)]">
             <nav class="flex gap-1">
                 @foreach($tabs as $key => $meta)
                     <button wire:click="$set('activeTab', '{{ $key }}')" type="button"
