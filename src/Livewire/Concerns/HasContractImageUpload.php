@@ -26,6 +26,8 @@ trait HasContractImageUpload
             $user = Auth::user();
             $teamId = $user?->currentTeam?->id ?? 0;
 
+            $disk = config('filesystems.default', 'public');
+
             $ext = strtolower($this->contractImage->getClientOriginalExtension() ?: 'png');
             if (!in_array($ext, ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'], true)) {
                 $ext = 'png';
@@ -34,14 +36,15 @@ trait HasContractImageUpload
             $filename = Str::random(12) . '.' . $ext;
             $dir = "events/contract-assets/team-{$teamId}";
 
-            $storedPath = $this->contractImage->storeAs($dir, $filename, 'public');
+            $storedPath = $this->contractImage->storeAs($dir, $filename, $disk);
 
-            if (!$storedPath || !Storage::disk('public')->exists($storedPath)) {
-                throw new \RuntimeException('Datei konnte nicht gespeichert werden (schreibrechte? disk=public)');
+            if (!$storedPath || !Storage::disk($disk)->exists($storedPath)) {
+                throw new \RuntimeException("Datei konnte nicht gespeichert werden (disk={$disk})");
             }
 
-            $url = Storage::disk('public')->url($storedPath);
-            $markdown = "\n\n![](" . $url . ")\n\n";
+            // URL-Platzhalter statt fertiger URL: wird beim Rendern ueber
+            // Storage-Disk aufgeloest (presigned bei S3, direkt bei local).
+            $markdown = "\n\n![](events-asset://{$disk}/{$storedPath})\n\n";
 
             $this->insertImageMarkdown($markdown);
         } catch (\Throwable $e) {

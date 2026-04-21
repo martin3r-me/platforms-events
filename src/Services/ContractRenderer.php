@@ -4,6 +4,7 @@ namespace Platform\Events\Services;
 
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
 use League\CommonMark\Extension\GithubFlavoredMarkdownExtension;
 use League\CommonMark\MarkdownConverter;
@@ -24,7 +25,33 @@ class ContractRenderer
         if ($raw === '') return '';
 
         $filled = self::replacePlaceholders($raw, $event, $contract);
+        $filled = self::resolveAssetUrls($filled);
         return self::markdownToHtml($filled);
+    }
+
+    /**
+     * Ersetzt events-asset://{disk}/{path} durch eine fuer das aktuelle
+     * Storage-Backend passende URL (presigned bei S3, direkt bei lokalem Disk).
+     */
+    public static function resolveAssetUrls(string $text): string
+    {
+        return preg_replace_callback(
+            '#events-asset://([a-z0-9_-]+)/([^\s\)]+)#i',
+            function ($m) {
+                $disk = $m[1];
+                $path = $m[2];
+                try {
+                    $storage = Storage::disk($disk);
+                    if ($storage->providesTemporaryUrls()) {
+                        return (string) $storage->temporaryUrl($path, now()->addHours(24));
+                    }
+                    return (string) $storage->url($path);
+                } catch (\Throwable $e) {
+                    return $m[0];
+                }
+            },
+            $text
+        );
     }
 
     /**
