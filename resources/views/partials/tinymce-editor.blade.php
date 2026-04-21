@@ -7,7 +7,6 @@
 
 @php
     $uid = $uniqueId ?: ('tiny-' . uniqid());
-    $initialJson = json_encode((string) $initial, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 @endphp
 
 {{-- Script-Definition VOR dem div, damit window.tinymceEditor verfuegbar ist,
@@ -100,12 +99,7 @@ window.tinymceEditor = function (opts) {
 @endonce
 
 <div wire:ignore
-     x-data="tinymceEditor({
-        uid: '{{ $uid }}',
-        wireProperty: '{{ $wireProperty }}',
-        initial: {!! $initialJson !!},
-        height: {{ (int) $height }},
-     })"
+     x-data="tinymceEditor({ uid: @js($uid), wireProperty: @js($wireProperty), initial: @js((string) $initial), height: {{ (int) $height }} })"
      x-init="$nextTick(() => setTimeout(() => init(), 50))">
     <textarea id="{{ $uid }}" style="display:none;"></textarea>
 </div>
