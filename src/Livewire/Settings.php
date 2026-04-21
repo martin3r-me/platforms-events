@@ -265,6 +265,39 @@ class Settings extends Component
         $this->tplModal = true;
     }
 
+    public function convertTplToMarkdown(): void
+    {
+        $current = (string) ($this->tplForm['html_content'] ?? '');
+        $this->tplForm['html_content'] = $this->htmlToMarkdown($current);
+    }
+
+    protected function htmlToMarkdown(string $content): string
+    {
+        $trim = trim($content);
+        if ($trim === '') return '';
+        if (!$this->looksLikeHtml($trim)) return $content;
+
+        try {
+            $converter = new \League\HTMLToMarkdown\HtmlConverter([
+                'strip_tags'                 => true,
+                'remove_nodes'               => 'script style',
+                'hard_break'                 => true,
+                'use_autolinks'              => false,
+                'header_style'               => 'atx',
+                'bold_style'                 => '**',
+                'italic_style'               => '_',
+            ]);
+            return trim($converter->convert($trim));
+        } catch (\Throwable $e) {
+            return $content;
+        }
+    }
+
+    protected function looksLikeHtml(string $s): bool
+    {
+        return (bool) preg_match('/<\/?[a-z][a-z0-9]*\b[^>]*>/i', $s);
+    }
+
     public function saveTemplate(): void
     {
         $teamId = $this->teamId();
@@ -275,12 +308,18 @@ class Settings extends Component
         $slug = trim((string) $this->tplForm['slug']);
         if ($slug === '') $slug = Str::slug($label);
 
+        $content = (string) $this->tplForm['html_content'];
+        if ($this->looksLikeHtml($content)) {
+            $content = $this->htmlToMarkdown($content);
+            $this->tplForm['html_content'] = $content;
+        }
+
         $data = [
             'label'        => $label,
             'slug'         => $slug,
             'description'  => trim((string) $this->tplForm['description']),
             'color'        => $this->tplForm['color'] ?: '#7c3aed',
-            'html_content' => $this->tplForm['html_content'],
+            'html_content' => $content,
             'is_active'    => (bool) $this->tplForm['is_active'],
         ];
 

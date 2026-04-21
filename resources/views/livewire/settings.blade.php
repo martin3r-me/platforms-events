@@ -306,11 +306,18 @@
                         </div>
                     </div>
                     <div>
-                        <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">HTML-Inhalt</label>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Inhalt (Markdown)</label>
+                            <button type="button" wire:click="convertTplToMarkdown"
+                                    class="flex items-center gap-1 px-2 py-0.5 border border-slate-200 rounded bg-white hover:bg-slate-50 text-[0.58rem] font-semibold text-slate-600 cursor-pointer">
+                                @svg('heroicon-o-arrow-path', 'w-2.5 h-2.5')
+                                HTML → Markdown konvertieren
+                            </button>
+                        </div>
                         <textarea wire:model="tplForm.html_content" rows="14"
                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono"
-                                  placeholder="&lt;h1&gt;Nutzungsvertrag&lt;/h1&gt;&#10;&lt;p&gt;Platzhalter wie @{{customer_company}} werden beim Erstellen ersetzt.&lt;/p&gt;"></textarea>
-                        <p class="text-[0.56rem] text-[var(--ui-muted)] mt-1">Unterstützt HTML. Platzhalter sind optional und werden im Dokument-Editor ersetzt.</p>
+                                  placeholder="# Nutzungsvertrag&#10;&#10;Platzhalter wie @{{customer_company}} werden beim Erstellen ersetzt.&#10;&#10;Du kannst auch HTML einfuegen und danach auf „HTML → Markdown konvertieren" klicken."></textarea>
+                        <p class="text-[0.56rem] text-[var(--ui-muted)] mt-1">Markdown empfohlen (passt zum Vertrags-Editor). HTML wird beim Speichern automatisch nach Markdown konvertiert.</p>
                     </div>
                     <label class="flex items-center gap-2 text-[0.68rem]">
                         <input type="checkbox" wire:model="tplForm.is_active">
