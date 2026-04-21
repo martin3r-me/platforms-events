@@ -137,6 +137,9 @@ window.tinymceEditor = function (opts) {
                 table_use_colgroups: false,
                 promotion: false,
                 branding: false,
+                convert_urls: false,
+                relative_urls: false,
+                remove_script_host: false,
                 content_style: 'body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.6; color: #1a1a1a; margin: 16px; }',
                 setup: function (editor) {
                     self._editor = editor;
