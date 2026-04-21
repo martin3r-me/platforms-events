@@ -104,11 +104,15 @@
                 @endforeach
 
                 {{-- ===== Angebote mit Drilldown ===== --}}
-                <div x-data="{ open: @js($activeTab === 'angebote') }">
+                @php
+                    $quotesRoot = $activeTab === 'angebote' && !$pendingQuoteView && !$pendingQuoteDayId && !$pendingQuoteItemId;
+                    $quotesAnyInside = $activeTab === 'angebote';
+                @endphp
+                <div x-data="{ open: @js($quotesAnyInside) }">
                     <button type="button" @click="open = !open" x-on:dblclick="$wire.resetQuoteView()"
                             wire:click="resetQuoteView"
                             class="w-full flex items-center gap-2 px-3 py-2 rounded-md transition text-left
-                                   {{ $activeTab === 'angebote' ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
+                                   {{ $quotesRoot ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : ($quotesAnyInside ? 'text-[var(--ui-primary)] font-medium' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]') }}">
                         @svg('heroicon-o-document-duplicate', 'w-4 h-4 flex-shrink-0')
                         <span class="flex-1 truncate">Angebote</span>
                         @if($counts['angebote_items'] > 0)
@@ -117,21 +121,43 @@
                         <svg :class="open ? 'rotate-90' : ''" class="w-3 h-3 transition-transform text-[var(--ui-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                     </button>
 
+                    @php
+                        $isQuotesTab = $activeTab === 'angebote';
+                        $qArticlesActive = $isQuotesTab && $pendingQuoteView === 'articles';
+                        // Root-Overview nur wenn Angebote-Tab aktiv UND weder Articles/Day/Item
+                        $qOverviewActive = $isQuotesTab && !$pendingQuoteView && !$pendingQuoteDayId && !$pendingQuoteItemId;
+
+                        // Day-Id des aktiven Items ermitteln (damit Datum mit-highlighted wird)
+                        $qActiveItemDayId = null;
+                        if ($pendingQuoteItemId) {
+                            foreach ($quoteTree as $dn) {
+                                foreach ($dn['types'] as $tp) {
+                                    if ($tp['id'] === $pendingQuoteItemId) { $qActiveItemDayId = $dn['day_id']; break 2; }
+                                }
+                            }
+                        }
+                    @endphp
                     <div x-show="open" x-cloak class="ml-3 border-l border-[var(--ui-border)]/40 pl-2 space-y-0.5 mt-0.5">
                         <button type="button" wire:click="openQuoteArticles"
-                                class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[0.72rem] text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]">
+                                class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[0.72rem] transition
+                                       {{ $qArticlesActive ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
                             @svg('heroicon-o-list-bullet', 'w-3.5 h-3.5 flex-shrink-0')
                             <span class="flex-1 text-left">Alle Artikel</span>
                             @if($counts['angebote_positionen'] > 0)
-                                <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">{{ $counts['angebote_positionen'] }}</span>
+                                <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full {{ $qArticlesActive ? 'bg-[var(--ui-primary)]/20 text-[var(--ui-primary)]' : 'bg-blue-100 text-blue-700' }}">{{ $counts['angebote_positionen'] }}</span>
                             @endif
                         </button>
 
                         @foreach($quoteTree as $dayNode)
-                            <div x-data="{ sub: false }">
+                            @php
+                                $dayActive = $isQuotesTab && ($pendingQuoteDayId === $dayNode['day_id'] || $qActiveItemDayId === $dayNode['day_id']);
+                                $dayIsDirect = $isQuotesTab && $pendingQuoteDayId === $dayNode['day_id'];
+                            @endphp
+                            <div x-data="{ sub: @js($dayActive) }">
                                 <button type="button" @click="sub = !sub"
                                         wire:click="openQuoteDay({{ $dayNode['day_id'] }})"
-                                        class="w-full flex items-center gap-1.5 px-2 py-1 rounded-md text-[0.72rem] text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]">
+                                        class="w-full flex items-center gap-1.5 px-2 py-1 rounded-md text-[0.72rem] transition
+                                               {{ $dayIsDirect ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : ($dayActive ? 'text-[var(--ui-secondary)]' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]') }}">
                                     <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: {{ $dayNode['color'] }}"></span>
                                     <span class="flex-1 text-left truncate font-mono text-[0.68rem]">{{ $dayNode['datum'] ?? $dayNode['label'] }}</span>
                                     @if($dayNode['positions'] > 0)
@@ -144,9 +170,11 @@
                                 @if(count($dayNode['types']) > 0)
                                     <div x-show="sub" x-cloak class="ml-4 space-y-0.5 mt-0.5">
                                         @foreach($dayNode['types'] as $type)
+                                            @php $typeActive = $isQuotesTab && $pendingQuoteItemId === $type['id']; @endphp
                                             <button type="button" wire:click="openQuoteItem({{ $type['id'] }})"
-                                                    class="w-full flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[0.66rem] text-[var(--ui-muted)] hover:bg-[var(--ui-muted-5)] hover:text-[var(--ui-primary)]">
-                                                <span class="w-1 h-1 rounded-full bg-[var(--ui-muted)] flex-shrink-0"></span>
+                                                    class="w-full flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[0.66rem] transition
+                                                           {{ $typeActive ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-muted)] hover:bg-[var(--ui-muted-5)] hover:text-[var(--ui-primary)]' }}">
+                                                <span class="w-1 h-1 rounded-full flex-shrink-0 {{ $typeActive ? 'bg-[var(--ui-primary)]' : 'bg-[var(--ui-muted)]' }}"></span>
                                                 <span class="flex-1 text-left truncate">{{ $type['typ'] }}</span>
                                                 @if($type['positions'] > 0)
                                                     <span class="text-[0.58rem] text-[var(--ui-muted)]">{{ $type['positions'] }}</span>
@@ -161,11 +189,25 @@
                 </div>
 
                 {{-- ===== Bestellungen mit Drilldown ===== --}}
-                <div x-data="{ open: @js($activeTab === 'bestellungen') }">
+                @php
+                    $ordersRoot = $activeTab === 'bestellungen' && !$pendingOrderView && !$pendingOrderDayId && !$pendingOrderItemId;
+                    $ordersAnyInside = $activeTab === 'bestellungen';
+                    $oArticlesActive = $ordersAnyInside && $pendingOrderView === 'articles';
+
+                    $oActiveItemDayId = null;
+                    if ($pendingOrderItemId) {
+                        foreach ($orderTree as $dn) {
+                            foreach ($dn['types'] as $tp) {
+                                if ($tp['id'] === $pendingOrderItemId) { $oActiveItemDayId = $dn['day_id']; break 2; }
+                            }
+                        }
+                    }
+                @endphp
+                <div x-data="{ open: @js($ordersAnyInside) }">
                     <button type="button" @click="open = !open"
                             wire:click="resetOrderView"
                             class="w-full flex items-center gap-2 px-3 py-2 rounded-md transition text-left
-                                   {{ $activeTab === 'bestellungen' ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
+                                   {{ $ordersRoot ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : ($ordersAnyInside ? 'text-[var(--ui-primary)] font-medium' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]') }}">
                         @svg('heroicon-o-shopping-cart', 'w-4 h-4 flex-shrink-0')
                         <span class="flex-1 truncate">Bestellungen</span>
                         @if($counts['bestellungen_items'] > 0)
@@ -176,19 +218,25 @@
 
                     <div x-show="open" x-cloak class="ml-3 border-l border-[var(--ui-border)]/40 pl-2 space-y-0.5 mt-0.5">
                         <button type="button" wire:click="openOrderArticles"
-                                class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[0.72rem] text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]">
+                                class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[0.72rem] transition
+                                       {{ $oArticlesActive ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
                             @svg('heroicon-o-list-bullet', 'w-3.5 h-3.5 flex-shrink-0')
                             <span class="flex-1 text-left">Alle Positionen</span>
                             @if($counts['bestellungen_positionen'] > 0)
-                                <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">{{ $counts['bestellungen_positionen'] }}</span>
+                                <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full {{ $oArticlesActive ? 'bg-[var(--ui-primary)]/20 text-[var(--ui-primary)]' : 'bg-blue-100 text-blue-700' }}">{{ $counts['bestellungen_positionen'] }}</span>
                             @endif
                         </button>
 
                         @foreach($orderTree as $dayNode)
-                            <div x-data="{ sub: false }">
+                            @php
+                                $dayActive = $ordersAnyInside && ($pendingOrderDayId === $dayNode['day_id'] || $oActiveItemDayId === $dayNode['day_id']);
+                                $dayIsDirect = $ordersAnyInside && $pendingOrderDayId === $dayNode['day_id'];
+                            @endphp
+                            <div x-data="{ sub: @js($dayActive) }">
                                 <button type="button" @click="sub = !sub"
                                         wire:click="openOrderDay({{ $dayNode['day_id'] }})"
-                                        class="w-full flex items-center gap-1.5 px-2 py-1 rounded-md text-[0.72rem] text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]">
+                                        class="w-full flex items-center gap-1.5 px-2 py-1 rounded-md text-[0.72rem] transition
+                                               {{ $dayIsDirect ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : ($dayActive ? 'text-[var(--ui-secondary)]' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]') }}">
                                     <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: {{ $dayNode['color'] }}"></span>
                                     <span class="flex-1 text-left truncate font-mono text-[0.68rem]">{{ $dayNode['datum'] ?? $dayNode['label'] }}</span>
                                     @if($dayNode['positions'] > 0)
@@ -201,9 +249,11 @@
                                 @if(count($dayNode['types']) > 0)
                                     <div x-show="sub" x-cloak class="ml-4 space-y-0.5 mt-0.5">
                                         @foreach($dayNode['types'] as $type)
+                                            @php $typeActive = $ordersAnyInside && $pendingOrderItemId === $type['id']; @endphp
                                             <button type="button" wire:click="openOrderItem({{ $type['id'] }})"
-                                                    class="w-full flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[0.66rem] text-[var(--ui-muted)] hover:bg-[var(--ui-muted-5)] hover:text-[var(--ui-primary)]">
-                                                <span class="w-1 h-1 rounded-full bg-[var(--ui-muted)] flex-shrink-0"></span>
+                                                    class="w-full flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[0.66rem] transition
+                                                           {{ $typeActive ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-muted)] hover:bg-[var(--ui-muted-5)] hover:text-[var(--ui-primary)]' }}">
+                                                <span class="w-1 h-1 rounded-full flex-shrink-0 {{ $typeActive ? 'bg-[var(--ui-primary)]' : 'bg-[var(--ui-muted)]' }}"></span>
                                                 <span class="flex-1 text-left truncate">{{ $type['typ'] }}</span>
                                                 @if($type['positions'] > 0)
                                                     <span class="text-[0.58rem] text-[var(--ui-muted)]">{{ $type['positions'] }}</span>
