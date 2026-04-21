@@ -778,15 +778,18 @@
                                                    class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-semibold text-[var(--ui-secondary)] bg-transparent focus:bg-white">
                                         </td>
                                         <td class="px-2 py-1.5">
-                                            @php $currentRaum = $inlineSchedule[$item->uuid]['raum'] ?? ''; @endphp
+                                            @php
+                                                $currentRaum = $inlineSchedule[$item->uuid]['raum'] ?? '';
+                                                $knownValues = array_column($eventRooms, 'value');
+                                            @endphp
                                             <select wire:model.blur="inlineSchedule.{{ $item->uuid }}.raum"
                                                     class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs bg-transparent focus:bg-white {{ empty($eventRooms) ? 'opacity-60' : '' }}"
                                                     @disabled(empty($eventRooms))>
                                                 <option value="">— wählen —</option>
                                                 @foreach($eventRooms as $room)
-                                                    <option value="{{ $room }}">{{ $room }}</option>
+                                                    <option value="{{ $room['value'] }}">{{ $room['label'] }}</option>
                                                 @endforeach
-                                                @if($currentRaum && !in_array($currentRaum, $eventRooms, true))
+                                                @if($currentRaum && !in_array($currentRaum, $knownValues, true))
                                                     <option value="{{ $currentRaum }}">{{ $currentRaum }} (nicht mehr gebucht)</option>
                                                 @endif
                                             </select>
@@ -834,7 +837,7 @@
                                         title="{{ empty($eventRooms) ? 'Zuerst im Räume-Tab Räume hinzufügen' : 'Raum aus den gebuchten Räumen wählen' }}">
                                     <option value="">{{ empty($eventRooms) ? '— erst Räume anlegen —' : 'Raum wählen …' }}</option>
                                     @foreach($eventRooms as $room)
-                                        <option value="{{ $room }}">{{ $room }}</option>
+                                        <option value="{{ $room['value'] }}">{{ $room['label'] }}</option>
                                     @endforeach
                                 </select>
                             </div>
