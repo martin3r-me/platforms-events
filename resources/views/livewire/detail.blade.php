@@ -250,7 +250,7 @@
         </x-ui-page-actionbar>
 
         {{-- Header --}}
-        <div class="mt-5 mb-3 bg-white border border-[var(--ui-border)] rounded-lg px-4 py-3">
+        <div class="mt-8 mb-4 bg-white border border-[var(--ui-border)] rounded-lg px-4 py-3.5">
             <div class="flex items-center justify-between gap-4 flex-wrap">
                 <div class="min-w-0 flex-1 flex items-center gap-3">
                     <span class="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 {{ $statusDotClass ?? 'bg-slate-400' }}"
