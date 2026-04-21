@@ -36,7 +36,7 @@
             </nav>
         </div>
 
-        {{-- Macros via @php + reuse --}}
+        {{-- Konfiguration der einfachen Listen-Sektionen --}}
         @php
             $simpleLists = [
                 'cost_centers'  => ['title' => 'Kostenstellen',   'subtitle' => 'Werden im Event-Basis-Tab und in Rechnungen als Auswahl angezeigt.', 'list' => $costCenters,       'new' => 'newCostCenter',    'add' => 'addCostCenter',    'remove' => 'removeCostCenter',    'placeholder' => 'z.B. 4200-Hochzeiten'],
