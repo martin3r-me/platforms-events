@@ -52,17 +52,11 @@ class ContractRenderer
                         return 'data:' . $mime . ';base64,' . base64_encode($bytes);
                     }
 
+                    // Nur bei Disks mit nativer presigned-URL (S3) direkt verlinken.
+                    // Fuer 'local' und 'public' immer ueber die signierte Route
+                    // gehen, weil storage:link auf dem Server nicht garantiert ist.
                     if ($storage->providesTemporaryUrls()) {
                         return (string) $storage->temporaryUrl($path, now()->addHours(24));
-                    }
-
-                    // Disks ohne native URL (local) oder wenn ->url() nicht konfiguriert
-                    // ist -> ueber signierte Route ausliefern.
-                    try {
-                        $nativeUrl = $storage->url($path);
-                        if ($nativeUrl) return (string) $nativeUrl;
-                    } catch (\Throwable $e) {
-                        // faellt auf signierte Route
                     }
 
                     return (string) URL::temporarySignedRoute(
