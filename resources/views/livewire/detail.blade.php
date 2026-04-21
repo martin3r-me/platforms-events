@@ -47,7 +47,7 @@
 
     {{-- Event-Detail-Sidebar (Tab-Navigation + Drilldown) --}}
     <x-slot name="sidebar">
-        <x-ui-page-sidebar title="Event-Modul" width="w-72" :defaultOpen="true">
+        <x-ui-page-sidebar title="Event-Modul" width="w-36" :defaultOpen="true">
             {{-- Event-Header --}}
             <div class="p-4 border-b border-[var(--ui-border)] flex items-start gap-2">
                 @svg('heroicon-o-calendar-days', 'w-5 h-5 text-[var(--ui-primary)] flex-shrink-0 mt-0.5')
