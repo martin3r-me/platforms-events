@@ -3,9 +3,9 @@
 namespace Platform\Events\Livewire\Concerns;
 
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Livewire\Attributes\On;
 
 /**
  * Livewire-Trait fuer den Bild-Upload im Vertrags- und Template-Editor.
@@ -32,15 +32,23 @@ trait HasContractImageUpload
             }
 
             $filename = Str::random(12) . '.' . $ext;
-            $path = "events/contract-assets/team-{$teamId}/{$filename}";
+            $dir = "events/contract-assets/team-{$teamId}";
 
-            Storage::disk('public')->put($path, file_get_contents($this->contractImage->getRealPath()));
+            $storedPath = $this->contractImage->storeAs($dir, $filename, 'public');
 
-            $url = Storage::disk('public')->url($path);
+            if (!$storedPath || !Storage::disk('public')->exists($storedPath)) {
+                throw new \RuntimeException('Datei konnte nicht gespeichert werden (schreibrechte? disk=public)');
+            }
+
+            $url = Storage::disk('public')->url($storedPath);
             $markdown = "\n\n![](" . $url . ")\n\n";
 
             $this->insertImageMarkdown($markdown);
         } catch (\Throwable $e) {
+            Log::error('[Events] Bild-Upload fehlgeschlagen', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             session()->flash('contractImageError', 'Upload fehlgeschlagen: ' . $e->getMessage());
         } finally {
             $this->contractImage = null;
