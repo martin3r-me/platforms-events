@@ -47,7 +47,7 @@
 
     {{-- Event-Detail-Sidebar (Tab-Navigation + Drilldown) --}}
     <x-slot name="sidebar">
-        <x-ui-page-sidebar title="Event-Modul" width="w-36" :defaultOpen="true">
+        <x-ui-page-sidebar title="Event-Modul" width="w-fit min-w-[150px] max-w-[260px]" :defaultOpen="true">
             {{-- Event-Header --}}
             <div class="p-4 border-b border-[var(--ui-border)] flex items-start gap-2">
                 @svg('heroicon-o-calendar-days', 'w-5 h-5 text-[var(--ui-primary)] flex-shrink-0 mt-0.5')
@@ -96,7 +96,7 @@
                                       ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold'
                                       : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
                         @svg($t['icon'], 'w-4 h-4 flex-shrink-0')
-                        <span class="flex-1 truncate">{{ $t['label'] }}</span>
+                        <span class="flex-1 whitespace-nowrap">{{ $t['label'] }}</span>
                         @if(!empty($t['badge']) && $t['badge'] > 0)
                             <span class="text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full {{ $badgeClass($t['badge'], $t['badgeColor'] ?? 'slate') }}">{{ $t['badge'] }}</span>
                         @endif
@@ -114,7 +114,7 @@
                             class="w-full flex items-center gap-2 px-3 py-2 rounded-md transition text-left
                                    {{ $quotesRoot ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : ($quotesAnyInside ? 'text-[var(--ui-primary)] font-medium' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]') }}">
                         @svg('heroicon-o-document-duplicate', 'w-4 h-4 flex-shrink-0')
-                        <span class="flex-1 truncate">Angebote</span>
+                        <span class="flex-1 whitespace-nowrap">Angebote</span>
                         @if($counts['angebote_items'] > 0)
                             <span class="text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-[var(--ui-primary)]/20 text-[var(--ui-primary)]">{{ $counts['angebote_items'] }}</span>
                         @endif
@@ -159,7 +159,7 @@
                                         class="w-full flex items-center gap-1.5 px-2 py-1 rounded-md text-[0.72rem] transition
                                                {{ $dayIsDirect ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : ($dayActive ? 'text-[var(--ui-secondary)]' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]') }}">
                                     <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: {{ $dayNode['color'] }}"></span>
-                                    <span class="flex-1 text-left truncate font-mono text-[0.68rem]">{{ $dayNode['datum'] ?? $dayNode['label'] }}</span>
+                                    <span class="flex-1 text-left whitespace-nowrap font-mono text-[0.68rem]">{{ $dayNode['datum'] ?? $dayNode['label'] }}</span>
                                     @if($dayNode['positions'] > 0)
                                         <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-700">{{ $dayNode['positions'] }}</span>
                                     @endif
@@ -175,7 +175,7 @@
                                                     class="w-full flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[0.66rem] transition
                                                            {{ $typeActive ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-muted)] hover:bg-[var(--ui-muted-5)] hover:text-[var(--ui-primary)]' }}">
                                                 <span class="w-1 h-1 rounded-full flex-shrink-0 {{ $typeActive ? 'bg-[var(--ui-primary)]' : 'bg-[var(--ui-muted)]' }}"></span>
-                                                <span class="flex-1 text-left truncate">{{ $type['typ'] }}</span>
+                                                <span class="flex-1 text-left whitespace-nowrap">{{ $type['typ'] }}</span>
                                                 @if($type['positions'] > 0)
                                                     <span class="text-[0.58rem] text-[var(--ui-muted)]">{{ $type['positions'] }}</span>
                                                 @endif
@@ -209,7 +209,7 @@
                             class="w-full flex items-center gap-2 px-3 py-2 rounded-md transition text-left
                                    {{ $ordersRoot ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : ($ordersAnyInside ? 'text-[var(--ui-primary)] font-medium' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]') }}">
                         @svg('heroicon-o-shopping-cart', 'w-4 h-4 flex-shrink-0')
-                        <span class="flex-1 truncate">Bestellungen</span>
+                        <span class="flex-1 whitespace-nowrap">Bestellungen</span>
                         @if($counts['bestellungen_items'] > 0)
                             <span class="text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-[var(--ui-primary)]/20 text-[var(--ui-primary)]">{{ $counts['bestellungen_items'] }}</span>
                         @endif
@@ -238,7 +238,7 @@
                                         class="w-full flex items-center gap-1.5 px-2 py-1 rounded-md text-[0.72rem] transition
                                                {{ $dayIsDirect ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : ($dayActive ? 'text-[var(--ui-secondary)]' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]') }}">
                                     <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: {{ $dayNode['color'] }}"></span>
-                                    <span class="flex-1 text-left truncate font-mono text-[0.68rem]">{{ $dayNode['datum'] ?? $dayNode['label'] }}</span>
+                                    <span class="flex-1 text-left whitespace-nowrap font-mono text-[0.68rem]">{{ $dayNode['datum'] ?? $dayNode['label'] }}</span>
                                     @if($dayNode['positions'] > 0)
                                         <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-700">{{ $dayNode['positions'] }}</span>
                                     @endif
@@ -254,7 +254,7 @@
                                                     class="w-full flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[0.66rem] transition
                                                            {{ $typeActive ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-muted)] hover:bg-[var(--ui-muted-5)] hover:text-[var(--ui-primary)]' }}">
                                                 <span class="w-1 h-1 rounded-full flex-shrink-0 {{ $typeActive ? 'bg-[var(--ui-primary)]' : 'bg-[var(--ui-muted)]' }}"></span>
-                                                <span class="flex-1 text-left truncate">{{ $type['typ'] }}</span>
+                                                <span class="flex-1 text-left whitespace-nowrap">{{ $type['typ'] }}</span>
                                                 @if($type['positions'] > 0)
                                                     <span class="text-[0.58rem] text-[var(--ui-muted)]">{{ $type['positions'] }}</span>
                                                 @endif
@@ -274,7 +274,7 @@
                                       ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold'
                                       : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
                         @svg($t['icon'], 'w-4 h-4 flex-shrink-0')
-                        <span class="flex-1 truncate">{{ $t['label'] }}</span>
+                        <span class="flex-1 whitespace-nowrap">{{ $t['label'] }}</span>
                         @if(!empty($t['badge']) && $t['badge'] > 0)
                             <span class="text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full {{ $badgeClass($t['badge'], $t['badgeColor'] ?? 'slate') }}">{{ $t['badge'] }}</span>
                         @endif
