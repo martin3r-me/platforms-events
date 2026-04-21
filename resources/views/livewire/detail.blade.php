@@ -249,8 +249,12 @@
             </x-ui-button>
         </x-ui-page-actionbar>
 
+        {{-- Spacer zur Breadcrumb-Leiste --}}
+        <div aria-hidden="true" style="height:2.5rem;"></div>
+
         {{-- Header --}}
-        <div class="mt-8 mb-4 bg-white border border-[var(--ui-border)] rounded-lg px-4 py-3.5">
+        <div class="mb-4 bg-white border border-[var(--ui-border)] rounded-lg px-4 py-3.5"
+             style="margin-top: 0;">
             <div class="flex items-center justify-between gap-4 flex-wrap">
                 <div class="min-w-0 flex-1 flex items-center gap-3">
                     <span class="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 {{ $statusDotClass ?? 'bg-slate-400' }}"
