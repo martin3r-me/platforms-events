@@ -306,29 +306,16 @@
                         </div>
                     </div>
                     <div>
-                        <div class="flex items-center justify-between mb-1">
-                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Inhalt (Markdown)</label>
-                            <div class="flex items-center gap-1.5">
-                                <label class="flex items-center gap-1 px-2 py-0.5 border border-slate-200 rounded bg-white hover:bg-slate-50 text-[0.58rem] font-semibold text-slate-600 cursor-pointer">
-                                    @svg('heroicon-o-photo', 'w-2.5 h-2.5')
-                                    Bild einfügen
-                                    <input type="file" wire:model="contractImage" accept="image/*" class="hidden">
-                                </label>
-                                <button type="button" wire:click="convertTplToMarkdown"
-                                        class="flex items-center gap-1 px-2 py-0.5 border border-slate-200 rounded bg-white hover:bg-slate-50 text-[0.58rem] font-semibold text-slate-600 cursor-pointer">
-                                    @svg('heroicon-o-arrow-path', 'w-2.5 h-2.5')
-                                    HTML → Markdown
-                                </button>
-                            </div>
-                        </div>
-                        <div wire:loading wire:target="contractImage" class="text-[0.6rem] text-slate-500 mb-1">Bild wird hochgeladen …</div>
-                        @if(session('contractImageError'))
-                            <div class="text-[0.6rem] text-red-500 mb-1">{{ session('contractImageError') }}</div>
-                        @endif
-                        <textarea wire:model="tplForm.html_content" rows="14"
-                                  class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono"
-                                  placeholder="# Nutzungsvertrag&#10;&#10;Platzhalter wie {CUSTOMER_COMPANY}, {EVENT_NUMBER} etc. werden beim PDF-Export ersetzt.&#10;&#10;Auch HTML moeglich - beim Speichern automatisch nach Markdown konvertiert."></textarea>
-                        <p class="text-[0.56rem] text-[var(--ui-muted)] mt-1">Markdown empfohlen. Platzhalter in geschweiften Klammern (siehe unten) werden beim Rendern mit Event-Daten gefüllt.</p>
+                        <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Inhalt</label>
+                        @include('events::partials.tinymce-editor', [
+                            'wireProperty' => 'tplForm.html_content',
+                            'initial'      => $tplForm['html_content'] ?? '',
+                            'height'       => 500,
+                            'uniqueId'     => 'tiny-template',
+                        ])
+                        <p class="text-[0.56rem] text-[var(--ui-muted)] mt-2">
+                            Formatierung ueber die Toolbar. Platzhalter in geschweiften Klammern werden beim Rendern mit Event-Daten gefuellt.
+                        </p>
 
                         {{-- Platzhalter-Liste --}}
                         <div class="mt-2" x-data="{ open: false }">

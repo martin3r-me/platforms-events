@@ -318,11 +318,8 @@ class Settings extends Component
         $slug = trim((string) $this->tplForm['slug']);
         if ($slug === '') $slug = Str::slug($label);
 
+        // HTML direkt speichern (TinyMCE-Output). Keine Auto-Konvertierung mehr.
         $content = (string) $this->tplForm['html_content'];
-        if ($this->looksLikeHtml($content)) {
-            $content = $this->htmlToMarkdown($content);
-            $this->tplForm['html_content'] = $content;
-        }
 
         $data = [
             'label'        => $label,

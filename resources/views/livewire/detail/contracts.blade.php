@@ -188,22 +188,17 @@
                 </select>
             </div>
             <div>
-                <div class="flex items-center justify-between mb-1">
-                    <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)]">Text (Markdown)</label>
-                    <label class="flex items-center gap-1 px-2 py-0.5 border border-slate-200 rounded bg-white hover:bg-slate-50 text-[0.6rem] font-semibold text-slate-600 cursor-pointer">
-                        @svg('heroicon-o-photo', 'w-3 h-3')
-                        Bild einfügen
-                        <input type="file" wire:model="contractImage" accept="image/*" class="hidden">
-                    </label>
-                </div>
-                <div wire:loading wire:target="contractImage" class="text-[0.6rem] text-slate-500 mb-1">Bild wird hochgeladen …</div>
-                @if(session('contractImageError'))
-                    <div class="text-[0.6rem] text-red-500 mb-1">{{ session('contractImageError') }}</div>
-                @endif
-                <textarea wire:model="contractText" rows="20"
-                          class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono"></textarea>
-                <p class="text-[0.58rem] text-[var(--ui-muted)] mt-1">
-                    Markdown wird im PDF &amp; der öffentlichen Ansicht formatiert. Platzhalter wie <code class="text-purple-600">{EVENT_NUMBER}</code>, <code class="text-purple-600">{CUSTOMER_COMPANY}</code> etc. werden beim Rendern mit Event-Daten ersetzt.
+                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Inhalt</label>
+                @include('events::partials.tinymce-editor', [
+                    'wireProperty' => 'contractText',
+                    'initial'      => $contractText,
+                    'height'       => 600,
+                    'uniqueId'     => 'tiny-contract',
+                ])
+                <p class="text-[0.58rem] text-[var(--ui-muted)] mt-2">
+                    Formatierung (fett, zentriert, Bilder, Tabellen) ueber die Toolbar. Platzhalter wie
+                    <code class="text-purple-600">{EVENT_NUMBER}</code>,
+                    <code class="text-purple-600">{CUSTOMER_COMPANY}</code> etc. werden beim Rendern ersetzt.
                 </p>
 
                 <div class="mt-2" x-data="{ open: false }">

@@ -27,7 +27,18 @@ class ContractRenderer
 
         $filled = self::replacePlaceholders($raw, $event, $contract);
         $filled = self::resolveAssetUrls($filled, $mode);
+
+        // Wenn der Content bereits HTML ist (TinyMCE-Output), direkt ausgeben.
+        // Nur noch Legacy-Plain-/Markdown-Content laeuft durch CommonMark.
+        if (self::looksLikeHtml($filled)) {
+            return $filled;
+        }
         return self::markdownToHtml($filled);
+    }
+
+    protected static function looksLikeHtml(string $s): bool
+    {
+        return (bool) preg_match('/<\/?[a-z][a-z0-9]*\b[^>]*>/i', $s);
     }
 
     /**
