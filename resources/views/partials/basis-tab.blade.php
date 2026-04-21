@@ -416,29 +416,27 @@
             </div>
         </x-ui-panel>
 
-        <div class="grid grid-cols-2 gap-3">
-            <x-ui-panel>
-                <div class="flex items-center justify-between p-2 border-b border-[var(--ui-border)]">
-                    <div class="flex items-center gap-2">
-                        <span class="w-0.5 h-3.5 rounded-full bg-sky-500"></span>
-                        <span class="text-[0.7rem] font-bold text-[var(--ui-secondary)]">Erste Absprache</span>
-                    </div>
-                    <span class="text-[0.55rem] text-[var(--ui-muted)] bg-[var(--ui-muted-5)] px-1.5 py-0.5 rounded-full">{{ $notesByType->get('absprache', collect())->count() }}</span>
+        <x-ui-panel>
+            <div class="flex items-center justify-between p-2 border-b border-[var(--ui-border)]">
+                <div class="flex items-center gap-2">
+                    <span class="w-0.5 h-3.5 rounded-full bg-sky-500"></span>
+                    <span class="text-[0.7rem] font-bold text-[var(--ui-secondary)]">Erste Absprache</span>
                 </div>
-                @include('events::partials.note-stream', ['type' => 'absprache', 'notes' => $notesByType->get('absprache', collect())])
-            </x-ui-panel>
+                <span class="text-[0.55rem] text-[var(--ui-muted)] bg-[var(--ui-muted-5)] px-1.5 py-0.5 rounded-full">{{ $notesByType->get('absprache', collect())->count() }}</span>
+            </div>
+            @include('events::partials.note-stream', ['type' => 'absprache', 'notes' => $notesByType->get('absprache', collect())])
+        </x-ui-panel>
 
-            <x-ui-panel>
-                <div class="flex items-center justify-between p-2 border-b border-[var(--ui-border)]">
-                    <div class="flex items-center gap-2">
-                        <span class="w-0.5 h-3.5 rounded-full bg-emerald-500"></span>
-                        <span class="text-[0.7rem] font-bold text-[var(--ui-secondary)]">Vereinbarung</span>
-                    </div>
-                    <span class="text-[0.55rem] text-[var(--ui-muted)] bg-[var(--ui-muted-5)] px-1.5 py-0.5 rounded-full">{{ $notesByType->get('vereinbarung', collect())->count() }}</span>
+        <x-ui-panel>
+            <div class="flex items-center justify-between p-2 border-b border-[var(--ui-border)]">
+                <div class="flex items-center gap-2">
+                    <span class="w-0.5 h-3.5 rounded-full bg-emerald-500"></span>
+                    <span class="text-[0.7rem] font-bold text-[var(--ui-secondary)]">Vereinbarung</span>
                 </div>
-                @include('events::partials.note-stream', ['type' => 'vereinbarung', 'notes' => $notesByType->get('vereinbarung', collect())])
-            </x-ui-panel>
-        </div>
+                <span class="text-[0.55rem] text-[var(--ui-muted)] bg-[var(--ui-muted-5)] px-1.5 py-0.5 rounded-full">{{ $notesByType->get('vereinbarung', collect())->count() }}</span>
+            </div>
+            @include('events::partials.note-stream', ['type' => 'vereinbarung', 'notes' => $notesByType->get('vereinbarung', collect())])
+        </x-ui-panel>
 
     </div>
 </div>
