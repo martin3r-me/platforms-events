@@ -731,11 +731,19 @@ class Detail extends Component
 
         $maxSort = (int) ScheduleItem::where('event_id', $this->event->id)->max('sort_order');
 
+        // Fallback: kein Datum angegeben → ersten Event-Tag nehmen, sonst start_date des Events
+        $datum = $data['datum'] ?: null;
+        if (!$datum) {
+            $firstDay = $this->event->days()->orderBy('sort_order')->first();
+            $datum = $firstDay?->datum?->format('Y-m-d')
+                ?? $this->event->start_date?->format('Y-m-d');
+        }
+
         ScheduleItem::create([
             'event_id'     => $this->event->id,
             'team_id'      => $this->event->team_id,
             'user_id'      => Auth::id(),
-            'datum'        => $data['datum'] ?: null,
+            'datum'        => $datum,
             'von'          => $data['von'] ?: null,
             'bis'          => $data['bis'] ?: null,
             'beschreibung' => $data['beschreibung'],
