@@ -27,8 +27,6 @@ window.tinymceEditor = function (opts) {
             const rootEl = this.$root;
             const wireEl = rootEl.closest('[wire\\:id]');
             this._wireId = wireEl ? wireEl.getAttribute('wire:id') : null;
-            console.log('[tinymceEditor] init called', { uid: this.uid, wireId: this._wireId });
-
             this._waitForTinyAndObserve(rootEl);
         },
 
@@ -36,10 +34,7 @@ window.tinymceEditor = function (opts) {
             const self = this;
             const ensureTiny = (attempts = 80) => {
                 if (typeof window.tinymce !== 'undefined') return self._observe(rootEl);
-                if (attempts <= 0) {
-                    console.error('[tinymceEditor] TinyMCE CDN nicht geladen');
-                    return;
-                }
+                if (attempts <= 0) return;
                 setTimeout(() => ensureTiny(attempts - 1), 100);
             };
             ensureTiny();
@@ -47,15 +42,10 @@ window.tinymceEditor = function (opts) {
 
         _observe(rootEl) {
             const self = this;
-            console.log('[tinymceEditor] observe start', { offsetParent: rootEl.offsetParent, offsetHeight: rootEl.offsetHeight });
-            if (rootEl.offsetParent !== null) {
-                console.log('[tinymceEditor] already visible, booting');
-                return self._boot();
-            }
+            if (rootEl.offsetParent !== null) return self._boot();
 
             if (typeof window.IntersectionObserver !== 'undefined') {
                 const observer = new IntersectionObserver(function (entries) {
-                    console.log('[tinymceEditor] intersect', entries[0].isIntersecting);
                     if (entries[0].isIntersecting && !self._editor) {
                         observer.disconnect();
                         self._boot();
@@ -64,14 +54,9 @@ window.tinymceEditor = function (opts) {
                 observer.observe(rootEl);
             }
 
-            // Zusaetzliches Polling als Sicherheits-Netz
             const poll = (attempts = 300) => {
                 if (self._editor || attempts <= 0) return;
-                if (rootEl.offsetParent !== null) {
-                    console.log('[tinymceEditor] poll detected visible, booting');
-                    self._boot();
-                    return;
-                }
+                if (rootEl.offsetParent !== null) return self._boot();
                 setTimeout(() => poll(attempts - 1), 200);
             };
             poll();
@@ -80,11 +65,7 @@ window.tinymceEditor = function (opts) {
         _boot() {
             const self = this;
             const target = document.getElementById(this.uid);
-            console.log('[tinymceEditor] _boot', { uid: this.uid, targetFound: !!target });
-            if (!target) {
-                console.error('[tinymceEditor] target not found:', this.uid);
-                return;
-            }
+            if (!target) return;
 
             // Frische Initial-Daten aus Livewire holen (wire:ignore friert den
             // Blade-interpolierten Wert auf der ersten Seitenrenderung ein).
@@ -94,16 +75,11 @@ window.tinymceEditor = function (opts) {
                     const parts = this.wireProperty.split('.');
                     let val = wire?.get(parts[0]);
                     for (let i = 1; i < parts.length && val; i++) val = val[parts[i]];
-                    if (typeof val === 'string' && val.length > 0) {
-                        this.initial = val;
-                        console.log('[tinymceEditor] refreshed initial from Livewire', { length: val.length });
-                    }
+                    if (typeof val === 'string' && val.length > 0) this.initial = val;
                 }
-            } catch (e) {
-                console.warn('[tinymceEditor] could not refresh initial', e);
-            }
+            } catch (e) {}
 
-            const initPromise = window.tinymce.init({
+            window.tinymce.init({
                 target: target,
                 license_key: 'gpl',
                 height: self.height,
@@ -128,29 +104,14 @@ window.tinymceEditor = function (opts) {
                 content_style: 'body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.6; color: #1a1a1a; margin: 16px; }',
                 setup: function (editor) {
                     self._editor = editor;
-                    console.log('[tinymceEditor] setup fired');
                     editor.on('init', function () {
-                        console.log('[tinymceEditor] editor init event, setting content');
                         editor.setContent(self.initial || '');
                     });
-                    const sync = function () {
-                        const html = editor.getContent();
-                        self._syncToLivewire(html);
-                    };
-                    editor.on('change keyup undo redo blur', sync);
+                    editor.on('change keyup undo redo blur', function () {
+                        self._syncToLivewire(editor.getContent());
+                    });
                 },
             });
-            if (initPromise && initPromise.then) {
-                initPromise
-                    .then(function (editors) {
-                        console.log('[tinymceEditor] init resolved', { editorCount: editors?.length });
-                    })
-                    .catch(function (err) {
-                        console.error('[tinymceEditor] init failed', err);
-                    });
-            } else {
-                console.log('[tinymceEditor] init returned (no promise)');
-            }
         },
 
         _syncToLivewire(html) {
@@ -158,9 +119,7 @@ window.tinymceEditor = function (opts) {
             try {
                 const wire = window.Livewire.find(this._wireId);
                 if (wire) wire.set(this.wireProperty, html, false);
-            } catch (e) {
-                console.warn('[tinymceEditor] sync failed', e);
-            }
+            } catch (e) {}
         },
     };
 };
