@@ -55,7 +55,8 @@
          }"
          @click.outside="open = false"
          @keydown.escape.window="open = false"
-         class="relative w-full">
+         :class="open ? 'relative z-50' : 'relative'"
+         class="w-full">
         <div class="w-full flex items-center gap-1 border border-[var(--ui-border)] rounded-md bg-white px-2 py-1 hover:border-[var(--ui-primary)]/40 transition">
             <button type="button" @click="toggle()"
                     class="flex-1 flex items-center gap-1.5 min-w-0 text-left bg-transparent border-0 cursor-pointer">
@@ -85,7 +86,7 @@
              x-transition:enter="transition ease-out duration-100"
              x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100"
-             class="absolute z-40 mt-1 w-full bg-white border border-[var(--ui-border)] rounded-md shadow-lg overflow-hidden">
+             class="absolute z-[60] mt-1 w-full bg-white border border-[var(--ui-border)] rounded-md shadow-xl overflow-hidden">
             <div class="p-2 border-b border-slate-100 bg-slate-50">
                 <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded px-2 py-1">
                     @svg('heroicon-o-magnifying-glass', 'w-3 h-3 text-slate-400 flex-shrink-0')
