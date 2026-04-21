@@ -5,7 +5,7 @@
     $inMn = 'w-full border border-[var(--ui-border)] rounded-md px-2 py-1 text-[0.7rem] font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30';
 @endphp
 
-<div class="pt-3 grid grid-cols-1 xl:grid-cols-[190px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3">
+<div class="grid grid-cols-1 xl:grid-cols-[190px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3">
 
     {{-- ========== Col 1: Termine ========== --}}
     <div>

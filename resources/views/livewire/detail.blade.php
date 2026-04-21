@@ -250,7 +250,7 @@
         </x-ui-page-actionbar>
 
         {{-- Header --}}
-        <div class="mt-4 bg-white border border-[var(--ui-border)] rounded-lg px-4 py-3">
+        <div class="mt-5 mb-3 bg-white border border-[var(--ui-border)] rounded-lg px-4 py-3">
             <div class="flex items-center justify-between gap-4 flex-wrap">
                 <div class="min-w-0 flex-1 flex items-center gap-3">
                     <span class="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 {{ $statusDotClass ?? 'bg-slate-400' }}"
@@ -307,7 +307,7 @@
 
         {{-- ================= Tab: Details ================= --}}
         @if($activeTab === 'details')
-            <div class="pt-4 space-y-4">
+            <div class="pt-1 space-y-4">
 
                 <x-ui-panel title="Interne Infos" subtitle="Nur intern sichtbar, nicht auf Kunden-PDFs">
                     @include('events::partials.note-stream', ['type' => 'intern', 'notes' => $notesByType->get('intern', collect())])
@@ -487,77 +487,77 @@
 
         {{-- ================= Tab: Aktivitäten ================= --}}
         @if($activeTab === 'aktivitaeten')
-            <div class="pt-6">
+            <div class="pt-1">
                 <livewire:events.detail.activities :event-id="$event->id" :key="'activities-'.$event->id" />
             </div>
         @endif
 
         {{-- ================= Tab: Angebote ================= --}}
         @if($activeTab === 'angebote')
-            <div class="pt-6">
+            <div class="pt-1">
                 <livewire:events.detail.quotes :event-id="$event->id" :key="'quotes-'.$event->id" />
             </div>
         @endif
 
         {{-- ================= Tab: Bestellungen ================= --}}
         @if($activeTab === 'bestellungen')
-            <div class="pt-6">
+            <div class="pt-1">
                 <livewire:events.detail.orders :event-id="$event->id" :key="'orders-'.$event->id" />
             </div>
         @endif
 
         {{-- ================= Tab: Verträge ================= --}}
         @if($activeTab === 'vertraege')
-            <div class="pt-6">
+            <div class="pt-1">
                 <livewire:events.detail.contracts :event-id="$event->id" :key="'contracts-'.$event->id" />
             </div>
         @endif
 
         {{-- ================= Tab: Rechnungen ================= --}}
         @if($activeTab === 'rechnungen')
-            <div class="pt-6">
+            <div class="pt-1">
                 <livewire:events.detail.invoices :event-id="$event->id" :key="'invoices-'.$event->id" />
             </div>
         @endif
 
         {{-- ================= Tab: Packliste ================= --}}
         @if($activeTab === 'packliste')
-            <div class="pt-6">
+            <div class="pt-1">
                 <livewire:events.detail.pick-lists :event-id="$event->id" :key="'picklists-'.$event->id" />
             </div>
         @endif
 
         {{-- ================= Tab: Kommunikation ================= --}}
         @if($activeTab === 'kommunikation')
-            <div class="pt-6">
+            <div class="pt-1">
                 <livewire:events.detail.communication :event-id="$event->id" :key="'comm-'.$event->id" />
             </div>
         @endif
 
         {{-- ================= Tab: Kalkulation ================= --}}
         @if($activeTab === 'kalkulation')
-            <div class="pt-6">
+            <div class="pt-1">
                 <livewire:events.detail.calculation :event-id="$event->id" :key="'calc-'.$event->id" />
             </div>
         @endif
 
         {{-- ================= Tab: Projekt-Function ================= --}}
         @if($activeTab === 'projekt')
-            <div class="pt-6">
+            <div class="pt-1">
                 <livewire:events.detail.projekt-function :event-id="$event->id" :key="'pf-'.$event->id" />
             </div>
         @endif
 
         {{-- ================= Tab: Schlussbericht ================= --}}
         @if($activeTab === 'schluss')
-            <div class="pt-6">
+            <div class="pt-1">
                 <livewire:events.detail.final-report :event-id="$event->id" :key="'fr-'.$event->id" />
             </div>
         @endif
 
         {{-- ================= Tab: Feedback ================= --}}
         @if($activeTab === 'feedback')
-            <div class="pt-6">
+            <div class="pt-1">
                 <livewire:events.detail.feedback :event-id="$event->id" :key="'feedback-'.$event->id" />
             </div>
         @endif
@@ -568,7 +568,7 @@
 
         {{-- ================= Tab: Räume (Buchungen) – Inline-Edit ================= --}}
         @if($activeTab === 'buchungen')
-            <div class="pt-4 space-y-4">
+            <div class="pt-1 space-y-4">
                 <x-ui-panel title="Räume" subtitle="{{ $bookings->count() }} Buchung(en)">
                     <div class="overflow-x-auto">
                         <table class="w-full border-collapse text-xs">
@@ -732,7 +732,7 @@
 
         {{-- ================= Tab: Ablauf – Inline-Edit ================= --}}
         @if($activeTab === 'ablauf')
-            <div class="pt-4 space-y-4">
+            <div class="pt-1 space-y-4">
                 <x-ui-panel title="Ablaufplan" subtitle="{{ $schedule->count() }} Eintrag/Einträge">
                     <div class="overflow-x-auto">
                         <table class="w-full border-collapse text-xs">
