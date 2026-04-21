@@ -6,16 +6,16 @@
             'signed'   => ['bg' => '#dcfce7', 'color' => '#16a34a', 'label' => 'Unterschrieben'],
             'rejected' => ['bg' => '#fee2e2', 'color' => '#dc2626', 'label' => 'Abgelehnt'],
         ];
-        $typeOptions = [
-            'nutzungsvertrag'     => 'Nutzungsvertrag',
-            'optionsbestaetigung' => 'Optionsbestätigung',
-        ];
-
-        // Merge: Template-Slugs → Labels, damit Vertraege aus Vorlagen auch benannt werden
-        $typeLabels = $typeOptions;
+        // Typ-Labels stammen ausschliesslich aus aktiven Dokumentvorlagen.
+        $typeLabels = [];
         foreach ($templates as $tpl) {
             if ($tpl->slug) $typeLabels[$tpl->slug] = $tpl->label;
         }
+        // Legacy-Fallbacks fuer bereits existierende Vertraege ohne Vorlage
+        $legacyLabels = [
+            'nutzungsvertrag'     => 'Nutzungsvertrag',
+            'optionsbestaetigung' => 'Optionsbestätigung',
+        ];
 
         // Group contracts by root-parent for version history
         $versionGroups = [];
@@ -45,30 +45,23 @@
             </button>
             <div x-show="dropOpen" @click.outside="dropOpen = false" x-cloak
                  class="absolute right-0 top-[calc(100%+4px)] z-[100] bg-white border border-slate-200 rounded-lg p-1 shadow-lg min-w-[260px]">
-                @if($templates->isNotEmpty())
-                    <div class="px-2 pt-1 pb-0.5 text-[0.52rem] font-bold uppercase tracking-wider text-slate-400">Aus Vorlage</div>
-                    @foreach($templates as $tpl)
-                        <button type="button" wire:click="createContract('{{ $tpl->slug }}')" @click="dropOpen = false"
-                                class="flex items-center gap-2 w-full px-2.5 py-2 border-0 rounded bg-white hover:bg-slate-50 cursor-pointer text-left text-[0.65rem] text-slate-700 transition">
-                            <div class="w-2 h-2 rounded-full flex-shrink-0" style="background: {{ $tpl->color ?: '#7c3aed' }};"></div>
-                            <div class="flex-1 min-w-0">
-                                <div class="font-semibold truncate">{{ $tpl->label }}</div>
-                                @if($tpl->description)
-                                    <div class="text-[0.55rem] text-slate-400 truncate">{{ $tpl->description }}</div>
-                                @endif
-                            </div>
-                        </button>
-                    @endforeach
-                    <div class="h-px bg-slate-100 my-1"></div>
-                @endif
-                <div class="px-2 pt-1 pb-0.5 text-[0.52rem] font-bold uppercase tracking-wider text-slate-400">Leer starten</div>
-                @foreach($typeOptions as $key => $label)
-                    <button type="button" wire:click="createContract('{{ $key }}')" @click="dropOpen = false"
+                @forelse($templates as $tpl)
+                    <button type="button" wire:click="createContract('{{ $tpl->slug }}')" @click="dropOpen = false"
                             class="flex items-center gap-2 w-full px-2.5 py-2 border-0 rounded bg-white hover:bg-slate-50 cursor-pointer text-left text-[0.65rem] text-slate-700 transition">
-                        <div class="w-2 h-2 rounded-full flex-shrink-0" style="background: {{ $key === 'nutzungsvertrag' ? '#7c3aed' : '#0891b2' }};"></div>
-                        <span class="font-semibold">{{ $label }}</span>
+                        <div class="w-2 h-2 rounded-full flex-shrink-0" style="background: {{ $tpl->color ?: '#7c3aed' }};"></div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-semibold truncate">{{ $tpl->label }}</div>
+                            @if($tpl->description)
+                                <div class="text-[0.55rem] text-slate-400 truncate">{{ $tpl->description }}</div>
+                            @endif
+                        </div>
                     </button>
-                @endforeach
+                @empty
+                    <div class="px-3 py-3 text-center text-[0.6rem] text-slate-400">
+                        Noch keine Dokumentvorlagen angelegt.<br>
+                        <a href="{{ route('events.settings') }}?tab=templates" class="text-purple-600 font-semibold no-underline hover:underline">In Einstellungen anlegen</a>
+                    </div>
+                @endforelse
             </div>
         </div>
     </div>
@@ -99,7 +92,7 @@
 
                             <div class="flex-1 min-w-0">
                                 <p class="text-[0.72rem] font-semibold text-[var(--ui-secondary)] m-0">
-                                    {{ $typeLabels[$ct->type] ?? $ct->type }} Nr. {{ $event->event_number }}
+                                    {{ $typeLabels[$ct->type] ?? ($legacyLabels[$ct->type] ?? $ct->type) }} Nr. {{ $event->event_number }}
                                 </p>
                                 <p class="text-[0.62rem] text-[var(--ui-muted)] mt-0.5">
                                     Erstellt am {{ $ct->created_at->format('d.m.Y') }}
@@ -185,9 +178,13 @@
             <div>
                 <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Typ</label>
                 <select wire:model="contractType" class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs">
-                    @foreach($typeOptions as $key => $label)
+                    @foreach($typeLabels as $key => $label)
                         <option value="{{ $key }}">{{ $label }}</option>
                     @endforeach
+                    @php $currentKey = $contractType; @endphp
+                    @if($currentKey && !isset($typeLabels[$currentKey]))
+                        <option value="{{ $currentKey }}">{{ $currentKey }}</option>
+                    @endif
                 </select>
             </div>
             <div>
