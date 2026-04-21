@@ -117,35 +117,55 @@
                             <span class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Neue Position</span>
 
                             @if(!empty($bausteine))
-                                <div x-data="{ open: false }" @click.outside="open = false" class="relative">
-                                    <button type="button" @click="open = !open"
+                                <div x-data="{
+                                        open: false,
+                                        pos: { top: 0, left: 0 },
+                                        recalc() {
+                                            const r = this.$refs.trigger.getBoundingClientRect();
+                                            this.pos = { top: r.bottom + window.scrollY + 4, left: r.left + window.scrollX };
+                                        },
+                                        toggle() {
+                                            if (!this.open) this.recalc();
+                                            this.open = !this.open;
+                                        }
+                                     }"
+                                     @keydown.escape.window="open = false"
+                                     @resize.window="recalc()"
+                                     @scroll.window.passive="open = false"
+                                     class="relative">
+                                    <button type="button" x-ref="trigger" @click="toggle()"
                                             class="flex items-center gap-1 px-2 py-0.5 rounded border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[0.6rem] font-bold cursor-pointer">
                                         @svg('heroicon-o-rectangle-stack', 'w-3 h-3')
                                         Baustein
-                                        <svg class="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <svg class="w-2 h-2 transition-transform" :class="open ? 'rotate-180' : ''"
+                                             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                                         </svg>
                                     </button>
-                                    <div x-show="open" x-cloak
-                                         class="absolute left-0 top-[calc(100%+4px)] z-30 bg-white border border-slate-200 rounded-md p-1 shadow-lg min-w-[180px]">
-                                        @foreach($bausteine as $b)
-                                            <button type="button"
-                                                    wire:click="$set('newPosition.gruppe', @js($b['name'] ?? ''))"
-                                                    @click="open = false"
-                                                    class="flex items-center gap-2 w-full px-2.5 py-1.5 rounded hover:bg-slate-50 text-left text-[0.65rem] font-medium text-slate-700">
-                                                <span class="w-2.5 h-2.5 rounded-sm flex-shrink-0"
-                                                      style="background: {{ $b['bg'] ?? '#f8fafc' }}; border: 1px solid {{ $b['text'] ?? '#64748b' }};"></span>
-                                                <span>{{ $b['name'] ?? '' }}</span>
-                                            </button>
-                                        @endforeach
-                                        <div class="border-t border-slate-100 mt-1 pt-1">
-                                            <a href="{{ route('events.settings') }}"
-                                               class="flex items-center gap-1.5 px-2.5 py-1.5 text-[0.6rem] text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded no-underline">
-                                                @svg('heroicon-o-cog-6-tooth', 'w-3 h-3')
-                                                Bausteine verwalten
-                                            </a>
+                                    <template x-teleport="body">
+                                        <div x-show="open" x-cloak
+                                             @click.outside="open = false"
+                                             :style="'position:absolute; top:' + pos.top + 'px; left:' + pos.left + 'px; z-index:9999; min-width:180px;'"
+                                             class="bg-white border border-slate-200 rounded-md p-1 shadow-xl">
+                                            @foreach($bausteine as $b)
+                                                <button type="button"
+                                                        wire:click="$set('newPosition.gruppe', @js($b['name'] ?? ''))"
+                                                        @click="open = false"
+                                                        class="flex items-center gap-2 w-full px-2.5 py-1.5 rounded hover:bg-slate-50 text-left text-[0.65rem] font-medium text-slate-700">
+                                                    <span class="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                                                          style="background: {{ $b['bg'] ?? '#f8fafc' }}; border: 1px solid {{ $b['text'] ?? '#64748b' }};"></span>
+                                                    <span>{{ $b['name'] ?? '' }}</span>
+                                                </button>
+                                            @endforeach
+                                            <div class="border-t border-slate-100 mt-1 pt-1">
+                                                <a href="{{ route('events.settings') }}"
+                                                   class="flex items-center gap-1.5 px-2.5 py-1.5 text-[0.6rem] text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded no-underline">
+                                                    @svg('heroicon-o-cog-6-tooth', 'w-3 h-3')
+                                                    Bausteine verwalten
+                                                </a>
+                                            </div>
                                         </div>
-                                    </div>
+                                    </template>
                                 </div>
                             @endif
 
