@@ -17,6 +17,16 @@ class Quotes extends Component
     public ?int $activeQuoteId = null;
     public ?int $activeItemId = null;
 
+    /**
+     * Sichtmodus:
+     *  - 'overview'  = alle Tage (Standard)
+     *  - 'day'       = ein bestimmter Tag (activeDayId gesetzt)
+     *  - 'articles'  = flache Liste aller Artikel ueber alle Tage
+     *  - 'editor'    = Positions-Editor fuer activeItemId
+     */
+    public string $view = 'overview';
+    public ?int $activeDayId = null;
+
     public array $newPosition = [
         'gruppe' => '', 'name' => '', 'anz' => '', 'anz2' => '',
         'uhrzeit' => '', 'bis' => '', 'inhalt' => '', 'gebinde' => '',
@@ -30,7 +40,7 @@ class Quotes extends Component
     public string $itemStatus = 'Entwurf';
     public string $itemMwst = '19%';
 
-    public function mount(int $eventId, ?int $initialItemId = null): void
+    public function mount(int $eventId, ?int $initialItemId = null, ?int $initialDayId = null, ?string $initialView = null): void
     {
         $this->eventId = $eventId;
         $this->activeQuoteId = Quote::where('event_id', $eventId)
@@ -38,10 +48,37 @@ class Quotes extends Component
             ->latest('version')
             ->value('id');
 
-        // Drilldown aus Sidebar: Vorgang direkt oeffnen.
+        // Drilldown aus Sidebar
         if ($initialItemId) {
             $this->openPositions($initialItemId);
+        } elseif ($initialDayId) {
+            $this->openDay($initialDayId);
+        } elseif ($initialView === 'articles') {
+            $this->openArticles();
+        } else {
+            $this->view = 'overview';
         }
+    }
+
+    public function openDay(int $dayId): void
+    {
+        $this->activeDayId = $dayId;
+        $this->activeItemId = null;
+        $this->view = 'day';
+    }
+
+    public function openArticles(): void
+    {
+        $this->activeDayId = null;
+        $this->activeItemId = null;
+        $this->view = 'articles';
+    }
+
+    public function backToOverview(): void
+    {
+        $this->activeDayId = null;
+        $this->activeItemId = null;
+        $this->view = 'overview';
     }
 
     protected function event(): Event
@@ -195,13 +232,22 @@ class Quotes extends Component
         $item = QuoteItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($itemId);
         if (!$item) return;
         $this->activeItemId = $itemId;
+        $this->activeDayId = $item->event_day_id;
+        $this->view = 'editor';
         $this->resetNewPosition();
         $this->dispatch('scroll-to-positions');
     }
 
     public function closePositions(): void
     {
-        $this->activeItemId = null;
+        // Nach Schliessen des Editors zurueck auf die Tages-Uebersicht, wenn ein Tag bekannt ist,
+        // sonst auf die Gesamt-Uebersicht.
+        if ($this->activeDayId) {
+            $this->view = 'day';
+            $this->activeItemId = null;
+        } else {
+            $this->backToOverview();
+        }
     }
 
     protected function resetNewPosition(): void
@@ -291,14 +337,28 @@ class Quotes extends Component
             }
         }
 
+        $activeDay = $this->activeDayId ? $event->days->firstWhere('id', $this->activeDayId) : null;
+
+        // Fuer "Alle Artikel"-Ansicht: alle Positionen ueber alle Tage flach, mit Tag- und Vorgangs-Info
+        $allPositions = collect();
+        if ($this->view === 'articles') {
+            $itemIds = $items->flatten()->pluck('id');
+            $allPositions = QuotePosition::whereIn('quote_item_id', $itemIds)
+                ->orderBy('quote_item_id')
+                ->orderBy('sort_order')
+                ->get();
+        }
+
         return view('events::livewire.detail.quotes', [
-            'event'       => $event,
-            'quotes'      => $quotes,
-            'activeQuote' => $activeQuote,
-            'days'        => $event->days,
-            'items'       => $items,
-            'activeItem'  => $activeItem,
-            'positions'   => $positions,
+            'event'        => $event,
+            'quotes'       => $quotes,
+            'activeQuote'  => $activeQuote,
+            'days'         => $event->days,
+            'items'        => $items,
+            'activeItem'   => $activeItem,
+            'activeDay'    => $activeDay,
+            'allPositions' => $allPositions,
+            'positions'    => $positions,
         ]);
     }
 }

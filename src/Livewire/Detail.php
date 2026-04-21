@@ -75,21 +75,79 @@ class Detail extends Component
     public ?string $editingNoteUuid = null;
     public array $noteForm = [];
 
-    // Drilldown aus Sidebar: direkt zu einem Vorgang im Angebote-/Bestellungen-Tab springen.
+    // Drilldown aus Sidebar: Initial-State für die Angebote-/Bestellungen-Child-Components.
     public ?int $pendingQuoteItemId = null;
     public ?int $pendingOrderItemId = null;
+    public ?int $pendingQuoteDayId  = null;
+    public ?int $pendingOrderDayId  = null;
+    public ?string $pendingQuoteView = null;
+    public ?string $pendingOrderView = null;
+
+    protected function resetPendingQuote(): void
+    {
+        $this->pendingQuoteItemId = null;
+        $this->pendingQuoteDayId  = null;
+        $this->pendingQuoteView   = null;
+    }
+
+    protected function resetPendingOrder(): void
+    {
+        $this->pendingOrderItemId = null;
+        $this->pendingOrderDayId  = null;
+        $this->pendingOrderView   = null;
+    }
 
     public function openQuoteItem(int $itemId): void
     {
+        $this->resetPendingQuote();
         $this->pendingQuoteItemId = $itemId;
-        $this->pendingOrderItemId = null;
         $this->activeTab = 'angebote';
     }
 
     public function openOrderItem(int $itemId): void
     {
+        $this->resetPendingOrder();
         $this->pendingOrderItemId = $itemId;
-        $this->pendingQuoteItemId = null;
+        $this->activeTab = 'bestellungen';
+    }
+
+    public function openQuoteDay(int $dayId): void
+    {
+        $this->resetPendingQuote();
+        $this->pendingQuoteDayId = $dayId;
+        $this->activeTab = 'angebote';
+    }
+
+    public function openOrderDay(int $dayId): void
+    {
+        $this->resetPendingOrder();
+        $this->pendingOrderDayId = $dayId;
+        $this->activeTab = 'bestellungen';
+    }
+
+    public function openQuoteArticles(): void
+    {
+        $this->resetPendingQuote();
+        $this->pendingQuoteView = 'articles';
+        $this->activeTab = 'angebote';
+    }
+
+    public function openOrderArticles(): void
+    {
+        $this->resetPendingOrder();
+        $this->pendingOrderView = 'articles';
+        $this->activeTab = 'bestellungen';
+    }
+
+    public function resetQuoteView(): void
+    {
+        $this->resetPendingQuote();
+        $this->activeTab = 'angebote';
+    }
+
+    public function resetOrderView(): void
+    {
+        $this->resetPendingOrder();
         $this->activeTab = 'bestellungen';
     }
 

@@ -105,8 +105,8 @@
 
                 {{-- ===== Angebote mit Drilldown ===== --}}
                 <div x-data="{ open: @js($activeTab === 'angebote') }">
-                    <button type="button" @click="open = !open" x-on:dblclick="$wire.set('activeTab', 'angebote')"
-                            wire:click="$set('activeTab', 'angebote')"
+                    <button type="button" @click="open = !open" x-on:dblclick="$wire.resetQuoteView()"
+                            wire:click="resetQuoteView"
                             class="w-full flex items-center gap-2 px-3 py-2 rounded-md transition text-left
                                    {{ $activeTab === 'angebote' ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
                         @svg('heroicon-o-document-duplicate', 'w-4 h-4 flex-shrink-0')
@@ -118,7 +118,7 @@
                     </button>
 
                     <div x-show="open" x-cloak class="ml-3 border-l border-[var(--ui-border)]/40 pl-2 space-y-0.5 mt-0.5">
-                        <button type="button" wire:click="$set('activeTab', 'angebote')"
+                        <button type="button" wire:click="openQuoteArticles"
                                 class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[0.72rem] text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]">
                             @svg('heroicon-o-list-bullet', 'w-3.5 h-3.5 flex-shrink-0')
                             <span class="flex-1 text-left">Alle Artikel</span>
@@ -130,7 +130,7 @@
                         @foreach($quoteTree as $dayNode)
                             <div x-data="{ sub: false }">
                                 <button type="button" @click="sub = !sub"
-                                        wire:click="$set('activeTab', 'angebote')"
+                                        wire:click="openQuoteDay({{ $dayNode['day_id'] }})"
                                         class="w-full flex items-center gap-1.5 px-2 py-1 rounded-md text-[0.72rem] text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]">
                                     <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: {{ $dayNode['color'] }}"></span>
                                     <span class="flex-1 text-left truncate font-mono text-[0.68rem]">{{ $dayNode['datum'] ?? $dayNode['label'] }}</span>
@@ -163,7 +163,7 @@
                 {{-- ===== Bestellungen mit Drilldown ===== --}}
                 <div x-data="{ open: @js($activeTab === 'bestellungen') }">
                     <button type="button" @click="open = !open"
-                            wire:click="$set('activeTab', 'bestellungen')"
+                            wire:click="resetOrderView"
                             class="w-full flex items-center gap-2 px-3 py-2 rounded-md transition text-left
                                    {{ $activeTab === 'bestellungen' ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
                         @svg('heroicon-o-shopping-cart', 'w-4 h-4 flex-shrink-0')
@@ -175,7 +175,7 @@
                     </button>
 
                     <div x-show="open" x-cloak class="ml-3 border-l border-[var(--ui-border)]/40 pl-2 space-y-0.5 mt-0.5">
-                        <button type="button" wire:click="$set('activeTab', 'bestellungen')"
+                        <button type="button" wire:click="openOrderArticles"
                                 class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[0.72rem] text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]">
                             @svg('heroicon-o-list-bullet', 'w-3.5 h-3.5 flex-shrink-0')
                             <span class="flex-1 text-left">Alle Positionen</span>
@@ -187,7 +187,7 @@
                         @foreach($orderTree as $dayNode)
                             <div x-data="{ sub: false }">
                                 <button type="button" @click="sub = !sub"
-                                        wire:click="$set('activeTab', 'bestellungen')"
+                                        wire:click="openOrderDay({{ $dayNode['day_id'] }})"
                                         class="w-full flex items-center gap-1.5 px-2 py-1 rounded-md text-[0.72rem] text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]">
                                     <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: {{ $dayNode['color'] }}"></span>
                                     <span class="flex-1 text-left truncate font-mono text-[0.68rem]">{{ $dayNode['datum'] ?? $dayNode['label'] }}</span>
@@ -502,7 +502,9 @@
                 <livewire:events.detail.quotes
                     :event-id="$event->id"
                     :initial-item-id="$pendingQuoteItemId"
-                    :key="'quotes-'.$event->id.'-'.($pendingQuoteItemId ?? '0')" />
+                    :initial-day-id="$pendingQuoteDayId"
+                    :initial-view="$pendingQuoteView"
+                    :key="'quotes-'.$event->id.'-'.($pendingQuoteItemId ?? '0').'-'.($pendingQuoteDayId ?? '0').'-'.($pendingQuoteView ?? '_')" />
             </div>
         @endif
 
@@ -512,7 +514,9 @@
                 <livewire:events.detail.orders
                     :event-id="$event->id"
                     :initial-item-id="$pendingOrderItemId"
-                    :key="'orders-'.$event->id.'-'.($pendingOrderItemId ?? '0')" />
+                    :initial-day-id="$pendingOrderDayId"
+                    :initial-view="$pendingOrderView"
+                    :key="'orders-'.$event->id.'-'.($pendingOrderItemId ?? '0').'-'.($pendingOrderDayId ?? '0').'-'.($pendingOrderView ?? '_')" />
             </div>
         @endif
 

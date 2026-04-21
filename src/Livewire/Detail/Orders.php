@@ -13,6 +13,8 @@ class Orders extends Component
 {
     public int $eventId;
     public ?int $activeItemId = null;
+    public ?int $activeDayId = null;
+    public string $view = 'overview';
 
     public bool $showItemModal = false;
     public ?int $itemEventDayId = null;
@@ -27,12 +29,40 @@ class Orders extends Component
         'gesamt' => 0, 'bemerkung' => '',
     ];
 
-    public function mount(int $eventId, ?int $initialItemId = null): void
+    public function mount(int $eventId, ?int $initialItemId = null, ?int $initialDayId = null, ?string $initialView = null): void
     {
         $this->eventId = $eventId;
+
         if ($initialItemId) {
             $this->openPositions($initialItemId);
+        } elseif ($initialDayId) {
+            $this->openDay($initialDayId);
+        } elseif ($initialView === 'articles') {
+            $this->openArticles();
+        } else {
+            $this->view = 'overview';
         }
+    }
+
+    public function openDay(int $dayId): void
+    {
+        $this->activeDayId = $dayId;
+        $this->activeItemId = null;
+        $this->view = 'day';
+    }
+
+    public function openArticles(): void
+    {
+        $this->activeDayId = null;
+        $this->activeItemId = null;
+        $this->view = 'articles';
+    }
+
+    public function backToOverview(): void
+    {
+        $this->activeDayId = null;
+        $this->activeItemId = null;
+        $this->view = 'overview';
     }
 
     protected function event(): Event
@@ -129,14 +159,22 @@ class Orders extends Component
 
     public function openPositions(int $itemId): void
     {
+        $item = OrderItem::find($itemId);
         $this->activeItemId = $itemId;
+        $this->activeDayId = $item?->event_day_id;
+        $this->view = 'editor';
         $this->resetNewPosition();
         $this->dispatch('scroll-to-positions');
     }
 
     public function closePositions(): void
     {
-        $this->activeItemId = null;
+        if ($this->activeDayId) {
+            $this->view = 'day';
+            $this->activeItemId = null;
+        } else {
+            $this->backToOverview();
+        }
     }
 
     protected function resetNewPosition(): void
@@ -215,13 +253,26 @@ class Orders extends Component
             }
         }
 
+        $activeDay = $this->activeDayId ? $event->days->firstWhere('id', $this->activeDayId) : null;
+
+        $allPositions = collect();
+        if ($this->view === 'articles') {
+            $itemIds = $items->flatten()->pluck('id');
+            $allPositions = OrderPosition::whereIn('order_item_id', $itemIds)
+                ->orderBy('order_item_id')
+                ->orderBy('sort_order')
+                ->get();
+        }
+
         return view('events::livewire.detail.orders', [
-            'event'       => $event,
-            'days'        => $event->days,
-            'items'       => $items,
-            'quoteItems'  => $quoteItems,
-            'activeItem'  => $activeItem,
-            'positions'   => $positions,
+            'event'        => $event,
+            'days'         => $event->days,
+            'items'        => $items,
+            'quoteItems'   => $quoteItems,
+            'activeItem'   => $activeItem,
+            'activeDay'    => $activeDay,
+            'allPositions' => $allPositions,
+            'positions'    => $positions,
         ]);
     }
 }
