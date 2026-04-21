@@ -8,6 +8,7 @@ use Platform\Events\Models\Event;
 use Platform\Events\Models\OrderItem;
 use Platform\Events\Models\OrderPosition;
 use Platform\Events\Models\QuoteItem;
+use Platform\Events\Services\SettingsService;
 
 class Orders extends Component
 {
@@ -280,6 +281,8 @@ class Orders extends Component
                 ->get();
         }
 
+        $bausteine = SettingsService::bausteine($event->team_id);
+
         return view('events::livewire.detail.orders', [
             'event'        => $event,
             'days'         => $event->days,
@@ -289,6 +292,7 @@ class Orders extends Component
             'activeDay'    => $activeDay,
             'allPositions' => $allPositions,
             'positions'    => $positions,
+            'bausteine'    => $bausteine,
         ]);
     }
 }

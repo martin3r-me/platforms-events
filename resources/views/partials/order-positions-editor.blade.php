@@ -1,16 +1,21 @@
 @php
     $fmt = $fmt ?? fn($v) => number_format((float)$v, 2, ',', '.');
-    $rowStyle = function (string $gruppe) {
-        $g = strtolower(trim($gruppe));
-        return match ($g) {
-            'headline'                         => ['bg' => 'bg-green-50',  'name' => 'font-bold italic text-green-700'],
-            'speisentexte', 'speisentext'      => ['bg' => 'bg-amber-50',  'name' => 'font-semibold italic text-amber-700'],
-            'trenntext'                        => ['bg' => 'bg-slate-50',  'name' => 'italic text-slate-500'],
-            default                            => ['bg' => '',              'name' => 'text-[var(--ui-secondary)]'],
-        };
+    $bausteine = $bausteine ?? [];
+
+    $bausteinMap = [];
+    foreach ($bausteine as $b) {
+        $bausteinMap[mb_strtolower(trim((string) ($b['name'] ?? '')))] = $b;
+    }
+    $isBaustein = fn(string $g) => isset($bausteinMap[mb_strtolower(trim($g))]);
+    $rowInlineStyle = function (string $gruppe) use ($bausteinMap) {
+        $b = $bausteinMap[mb_strtolower(trim($gruppe))] ?? null;
+        if (!$b) return ['style' => '', 'nameStyle' => ''];
+        return [
+            'style'     => 'background: ' . ($b['bg'] ?? '#f8fafc') . ';',
+            'nameStyle' => 'color: ' . ($b['text'] ?? '#64748b') . '; font-weight: 700; font-style: italic;',
+        ];
     };
-    $isText = fn(string $g) => in_array(strtolower(trim($g)), ['headline', 'speisentexte', 'speisentext', 'trenntext'], true);
-    $totalArticles = $positions->filter(fn($p) => !$isText((string) $p->gruppe))->count();
+    $totalArticles = $positions->filter(fn($p) => !$isBaustein((string) $p->gruppe))->count();
     $totalGesamt = (float) $positions->sum('gesamt');
 @endphp
 <div id="order-positions-editor-{{ $activeItem->id }}"
@@ -62,12 +67,12 @@
             <tbody>
                 @forelse($positions as $p)
                     @php
-                        $rs = $rowStyle((string) $p->gruppe);
-                        $text = $isText((string) $p->gruppe);
+                        $rs = $rowInlineStyle((string) $p->gruppe);
+                        $text = $isBaustein((string) $p->gruppe);
                     @endphp
-                    <tr class="border-b border-slate-100 hover:bg-slate-50/40 {{ $rs['bg'] }}">
+                    <tr class="border-b border-slate-100 hover:bg-slate-50/40" style="{{ $rs['style'] }}">
                         <td class="py-1.5 px-2.5 text-slate-600">{{ $p->gruppe }}</td>
-                        <td class="py-1.5 px-2 {{ $rs['name'] }}">{{ $p->name }}</td>
+                        <td class="py-1.5 px-2" style="{{ $rs['nameStyle'] ?: '' }}">{{ $p->name }}</td>
                         <td class="py-1.5 px-1.5 text-right font-mono">{{ $text ? '' : $p->anz }}</td>
                         <td class="py-1.5 px-1.5 text-right font-mono text-slate-500">{{ $text ? '' : $p->anz2 }}</td>
                         <td class="py-1.5 px-1.5 font-mono text-slate-500">{{ $text ? '' : $p->uhrzeit }}</td>
@@ -107,9 +112,44 @@
             <tbody class="bg-slate-50 border-t-2 border-slate-300">
                 <tr>
                     <td colspan="13" class="px-2.5 pt-2 pb-1">
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 flex-wrap">
                             <div class="w-[3px] h-3 bg-orange-600 rounded-sm"></div>
                             <span class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Neue Position</span>
+
+                            @if(!empty($bausteine))
+                                <div x-data="{ open: false }" @click.outside="open = false" class="relative">
+                                    <button type="button" @click="open = !open"
+                                            class="flex items-center gap-1 px-2 py-0.5 rounded border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[0.6rem] font-bold cursor-pointer">
+                                        @svg('heroicon-o-rectangle-stack', 'w-3 h-3')
+                                        Baustein
+                                        <svg class="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </button>
+                                    <div x-show="open" x-cloak
+                                         class="absolute left-0 top-[calc(100%+4px)] z-30 bg-white border border-slate-200 rounded-md p-1 shadow-lg min-w-[180px]">
+                                        @foreach($bausteine as $b)
+                                            <button type="button"
+                                                    wire:click="$set('newPosition.gruppe', @js($b['name'] ?? ''))"
+                                                    @click="open = false"
+                                                    class="flex items-center gap-2 w-full px-2.5 py-1.5 rounded hover:bg-slate-50 text-left text-[0.65rem] font-medium text-slate-700">
+                                                <span class="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                                                      style="background: {{ $b['bg'] ?? '#f8fafc' }}; border: 1px solid {{ $b['text'] ?? '#64748b' }};"></span>
+                                                <span>{{ $b['name'] ?? '' }}</span>
+                                            </button>
+                                        @endforeach
+                                        <div class="border-t border-slate-100 mt-1 pt-1">
+                                            <a href="{{ route('events.settings') }}"
+                                               class="flex items-center gap-1.5 px-2.5 py-1.5 text-[0.6rem] text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded no-underline">
+                                                @svg('heroicon-o-cog-6-tooth', 'w-3 h-3')
+                                                Bausteine verwalten
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <span class="text-[0.55rem] text-slate-400 ml-auto">Baustein wählen oder Gruppe/Typ frei eingeben.</span>
                         </div>
                     </td>
                 </tr>

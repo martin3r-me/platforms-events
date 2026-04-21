@@ -10,6 +10,7 @@ use Platform\Events\Models\Quote;
 use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\QuotePosition;
 use Platform\Events\Services\ActivityLogger;
+use Platform\Events\Services\SettingsService;
 
 class Quotes extends Component
 {
@@ -375,6 +376,8 @@ class Quotes extends Component
                 ->get();
         }
 
+        $bausteine = SettingsService::bausteine($event->team_id);
+
         return view('events::livewire.detail.quotes', [
             'event'        => $event,
             'quotes'       => $quotes,
@@ -385,6 +388,7 @@ class Quotes extends Component
             'activeDay'    => $activeDay,
             'allPositions' => $allPositions,
             'positions'    => $positions,
+            'bausteine'    => $bausteine,
         ]);
     }
 }
