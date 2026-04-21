@@ -91,11 +91,28 @@ window.tinymceEditor = function (opts) {
                 image_title: true,
                 image_dimensions: true,
                 automatic_uploads: true,
-                images_upload_handler: function (blobInfo) {
-                    return new Promise(function (resolve) {
-                        const reader = new FileReader();
-                        reader.onload = function () { resolve(reader.result); };
-                        reader.readAsDataURL(blobInfo.blob());
+                images_upload_handler: function (blobInfo, progress) {
+                    return new Promise(function (resolve, reject) {
+                        const fd = new FormData();
+                        fd.append('file', blobInfo.blob(), blobInfo.filename());
+                        const token = document.querySelector('meta[name=csrf-token]')?.content || '';
+                        fetch('/events/contract-assets/upload', {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
+                            body: fd,
+                        })
+                        .then(function (r) {
+                            if (!r.ok) throw new Error('Upload fehlgeschlagen (HTTP ' + r.status + ')');
+                            return r.json();
+                        })
+                        .then(function (data) {
+                            if (!data?.location) throw new Error('Keine URL zurueckerhalten');
+                            resolve(data.location);
+                        })
+                        .catch(function (err) {
+                            reject(err.message || 'Upload fehlgeschlagen');
+                        });
                     });
                 },
                 table_use_colgroups: false,

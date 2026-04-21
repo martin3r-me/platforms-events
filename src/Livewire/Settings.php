@@ -290,8 +290,12 @@ class Settings extends Component
     {
         $content = (string) $content;
         if ($content === '') return '';
-        if ($this->looksLikeHtml($content)) return $content;
-        return \Platform\Events\Services\ContractRenderer::markdownToHtml($content);
+        $html = $this->looksLikeHtml($content)
+            ? $content
+            : \Platform\Events\Services\ContractRenderer::markdownToHtml($content);
+        // events-asset://-Schemes zu frischen signierten URLs aufloesen,
+        // damit TinyMCE Bilder im Editor anzeigt.
+        return \Platform\Events\Services\ContractRenderer::resolveForEditor($html);
     }
 
     protected function htmlToMarkdown(string $content): string
@@ -331,8 +335,11 @@ class Settings extends Component
         $slug = trim((string) $this->tplForm['slug']);
         if ($slug === '') $slug = Str::slug($label);
 
-        // HTML direkt speichern (TinyMCE-Output). Keine Auto-Konvertierung mehr.
+        // HTML direkt speichern (TinyMCE-Output). Signed-Asset-URLs ins
+        // events-asset://-Scheme normalisieren, damit der Text zukunftssicher
+        // gespeichert ist (Signatur laeuft sonst nach 24h ab).
         $content = (string) $this->tplForm['html_content'];
+        $content = \Platform\Events\Services\ContractRenderer::normalizeAssetUrls($content);
 
         $data = [
             'label'        => $label,

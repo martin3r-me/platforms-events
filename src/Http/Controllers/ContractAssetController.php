@@ -2,9 +2,13 @@
 
 namespace Platform\Events\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -43,6 +47,53 @@ class ContractAssetController extends Controller
         }, 200, [
             'Content-Type'  => $mime,
             'Cache-Control' => 'private, max-age=3600',
+        ]);
+    }
+
+    /**
+     * TinyMCE-Upload-Endpoint: speichert das Bild auf der bevorzugten Disk
+     * (S3 wenn konfiguriert, sonst public) und liefert eine signierte URL
+     * zurueck, die sowohl im Editor sofort funktioniert als auch spaeter zur
+     * events-asset://-Form normalisiert werden kann.
+     */
+    public function upload(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        if (!$user) return response()->json(['error' => 'unauthenticated'], 401);
+
+        $request->validate([
+            'file' => 'required|file|image|max:10240',
+        ]);
+
+        $teamId = $user->currentTeam?->id ?? 0;
+        $disk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
+
+        $file = $request->file('file');
+        $ext = strtolower($file->getClientOriginalExtension() ?: 'png');
+        if (!in_array($ext, ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'], true)) {
+            $ext = 'png';
+        }
+
+        $filename = Str::random(16) . '.' . $ext;
+        $dir = "events/contract-assets/team-{$teamId}";
+        $storedPath = $file->storeAs($dir, $filename, $disk);
+
+        if (!$storedPath || !Storage::disk($disk)->exists($storedPath)) {
+            return response()->json(['error' => 'upload failed'], 500);
+        }
+
+        // Signierte URL: funktioniert sofort im Editor UND im Public-View
+        $url = URL::temporarySignedRoute(
+            'events.public.asset',
+            now()->addHours(24),
+            ['disk' => $disk, 'path' => $storedPath]
+        );
+
+        return response()->json([
+            'location'   => $url,
+            'disk'       => $disk,
+            'path'       => $storedPath,
+            'asset_ref'  => "events-asset://{$disk}/{$storedPath}",
         ]);
     }
 }

@@ -140,8 +140,10 @@ class Contracts extends Component
     protected function ensureHtmlForEditor(string $content): string
     {
         if ($content === '') return '';
-        if (preg_match('/<\/?[a-z][a-z0-9]*\b[^>]*>/i', $content)) return $content;
-        return \Platform\Events\Services\ContractRenderer::markdownToHtml($content);
+        $html = preg_match('/<\/?[a-z][a-z0-9]*\b[^>]*>/i', $content)
+            ? $content
+            : \Platform\Events\Services\ContractRenderer::markdownToHtml($content);
+        return \Platform\Events\Services\ContractRenderer::resolveForEditor($html);
     }
 
     public function saveContent(): void
@@ -149,9 +151,16 @@ class Contracts extends Component
         if (!$this->activeContractId) return;
         $c = Contract::find($this->activeContractId);
         if (!$c) return;
+
+        // Signed-Asset-URLs zu events-asset://-Scheme normalisieren (24h-
+        // Signatur laeuft sonst ab).
+        $text = \Platform\Events\Services\ContractRenderer::normalizeAssetUrls(
+            (string) $this->contractText
+        );
+
         $c->update([
             'type'    => $this->contractType,
-            'content' => ['text' => $this->contractText],
+            'content' => ['text' => $text],
         ]);
         $this->showEditModal = false;
     }

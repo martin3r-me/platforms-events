@@ -83,6 +83,40 @@ class ContractRenderer
         );
     }
 
+    /**
+     * Beim Speichern: ersetzt signierte Asset-URLs im HTML durch das
+     * events-asset://-Scheme. Die URL enthaelt disk als Route-Parameter und
+     * path als Query-Parameter.
+     */
+    public static function normalizeAssetUrls(string $html): string
+    {
+        if ($html === '') return '';
+
+        $pattern = '#<img\b([^>]*?)\bsrc="([^"]*?)/events/asset/([a-z0-9_-]+)\?([^"]*?)"([^>]*)>#i';
+        return preg_replace_callback($pattern, function ($m) {
+            $attrsBefore = $m[1];
+            $disk = $m[3];
+            $query = $m[4];
+            $attrsAfter = $m[5];
+
+            $path = '';
+            parse_str(html_entity_decode($query), $parts);
+            if (!empty($parts['path'])) $path = (string) $parts['path'];
+            if ($path === '') return $m[0];
+
+            return '<img' . $attrsBefore . 'src="events-asset://' . $disk . '/' . $path . '"' . $attrsAfter . '>';
+        }, $html);
+    }
+
+    /**
+     * Beim Laden in den Editor: ersetzt events-asset://-Schemes durch frische
+     * signierte URLs, damit TinyMCE Bilder anzeigen kann.
+     */
+    public static function resolveForEditor(string $html): string
+    {
+        return self::resolveAssetUrls($html, 'web');
+    }
+
     protected static function guessMimeFromPath(string $path): string
     {
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
