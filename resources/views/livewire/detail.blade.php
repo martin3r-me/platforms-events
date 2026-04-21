@@ -307,13 +307,21 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Unterschrift links (Projektverantwortlicher)</label>
-                                    <input wire:model="event.sign_left" type="text" placeholder="Max Mustermann"
-                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                    @include('events::partials.user-picker', [
+                                        'field'       => 'event.sign_left',
+                                        'users'       => $teamUsers,
+                                        'current'     => $event->sign_left,
+                                        'placeholder' => '— Teammitglied wählen —',
+                                    ])
                                 </div>
                                 <div>
                                     <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Unterschrift rechts (Vorgesetzter)</label>
-                                    <input wire:model="event.sign_right" type="text" placeholder="Erika Mustermann"
-                                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                    @include('events::partials.user-picker', [
+                                        'field'       => 'event.sign_right',
+                                        'users'       => $teamUsers,
+                                        'current'     => $event->sign_right,
+                                        'placeholder' => '— Teammitglied wählen —',
+                                    ])
                                 </div>
                             </div>
 

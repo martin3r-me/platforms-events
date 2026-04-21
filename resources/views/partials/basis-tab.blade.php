@@ -163,7 +163,12 @@
             <div class="p-2 space-y-1.5">
                 <div>
                     <label class="{{ $lbl }}">Verantwortlich</label>
-                    <input wire:model.blur="event.responsible" type="text" class="{{ $in }}">
+                    @include('events::partials.user-picker', [
+                        'field'       => 'event.responsible',
+                        'users'       => $teamUsers,
+                        'current'     => $event->responsible,
+                        'placeholder' => '— Teammitglied wählen —',
+                    ])
                 </div>
                 <div class="grid grid-cols-2 gap-1.5">
                     <div>

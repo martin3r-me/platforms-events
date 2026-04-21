@@ -778,6 +778,14 @@ class Detail extends Component
             ->get()
             ->keyBy('role');
 
+        // Team-Mitglieder fuer User-Picker (Verantwortlich / Unterschriften)
+        $teamUsers = $team
+            ? $team->users()->orderBy('name')->get(['users.id', 'users.name', 'users.email'])
+                ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'email' => $u->email])
+                ->values()
+                ->all()
+            : [];
+
         $notesByType = $notes->groupBy('type');
 
         return view('events::livewire.detail', [
@@ -796,6 +804,7 @@ class Detail extends Component
             'orderTree'      => $orderTree,
             'settings'       => $settings,
             'signatures'     => $signatures,
+            'teamUsers'      => $teamUsers,
         ])->layout('platform::layouts.app');
     }
 }
