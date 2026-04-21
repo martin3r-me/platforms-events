@@ -309,7 +309,7 @@
                         <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">HTML-Inhalt</label>
                         <textarea wire:model="tplForm.html_content" rows="14"
                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono"
-                                  placeholder="<h1>Nutzungsvertrag</h1>&#10;<p>Platzhalter wie {{customer_company}} werden beim Erstellen ersetzt.</p>"></textarea>
+                                  placeholder="&lt;h1&gt;Nutzungsvertrag&lt;/h1&gt;&#10;&lt;p&gt;Platzhalter wie @{{customer_company}} werden beim Erstellen ersetzt.&lt;/p&gt;"></textarea>
                         <p class="text-[0.56rem] text-[var(--ui-muted)] mt-1">Unterstützt HTML. Platzhalter sind optional und werden im Dokument-Editor ersetzt.</p>
                     </div>
                     <label class="flex items-center gap-2 text-[0.68rem]">
