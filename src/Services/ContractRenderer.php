@@ -30,10 +30,53 @@ class ContractRenderer
 
         // Wenn der Content bereits HTML ist (TinyMCE-Output), direkt ausgeben.
         // Nur noch Legacy-Plain-/Markdown-Content laeuft durch CommonMark.
-        if (self::looksLikeHtml($filled)) {
-            return $filled;
+        if (!self::looksLikeHtml($filled)) {
+            $filled = self::markdownToHtml($filled);
         }
-        return self::markdownToHtml($filled);
+
+        // DomPDF hat Schwierigkeiten mit text-align: center auf Bildern.
+        // Im PDF-Modus setzen wir zentrierte Elemente in <div align="center">-
+        // Wrapper, die DomPDF zuverlaessig rendert.
+        if ($mode === 'pdf') {
+            $filled = self::hardenAlignmentForPdf($filled);
+        }
+
+        return $filled;
+    }
+
+    /**
+     * Wandelt CSS-basierte Zentrierungen in align="center"-Attribute, die
+     * DomPDF verlaesslich rendert.
+     */
+    public static function hardenAlignmentForPdf(string $html): string
+    {
+        // 1. <p style="text-align: center;">...</p> -> <p align="center">...</p>
+        $html = preg_replace_callback(
+            '#<(p|div|h[1-6])\b([^>]*?)style="([^"]*?)text-align:\s*center;?([^"]*?)"([^>]*)>#i',
+            function ($m) {
+                $tag = $m[1];
+                $attrsBefore = $m[2];
+                $styleBefore = $m[3];
+                $styleAfter = $m[4];
+                $attrsAfter = $m[5];
+                $cleanStyle = trim($styleBefore . ' ' . $styleAfter, " ;\t\n");
+                $styleAttr = $cleanStyle !== '' ? ' style="' . $cleanStyle . '"' : '';
+                return '<' . $tag . ' align="center"' . $attrsBefore . $styleAttr . $attrsAfter . '>';
+            },
+            $html
+        );
+
+        // 2. <img style="... margin-left: auto; margin-right: auto ..."> einzeln
+        //    stehende zentrierte Bilder bekommen einen <div align="center">-Wrapper.
+        $html = preg_replace_callback(
+            '#<img([^>]*?)style="([^"]*?(margin-left:\s*auto|margin:\s*\d*px?\s*auto)[^"]*?)"([^>]*)/?>#i',
+            function ($m) {
+                return '<div align="center"><img' . $m[1] . 'style="' . $m[2] . '"' . $m[4] . '></div>';
+            },
+            $html
+        );
+
+        return $html;
     }
 
     protected static function looksLikeHtml(string $s): bool
