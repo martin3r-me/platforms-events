@@ -604,7 +604,14 @@ class Detail extends Component
             }
             $targetDates = array_values(array_filter($targetDates));
         } else {
-            $targetDates = [$data['datum'] ?: null];
+            // Fallback: kein Datum → ersten Event-Tag nehmen, sonst start_date
+            $datum = $data['datum'] ?: null;
+            if (!$datum) {
+                $firstDay = $this->event->days()->orderBy('sort_order')->first();
+                $datum = $firstDay?->datum?->format('Y-m-d')
+                    ?? $this->event->start_date?->format('Y-m-d');
+            }
+            $targetDates = [$datum];
         }
 
         $maxSort = (int) Booking::where('event_id', $this->event->id)->max('sort_order');
