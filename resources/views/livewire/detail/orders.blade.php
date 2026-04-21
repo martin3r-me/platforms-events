@@ -11,7 +11,35 @@
             $totalArtikel += $dayItems->sum('artikel');
             $totalEinkauf += (float) $dayItems->sum('einkauf');
         }
+
+        $mode = $activeItem ? 'editor' : 'overview';
+        $activeDay = $activeItem ? $days->firstWhere('id', $activeItem->event_day_id) : null;
     @endphp
+
+    @if($mode === 'editor' && $activeItem)
+        {{-- ========== Modus: Einzel-Vorgang (Positions-Editor als Seite) ========== --}}
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-1 h-6 rounded-sm flex-shrink-0" style="background: {{ $activeDay?->color ?? '#ea580c' }};"></div>
+                <div class="min-w-0">
+                    <p class="text-[1rem] font-bold text-[var(--ui-secondary)] m-0 truncate">Bestellung · {{ $activeItem->typ }}</p>
+                    <p class="text-[0.65rem] text-[var(--ui-muted)] m-0">
+                        @if($activeDay)
+                            {{ $activeDay->label ?? $activeDay->day_of_week }} · {{ $activeDay->datum?->format('d.m.Y') }}
+                        @endif
+                        · <span class="font-mono">{{ $activeItem->positionen }} Pos · {{ $fmt($activeItem->einkauf) }} €</span>
+                    </p>
+                </div>
+            </div>
+            <button wire:click="closePositions"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-[0.68rem] font-semibold">
+                @svg('heroicon-o-arrow-left', 'w-3.5 h-3.5')
+                Zurück zur Übersicht
+            </button>
+        </div>
+
+        @include('events::partials.order-positions-editor')
+    @else
 
     {{-- Header --}}
     <div class="flex items-center justify-between mb-4">
@@ -146,15 +174,10 @@
                         </div>
                     @endif
 
-                    {{-- Inline Positions-Editor: direkt unter den Vorgang-Kacheln im Tag --}}
-                    @if($activeItem && $activeItem->event_day_id === $day->id)
-                        <div class="pt-3 pb-1 border-t border-slate-100">
-                            @include('events::partials.order-positions-editor')
-                        </div>
-                    @endif
                 </div>
             @endforeach
         </div>
+    @endif
     @endif
 
     {{-- Modal: Item anlegen --}}

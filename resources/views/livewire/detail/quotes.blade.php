@@ -17,15 +17,45 @@
             $totalArtikel += $dayItems->sum('artikel');
             $totalUmsatz += (float) $dayItems->sum('umsatz');
         }
+
+        // Modus: ist ein Vorgang aktiv → zeige nur den Positions-Editor als "Seite"
+        $mode = $activeItem ? 'editor' : 'overview';
+        $activeDay = $activeItem ? $days->firstWhere('id', $activeItem->event_day_id) : null;
     @endphp
 
-    {{-- Header --}}
-    <div class="flex items-center justify-between mb-4">
-        <div>
-            <p class="text-[1rem] font-bold text-[var(--ui-secondary)]">Angebote · Übersicht</p>
-            <p class="text-[0.65rem] text-[var(--ui-muted)]">Alle Vorgänge je Tag mit Artikel- und Umsatzzusammenfassung</p>
+    @if($mode === 'editor' && $activeItem)
+        {{-- ========== Modus: Einzel-Vorgang (Positions-Editor als Seite) ========== --}}
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-1 h-6 rounded-sm flex-shrink-0" style="background: {{ $activeDay?->color ?? '#2563eb' }};"></div>
+                <div class="min-w-0">
+                    <p class="text-[1rem] font-bold text-[var(--ui-secondary)] m-0 truncate">Angebot · {{ $activeItem->typ }}</p>
+                    <p class="text-[0.65rem] text-[var(--ui-muted)] m-0">
+                        @if($activeDay)
+                            {{ $activeDay->label ?? $activeDay->day_of_week }} · {{ $activeDay->datum?->format('d.m.Y') }}
+                        @endif
+                        · <span class="font-mono">{{ $activeItem->positionen }} Pos · {{ $fmt($activeItem->umsatz) }} €</span>
+                    </p>
+                </div>
+            </div>
+            <button wire:click="closePositions"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-[0.68rem] font-semibold">
+                @svg('heroicon-o-arrow-left', 'w-3.5 h-3.5')
+                Zurück zur Übersicht
+            </button>
         </div>
-    </div>
+
+        @include('events::partials.quote-positions-editor')
+    @else
+        {{-- ========== Modus: Übersicht (alle Tage + KPIs + Angebots-Versand) ========== --}}
+
+        {{-- Header --}}
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <p class="text-[1rem] font-bold text-[var(--ui-secondary)]">Angebote · Übersicht</p>
+                <p class="text-[0.65rem] text-[var(--ui-muted)]">Alle Vorgänge je Tag mit Artikel- und Umsatzzusammenfassung</p>
+            </div>
+        </div>
 
     {{-- Gesamt-KPIs --}}
     <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-4">
@@ -141,12 +171,6 @@
                         </div>
                     @endif
 
-                    {{-- Inline Positions-Editor: erscheint innerhalb der Tag-Karte, direkt unter den Vorgang-Kacheln --}}
-                    @if($activeItem && $activeItem->event_day_id === $day->id)
-                        <div class="pt-3 pb-1">
-                            @include('events::partials.quote-positions-editor')
-                        </div>
-                    @endif
                 </div>
             @endforeach
         </div>
@@ -234,6 +258,7 @@
             </div>
         @endif
     </div>
+    @endif
 
     {{-- Modal: Item anlegen --}}
     <x-ui-modal wire:model="showItemModal" size="md" :hideFooter="true">
