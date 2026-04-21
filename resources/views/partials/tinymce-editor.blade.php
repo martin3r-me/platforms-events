@@ -85,9 +85,6 @@ window.tinymceEditor = function (opts) {
                 console.error('[tinymceEditor] target not found:', this.uid);
                 return;
             }
-            // Entferne Placeholder
-            const placeholder = this.$root.querySelector('.tinymce-placeholder');
-            if (placeholder) placeholder.remove();
 
             const initPromise = window.tinymce.init({
                 target: target,
@@ -151,12 +148,12 @@ window.tinymceEditor = function (opts) {
 </script>
 @endonce
 
+<style>
+    .tox-tinymce { display: block !important; }
+</style>
 <div wire:ignore
      x-data="tinymceEditor({ uid: @js($uid), wireProperty: @js($wireProperty), initial: @js((string) $initial), height: {{ (int) $height }} })"
      x-init="$nextTick(() => setTimeout(() => init(), 50))"
-     style="min-height: {{ (int) $height }}px; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 8px; background: #f8fafc;">
-    <div class="tinymce-placeholder" style="color: #64748b; font-size: 0.7rem; padding: 6px;">
-        Editor wird geladen (uid: {{ $uid }}) …
-    </div>
-    <textarea id="{{ $uid }}" style="display:none;"></textarea>
+     style="min-height: {{ (int) $height }}px;">
+    <textarea id="{{ $uid }}" style="width:100%; height:{{ (int) $height }}px; opacity:0; position:absolute; pointer-events:none;"></textarea>
 </div>
