@@ -49,34 +49,43 @@ class ContractRenderer
     public static function resolveAssetUrls(string $text, string $mode = 'web'): string
     {
         return preg_replace_callback(
-            '#events-asset://([a-z0-9_-]+)/([^\s\)]+)#i',
+            '#events-asset://([a-z0-9_-]+)/([^\s\)"\'<>]+)#i',
             function ($m) use ($mode) {
                 $disk = $m[1];
                 $path = $m[2];
+
+                if ($mode === 'pdf') {
+                    try {
+                        $storage = Storage::disk($disk);
+                        if ($storage->exists($path)) {
+                            $bytes = $storage->get($path);
+                            $mime = $storage->mimeType($path) ?: self::guessMimeFromPath($path);
+                            return 'data:' . $mime . ';base64,' . base64_encode($bytes);
+                        }
+                    } catch (\Throwable $e) {}
+                    // Wenn Datei nicht existiert: 1x1 transparentes PNG als Data-URL,
+                    // damit das PDF kein kaputtes Bild hat.
+                    return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+                }
+
+                // Web-Modus: immer eine absolute URL liefern - egal ob Datei
+                // existiert oder nicht. Broken image ist besser als
+                // ERR_UNKNOWN_URL_SCHEME.
                 try {
                     $storage = Storage::disk($disk);
-                    if (!$storage->exists($path)) return $m[0];
-
-                    if ($mode === 'pdf') {
-                        $bytes = $storage->get($path);
-                        $mime = $storage->mimeType($path) ?: self::guessMimeFromPath($path);
-                        return 'data:' . $mime . ';base64,' . base64_encode($bytes);
-                    }
-
-                    // Nur bei Disks mit nativer presigned-URL (S3) direkt verlinken.
-                    // Fuer 'local' und 'public' immer ueber die signierte Route
-                    // gehen, weil storage:link auf dem Server nicht garantiert ist.
                     if ($storage->providesTemporaryUrls()) {
                         return (string) $storage->temporaryUrl($path, now()->addHours(24));
                     }
+                } catch (\Throwable $e) {}
 
+                try {
                     return (string) URL::temporarySignedRoute(
                         'events.public.asset',
                         now()->addHours(24),
                         ['disk' => $disk, 'path' => $path]
                     );
                 } catch (\Throwable $e) {
-                    return $m[0];
+                    return '';
                 }
             },
             $text
