@@ -11,6 +11,12 @@
             'optionsbestaetigung' => 'Optionsbestätigung',
         ];
 
+        // Merge: Template-Slugs → Labels, damit Vertraege aus Vorlagen auch benannt werden
+        $typeLabels = $typeOptions;
+        foreach ($templates as $tpl) {
+            if ($tpl->slug) $typeLabels[$tpl->slug] = $tpl->label;
+        }
+
         // Group contracts by root-parent for version history
         $versionGroups = [];
         foreach ($contracts as $c) {
@@ -38,7 +44,24 @@
                 @svg('heroicon-o-chevron-down', 'w-2.5 h-2.5 ml-0.5')
             </button>
             <div x-show="dropOpen" @click.outside="dropOpen = false" x-cloak
-                 class="absolute right-0 top-[calc(100%+4px)] z-[100] bg-white border border-slate-200 rounded-lg p-1 shadow-lg min-w-[220px]">
+                 class="absolute right-0 top-[calc(100%+4px)] z-[100] bg-white border border-slate-200 rounded-lg p-1 shadow-lg min-w-[260px]">
+                @if($templates->isNotEmpty())
+                    <div class="px-2 pt-1 pb-0.5 text-[0.52rem] font-bold uppercase tracking-wider text-slate-400">Aus Vorlage</div>
+                    @foreach($templates as $tpl)
+                        <button type="button" wire:click="createContract('{{ $tpl->slug }}')" @click="dropOpen = false"
+                                class="flex items-center gap-2 w-full px-2.5 py-2 border-0 rounded bg-white hover:bg-slate-50 cursor-pointer text-left text-[0.65rem] text-slate-700 transition">
+                            <div class="w-2 h-2 rounded-full flex-shrink-0" style="background: {{ $tpl->color ?: '#7c3aed' }};"></div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-semibold truncate">{{ $tpl->label }}</div>
+                                @if($tpl->description)
+                                    <div class="text-[0.55rem] text-slate-400 truncate">{{ $tpl->description }}</div>
+                                @endif
+                            </div>
+                        </button>
+                    @endforeach
+                    <div class="h-px bg-slate-100 my-1"></div>
+                @endif
+                <div class="px-2 pt-1 pb-0.5 text-[0.52rem] font-bold uppercase tracking-wider text-slate-400">Leer starten</div>
                 @foreach($typeOptions as $key => $label)
                     <button type="button" wire:click="createContract('{{ $key }}')" @click="dropOpen = false"
                             class="flex items-center gap-2 w-full px-2.5 py-2 border-0 rounded bg-white hover:bg-slate-50 cursor-pointer text-left text-[0.65rem] text-slate-700 transition">
@@ -76,7 +99,7 @@
 
                             <div class="flex-1 min-w-0">
                                 <p class="text-[0.72rem] font-semibold text-[var(--ui-secondary)] m-0">
-                                    {{ $typeOptions[$ct->type] ?? $ct->type }} Nr. {{ $event->event_number }}
+                                    {{ $typeLabels[$ct->type] ?? $ct->type }} Nr. {{ $event->event_number }}
                                 </p>
                                 <p class="text-[0.62rem] text-[var(--ui-muted)] mt-0.5">
                                     Erstellt am {{ $ct->created_at->format('d.m.Y') }}

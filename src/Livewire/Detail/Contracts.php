@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Platform\Events\Models\Contract;
+use Platform\Events\Models\DocumentTemplate;
 use Platform\Events\Models\Event;
 use Platform\Events\Services\ActivityLogger;
 
@@ -40,6 +41,22 @@ class Contracts extends Component
     public function createContract(string $type = 'nutzungsvertrag'): void
     {
         $event = $this->event();
+        $text = '';
+        $logNote = $type;
+
+        $tpl = DocumentTemplate::where('team_id', $event->team_id)
+            ->where('is_active', true)
+            ->where(function ($q) use ($type) {
+                $q->where('slug', $type)->orWhere('id', is_numeric($type) ? (int) $type : 0);
+            })
+            ->first();
+
+        if ($tpl) {
+            $text = (string) $tpl->html_content;
+            $type = $tpl->slug ?: $tpl->label;
+            $logNote = "{$tpl->label} (Vorlage)";
+        }
+
         $contract = Contract::create([
             'team_id'    => $event->team_id,
             'user_id'    => Auth::id(),
@@ -47,12 +64,12 @@ class Contracts extends Component
             'type'       => $type,
             'token'      => Str::random(48),
             'status'     => 'draft',
-            'content'    => ['text' => ''],
+            'content'    => ['text' => $text],
             'version'    => 1,
             'is_current' => true,
         ]);
         $this->activeContractId = $contract->id;
-        ActivityLogger::log($event, 'contract', "Vertrag #{$contract->id} (v1, {$type}) angelegt");
+        ActivityLogger::log($event, 'contract', "Vertrag #{$contract->id} (v1, {$logNote}) angelegt");
     }
 
     public function selectContract(int $contractId): void
@@ -155,10 +172,17 @@ class Contracts extends Component
             ->get();
         $activeContract = $this->activeContractId ? Contract::find($this->activeContractId) : null;
 
+        $templates = DocumentTemplate::where('team_id', $event->team_id)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('label')
+            ->get();
+
         return view('events::livewire.detail.contracts', [
             'event'          => $event,
             'contracts'      => $contracts,
             'activeContract' => $activeContract,
+            'templates'      => $templates,
         ]);
     }
 }
