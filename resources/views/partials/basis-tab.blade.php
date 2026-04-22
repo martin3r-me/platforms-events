@@ -86,32 +86,36 @@
                     <div>
                         <label class="{{ $lbl }}">Ansprechpartner</label>
                         @php $c = ($crmContactSlots ?? [])['organizer'] ?? []; @endphp
-                        @include('events::partials.crm-contact-picker', [
-                            'slot'          => 'organizer',
-                            'available'     => $crmContactAvailable ?? false,
-                            'contacts'      => $c['contacts']     ?? [],
-                            'currentId'     => $c['currentId']    ?? null,
-                            'currentLabel'  => $c['currentLabel'] ?? $event->organizer_contact,
-                            'currentUrl'    => $c['currentUrl']   ?? null,
-                            'hasCompany'    => $c['hasCompany']   ?? false,
-                            'fallbackField' => 'organizer_contact',
-                            'placeholder'   => '— Kontakt wählen —',
-                        ])
+                        <div wire:key="crm-contact-organizer-{{ md5(json_encode($c['contacts'] ?? [])) }}">
+                            @include('events::partials.crm-contact-picker', [
+                                'slot'          => 'organizer',
+                                'available'     => $crmContactAvailable ?? false,
+                                'contacts'      => $c['contacts']     ?? [],
+                                'currentId'     => $c['currentId']    ?? null,
+                                'currentLabel'  => $c['currentLabel'] ?? $event->organizer_contact,
+                                'currentUrl'    => $c['currentUrl']   ?? null,
+                                'hasCompany'    => $c['hasCompany']   ?? false,
+                                'fallbackField' => 'organizer_contact',
+                                'placeholder'   => '— Kontakt wählen —',
+                            ])
+                        </div>
                     </div>
                     <div>
                         <label class="{{ $lbl }}">Asp. vor Ort</label>
                         @php $c = ($crmContactSlots ?? [])['organizer_onsite'] ?? []; @endphp
-                        @include('events::partials.crm-contact-picker', [
-                            'slot'          => 'organizer_onsite',
-                            'available'     => $crmContactAvailable ?? false,
-                            'contacts'      => $c['contacts']     ?? [],
-                            'currentId'     => $c['currentId']    ?? null,
-                            'currentLabel'  => $c['currentLabel'] ?? $event->organizer_contact_onsite,
-                            'currentUrl'    => $c['currentUrl']   ?? null,
-                            'hasCompany'    => $c['hasCompany']   ?? false,
-                            'fallbackField' => 'organizer_contact_onsite',
-                            'placeholder'   => '— Kontakt wählen —',
-                        ])
+                        <div wire:key="crm-contact-organizer-onsite-{{ md5(json_encode($c['contacts'] ?? [])) }}">
+                            @include('events::partials.crm-contact-picker', [
+                                'slot'          => 'organizer_onsite',
+                                'available'     => $crmContactAvailable ?? false,
+                                'contacts'      => $c['contacts']     ?? [],
+                                'currentId'     => $c['currentId']    ?? null,
+                                'currentLabel'  => $c['currentLabel'] ?? $event->organizer_contact_onsite,
+                                'currentUrl'    => $c['currentUrl']   ?? null,
+                                'hasCompany'    => $c['hasCompany']   ?? false,
+                                'fallbackField' => 'organizer_contact_onsite',
+                                'placeholder'   => '— Kontakt wählen —',
+                            ])
+                        </div>
                     </div>
                 </div>
                 <div>
@@ -181,17 +185,19 @@
                     <div>
                         <label class="{{ $lbl }}">Ansprechpartner</label>
                         @php $c = ($crmContactSlots ?? [])['invoice'] ?? []; @endphp
-                        @include('events::partials.crm-contact-picker', [
-                            'slot'          => 'invoice',
-                            'available'     => $crmContactAvailable ?? false,
-                            'contacts'      => $c['contacts']     ?? [],
-                            'currentId'     => $c['currentId']    ?? null,
-                            'currentLabel'  => $c['currentLabel'] ?? $event->invoice_contact,
-                            'currentUrl'    => $c['currentUrl']   ?? null,
-                            'hasCompany'    => $c['hasCompany']   ?? false,
-                            'fallbackField' => 'invoice_contact',
-                            'placeholder'   => '— Kontakt wählen —',
-                        ])
+                        <div wire:key="crm-contact-invoice-{{ md5(json_encode($c['contacts'] ?? [])) }}">
+                            @include('events::partials.crm-contact-picker', [
+                                'slot'          => 'invoice',
+                                'available'     => $crmContactAvailable ?? false,
+                                'contacts'      => $c['contacts']     ?? [],
+                                'currentId'     => $c['currentId']    ?? null,
+                                'currentLabel'  => $c['currentLabel'] ?? $event->invoice_contact,
+                                'currentUrl'    => $c['currentUrl']   ?? null,
+                                'hasCompany'    => $c['hasCompany']   ?? false,
+                                'fallbackField' => 'invoice_contact',
+                                'placeholder'   => '— Kontakt wählen —',
+                            ])
+                        </div>
                     </div>
                     <div>
                         <label class="{{ $lbl }}">Rechnungsdatum</label>
@@ -296,17 +302,19 @@
                 <div>
                     <label class="{{ $lbl }}">Ansprechpartner</label>
                     @php $c = ($crmContactSlots ?? [])['delivery'] ?? []; @endphp
-                    @include('events::partials.crm-contact-picker', [
-                        'slot'          => 'delivery',
-                        'available'     => $crmContactAvailable ?? false,
-                        'contacts'      => $c['contacts']     ?? [],
-                        'currentId'     => $c['currentId']    ?? null,
-                        'currentLabel'  => $c['currentLabel'] ?? $event->delivery_contact,
-                        'currentUrl'    => $c['currentUrl']   ?? null,
-                        'hasCompany'    => $c['hasCompany']   ?? false,
-                        'fallbackField' => 'delivery_contact',
-                        'placeholder'   => '— Kontakt wählen —',
-                    ])
+                    <div wire:key="crm-contact-delivery-{{ md5(json_encode($c['contacts'] ?? [])) }}">
+                        @include('events::partials.crm-contact-picker', [
+                            'slot'          => 'delivery',
+                            'available'     => $crmContactAvailable ?? false,
+                            'contacts'      => $c['contacts']     ?? [],
+                            'currentId'     => $c['currentId']    ?? null,
+                            'currentLabel'  => $c['currentLabel'] ?? $event->delivery_contact,
+                            'currentUrl'    => $c['currentUrl']   ?? null,
+                            'hasCompany'    => $c['hasCompany']   ?? false,
+                            'fallbackField' => 'delivery_contact',
+                            'placeholder'   => '— Kontakt wählen —',
+                        ])
+                    </div>
                 </div>
             </div>
         </x-ui-panel>
