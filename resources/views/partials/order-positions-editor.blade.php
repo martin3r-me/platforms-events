@@ -208,19 +208,19 @@
                         @endif
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model="newPosition.anz" type="text" placeholder="0"
+                        <input wire:model.blur="newPosition.anz" type="text" placeholder="0"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model="newPosition.anz2" type="text" placeholder="0"
+                        <input wire:model.blur="newPosition.anz2" type="text" placeholder="0"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model="newPosition.uhrzeit" type="text" placeholder="Von"
+                        <input wire:model.blur="newPosition.uhrzeit" type="text" placeholder="Von"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono bg-white">
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model="newPosition.bis" type="text" placeholder="Bis"
+                        <input wire:model.blur="newPosition.bis" type="text" placeholder="Bis"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono bg-white">
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
@@ -232,7 +232,7 @@
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model="newPosition.ek" type="number" step="0.01" placeholder="0,00"
+                        <input wire:model.blur="newPosition.ek" type="number" step="0.01" placeholder="0,00"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
@@ -244,7 +244,7 @@
                         </select>
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model="newPosition.gesamt" type="number" step="0.01" placeholder="auto"
+                        <input wire:model.blur="newPosition.gesamt" type="number" step="0.01" placeholder="auto"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
