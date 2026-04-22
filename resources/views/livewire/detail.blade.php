@@ -296,6 +296,12 @@
             .events-detail-page section > header + div {
                 padding-top: 0.5rem !important;
             }
+            /* Farblicher Strich links vor dem Panel-Titel */
+            .events-detail-page section > header h3 {
+                border-left: 3px solid var(--ui-primary, #3b82f6);
+                padding-left: 0.55rem;
+                line-height: 1.1;
+            }
         </style>
         <div class="events-detail-page">
         {{-- Abstand zur Navbar --}}
