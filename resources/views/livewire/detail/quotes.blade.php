@@ -328,9 +328,9 @@
                 Vorlage einfügen
             </span>
         </x-slot>
-        <div class="grid grid-cols-12 gap-3" style="min-height: 380px;">
+        <div class="flex gap-4 w-full" style="min-height: 460px;">
             {{-- Links: Suche + Liste --}}
-            <div class="col-span-4 flex flex-col min-h-0">
+            <div class="w-[280px] flex-shrink-0 flex flex-col min-h-0">
                 <div class="relative mb-2">
                     <span class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400">
                         @svg('heroicon-o-magnifying-glass', 'w-3.5 h-3.5')
@@ -372,19 +372,19 @@
             </div>
 
             {{-- Rechts: Vorschau --}}
-            <div class="col-span-8 flex flex-col min-h-0 border-l border-slate-100 pl-3">
+            <div class="flex-1 min-w-0 flex flex-col border-l border-slate-100 pl-4">
                 @if($selectedPackagePreview)
-                    <div class="flex items-center justify-between mb-2">
-                        <div class="flex items-center gap-2">
-                            <span class="w-2.5 h-2.5 rounded-full" style="background: {{ $selectedPackagePreview->color ?: '#8b5cf6' }};"></span>
-                            <h3 class="text-[0.85rem] font-bold text-[var(--ui-secondary)] m-0">{{ $selectedPackagePreview->name }}</h3>
-                            <span class="text-[0.62rem] text-slate-400">{{ $selectedPackagePreview->items->count() }} Positionen</span>
+                    <div class="flex items-center justify-between mb-2 flex-shrink-0">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background: {{ $selectedPackagePreview->color ?: '#8b5cf6' }};"></span>
+                            <h3 class="text-[0.85rem] font-bold text-[var(--ui-secondary)] m-0 truncate">{{ $selectedPackagePreview->name }}</h3>
+                            <span class="text-[0.62rem] text-slate-400 flex-shrink-0">{{ $selectedPackagePreview->items->count() }} Positionen</span>
                         </div>
                     </div>
                     @if($selectedPackagePreview->description)
-                        <p class="text-[0.62rem] text-slate-500 italic mb-2">{{ $selectedPackagePreview->description }}</p>
+                        <p class="text-[0.62rem] text-slate-500 italic mb-2 flex-shrink-0">{{ $selectedPackagePreview->description }}</p>
                     @endif
-                    <div class="flex-1 overflow-y-auto border border-slate-100 rounded-md">
+                    <div class="flex-1 overflow-auto border border-slate-100 rounded-md min-h-0">
                         <table class="w-full text-[0.65rem]">
                             <thead class="bg-slate-50 sticky top-0">
                                 <tr class="border-b border-slate-200">
@@ -414,9 +414,9 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="flex justify-end pt-3">
+                    <div class="flex justify-end pt-3 flex-shrink-0">
                         <button wire:click="applySelectedPackage"
-                                class="flex items-center gap-1.5 px-4 py-2 rounded-md bg-purple-600 hover:bg-purple-700 text-white border-0 cursor-pointer text-[0.72rem] font-bold">
+                                class="flex items-center gap-1.5 px-4 py-2 rounded-md bg-purple-600 hover:bg-purple-700 text-white border-0 cursor-pointer text-[0.72rem] font-bold whitespace-nowrap">
                             @svg('heroicon-o-plus', 'w-3.5 h-3.5')
                             Vorlage einfügen
                         </button>
