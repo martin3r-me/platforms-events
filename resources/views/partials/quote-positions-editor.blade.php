@@ -189,10 +189,34 @@
                         <input wire:model="newPosition.gruppe" type="text" placeholder="Gruppe / Typ"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] bg-white">
                     </td>
-                    <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model="newPosition.name" type="text" placeholder="Bezeichnung"
+                    <td class="px-1.5 py-1.5 align-top relative" x-data="{ showArticles: false }">
+                        <input wire:model.live.debounce.300ms="newPosition.name" type="text" placeholder="Bezeichnung / Artikel suchen"
                                @keydown.enter="$wire.addPosition()"
+                               @focus="showArticles = true"
+                               @click.outside="showArticles = false"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] bg-white">
+                        @if($articleMatches->isNotEmpty())
+                            <div x-show="showArticles" x-cloak
+                                 class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded shadow-lg z-50 max-h-64 overflow-y-auto min-w-[320px]">
+                                @foreach($articleMatches as $art)
+                                    <button type="button"
+                                            wire:click="pickArticle({{ $art->id }})"
+                                            @click="showArticles = false"
+                                            class="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-slate-50 transition border-0 bg-transparent cursor-pointer">
+                                        <span class="text-[0.58rem] font-mono font-bold text-slate-500 min-w-[70px] flex-shrink-0">{{ $art->article_number }}</span>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-[0.65rem] text-slate-700 truncate">{{ $art->name }}</div>
+                                            @if($art->gebinde)
+                                                <div class="text-[0.55rem] text-slate-400">{{ $art->gebinde }}</div>
+                                            @endif
+                                        </div>
+                                        @if($art->vk > 0)
+                                            <span class="text-[0.6rem] font-mono text-slate-500 flex-shrink-0">{{ number_format($art->vk, 2, ',', '.') }} €</span>
+                                        @endif
+                                    </button>
+                                @endforeach
+                            </div>
+                        @endif
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
                         <input wire:model="newPosition.anz" type="text" placeholder="0"

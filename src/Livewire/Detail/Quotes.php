@@ -5,6 +5,7 @@ namespace Platform\Events\Livewire\Detail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Component;
+use Platform\Events\Models\Article;
 use Platform\Events\Models\Event;
 use Platform\Events\Models\Quote;
 use Platform\Events\Models\QuoteItem;
@@ -287,6 +288,24 @@ class Quotes extends Component
         ];
     }
 
+    /**
+     * Fuellt die neue Position mit den Daten des gewaehlten Artikels.
+     */
+    public function pickArticle(int $articleId): void
+    {
+        $event = $this->event();
+        $article = Article::where('team_id', $event->team_id)->find($articleId);
+        if (!$article) return;
+
+        $this->newPosition['name']     = (string) $article->name;
+        $this->newPosition['inhalt']   = (string) ($article->description ?? $article->offer_text ?? '');
+        $this->newPosition['gebinde']  = (string) ($article->gebinde ?? '');
+        $this->newPosition['ek']       = (float) ($article->ek ?? 0);
+        $this->newPosition['basis_ek'] = (float) ($article->ek ?? 0);
+        $this->newPosition['preis']    = (float) ($article->vk ?? 0);
+        if (!empty($article->mwst)) $this->newPosition['mwst'] = (string) $article->mwst;
+    }
+
     public function addPosition(): void
     {
         if (!$this->activeItemId) return;
@@ -378,17 +397,39 @@ class Quotes extends Component
 
         $bausteine = SettingsService::bausteine($event->team_id);
 
+        // Artikel-Suche (performant fuer >50k Artikel: team-gefiltert, active,
+        // LIMIT 20, prefix-matches zuerst). Suchquelle ist das Name-Feld der
+        // neuen Position.
+        $articleMatches = collect();
+        $query = trim((string) ($this->newPosition['name'] ?? ''));
+        if (mb_strlen($query) >= 2 && $this->view === 'editor') {
+            $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $query) . '%';
+            $prefixLike = str_replace(['%', '_'], ['\\%', '\\_'], $query) . '%';
+            $articleMatches = Article::where('team_id', $event->team_id)
+                ->where('is_active', true)
+                ->where(function ($q) use ($like) {
+                    $q->where('name', 'like', $like)
+                      ->orWhere('article_number', 'like', $like)
+                      ->orWhere('external_code', 'like', $like);
+                })
+                ->orderByRaw('CASE WHEN name LIKE ? THEN 0 WHEN article_number LIKE ? THEN 1 ELSE 2 END', [$prefixLike, $prefixLike])
+                ->orderBy('name')
+                ->limit(20)
+                ->get(['id', 'article_number', 'name', 'gebinde', 'ek', 'vk', 'mwst']);
+        }
+
         return view('events::livewire.detail.quotes', [
-            'event'        => $event,
-            'quotes'       => $quotes,
-            'activeQuote'  => $activeQuote,
-            'days'         => $event->days,
-            'items'        => $items,
-            'activeItem'   => $activeItem,
-            'activeDay'    => $activeDay,
-            'allPositions' => $allPositions,
-            'positions'    => $positions,
-            'bausteine'    => $bausteine,
+            'event'          => $event,
+            'quotes'         => $quotes,
+            'activeQuote'    => $activeQuote,
+            'days'           => $event->days,
+            'items'          => $items,
+            'activeItem'     => $activeItem,
+            'activeDay'      => $activeDay,
+            'allPositions'   => $allPositions,
+            'positions'      => $positions,
+            'bausteine'      => $bausteine,
+            'articleMatches' => $articleMatches,
         ]);
     }
 }
