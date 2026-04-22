@@ -49,6 +49,37 @@ class Quotes extends Component
     public ?int $approvalApproverId = null;
     public string $approvalComment = '';
 
+    // Package/Vorlage-Picker
+    public bool $showPackagePicker = false;
+    public string $packageSearch = '';
+    public ?int $selectedPackagePreviewId = null;
+
+    public function openPackagePicker(): void
+    {
+        $this->packageSearch = '';
+        $this->selectedPackagePreviewId = null;
+        $this->showPackagePicker = true;
+    }
+
+    public function closePackagePicker(): void
+    {
+        $this->showPackagePicker = false;
+        $this->packageSearch = '';
+        $this->selectedPackagePreviewId = null;
+    }
+
+    public function selectPackagePreview(int $id): void
+    {
+        $this->selectedPackagePreviewId = $id;
+    }
+
+    public function applySelectedPackage(): void
+    {
+        if (!$this->selectedPackagePreviewId) return;
+        $this->applyPackage($this->selectedPackagePreviewId);
+        $this->closePackagePicker();
+    }
+
     public function mount(int $eventId, ?int $initialItemId = null, ?int $initialDayId = null, ?string $initialView = null): void
     {
         $this->eventId = $eventId;
@@ -682,12 +713,28 @@ class Quotes extends Component
 
         $bausteine = SettingsService::bausteine($event->team_id);
 
-        // Artikel-Vorlagen (Packages) fuer den "Vorlage einfuegen"-Button
-        $articlePackages = ArticlePackage::where('team_id', $event->team_id)
-            ->where('is_active', true)
+        // Artikel-Vorlagen (Packages) fuer den "Vorlage einfuegen"-Modal
+        $packagesQuery = ArticlePackage::where('team_id', $event->team_id)
+            ->where('is_active', true);
+        if ($this->showPackagePicker && trim($this->packageSearch) !== '') {
+            $like = '%' . str_replace(['%','_'], ['\\%','\\_'], trim($this->packageSearch)) . '%';
+            $packagesQuery->where(function ($q) use ($like) {
+                $q->where('name', 'like', $like)
+                  ->orWhere('description', 'like', $like);
+            });
+        }
+        $articlePackages = $packagesQuery
+            ->withCount('items')
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->get(['id', 'name', 'description', 'color']);
+            ->get();
+
+        $selectedPackagePreview = null;
+        if ($this->showPackagePicker && $this->selectedPackagePreviewId) {
+            $selectedPackagePreview = ArticlePackage::with(['items' => fn($q) => $q->orderBy('sort_order')])
+                ->where('team_id', $event->team_id)
+                ->find($this->selectedPackagePreviewId);
+        }
 
         // Team-Mitglieder fuer den Approver-Picker
         $team = \Platform\Core\Models\Team::find($event->team_id);
@@ -733,6 +780,7 @@ class Quotes extends Component
             'bausteine'      => $bausteine,
             'articleMatches' => $articleMatches,
             'articlePackages'=> $articlePackages,
+            'selectedPackagePreview' => $selectedPackagePreview,
             'teamUsers'      => $teamUsers,
             'currentUserId'  => Auth::id(),
         ]);

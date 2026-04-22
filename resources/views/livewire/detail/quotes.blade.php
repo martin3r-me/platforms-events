@@ -320,6 +320,116 @@
         </div>
     @endif
 
+    {{-- Modal: Vorlage einfuegen (Package-Picker mit Vorschau) --}}
+    <x-ui-modal wire:model="showPackagePicker" size="xl" :hideFooter="true">
+        <x-slot name="header">
+            <span class="flex items-center gap-2">
+                @svg('heroicon-o-rectangle-group', 'w-4 h-4 text-purple-600')
+                Vorlage einfügen
+            </span>
+        </x-slot>
+        <div class="grid grid-cols-12 gap-3" style="min-height: 380px;">
+            {{-- Links: Suche + Liste --}}
+            <div class="col-span-4 flex flex-col min-h-0">
+                <div class="relative mb-2">
+                    <span class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400">
+                        @svg('heroicon-o-magnifying-glass', 'w-3.5 h-3.5')
+                    </span>
+                    <input wire:model.live.debounce.300ms="packageSearch" type="text"
+                           placeholder="Vorlage suchen …"
+                           class="w-full border border-slate-200 rounded-md pl-7 pr-2 py-1.5 text-[0.7rem] focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                </div>
+                <div class="flex-1 overflow-y-auto border border-slate-100 rounded-md p-1">
+                    @forelse(($articlePackages ?? collect()) as $pkg)
+                        <button type="button"
+                                wire:click="selectPackagePreview({{ $pkg->id }})"
+                                class="flex items-center gap-2 w-full px-2.5 py-2 rounded text-left text-[0.7rem] font-medium transition cursor-pointer border-0
+                                       {{ $selectedPackagePreviewId === $pkg->id ? 'bg-purple-50 border border-purple-200 text-purple-700' : 'bg-transparent hover:bg-slate-50 text-slate-700' }}">
+                            <span class="w-2 h-2 rounded-full flex-shrink-0" style="background: {{ $pkg->color ?: '#8b5cf6' }};"></span>
+                            <div class="flex-1 min-w-0">
+                                <div class="truncate font-semibold">{{ $pkg->name }}</div>
+                                @if($pkg->description)
+                                    <div class="text-[0.58rem] text-slate-400 truncate">{{ $pkg->description }}</div>
+                                @endif
+                            </div>
+                            <span class="text-[0.58rem] text-slate-400 flex-shrink-0">{{ $pkg->items_count ?? 0 }} Pos.</span>
+                        </button>
+                    @empty
+                        <div class="px-3 py-6 text-center text-[0.65rem] text-slate-400">
+                            @if(trim($packageSearch) !== '')
+                                Keine Treffer für „{{ $packageSearch }}"
+                            @else
+                                Noch keine Vorlagen angelegt.
+                            @endif
+                        </div>
+                    @endforelse
+                </div>
+                <a href="{{ route('events.articles') }}"
+                   class="mt-2 flex items-center gap-1.5 px-2 py-1 text-[0.6rem] text-slate-400 hover:text-slate-600 no-underline">
+                    @svg('heroicon-o-cog-6-tooth', 'w-3 h-3')
+                    Vorlagen verwalten
+                </a>
+            </div>
+
+            {{-- Rechts: Vorschau --}}
+            <div class="col-span-8 flex flex-col min-h-0 border-l border-slate-100 pl-3">
+                @if($selectedPackagePreview)
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full" style="background: {{ $selectedPackagePreview->color ?: '#8b5cf6' }};"></span>
+                            <h3 class="text-[0.85rem] font-bold text-[var(--ui-secondary)] m-0">{{ $selectedPackagePreview->name }}</h3>
+                            <span class="text-[0.62rem] text-slate-400">{{ $selectedPackagePreview->items->count() }} Positionen</span>
+                        </div>
+                    </div>
+                    @if($selectedPackagePreview->description)
+                        <p class="text-[0.62rem] text-slate-500 italic mb-2">{{ $selectedPackagePreview->description }}</p>
+                    @endif
+                    <div class="flex-1 overflow-y-auto border border-slate-100 rounded-md">
+                        <table class="w-full text-[0.65rem]">
+                            <thead class="bg-slate-50 sticky top-0">
+                                <tr class="border-b border-slate-200">
+                                    <th class="text-left py-1.5 px-2 font-semibold text-slate-500">Gruppe</th>
+                                    <th class="text-left py-1.5 px-2 font-semibold text-slate-500">Name</th>
+                                    <th class="text-right py-1.5 px-2 font-semibold text-slate-500">Anz.</th>
+                                    <th class="text-left py-1.5 px-2 font-semibold text-slate-500">Gebinde</th>
+                                    <th class="text-right py-1.5 px-2 font-semibold text-slate-500">VK</th>
+                                    <th class="text-center py-1.5 px-2 font-semibold text-slate-500">MwSt.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($selectedPackagePreview->items->sortBy('sort_order') as $pi)
+                                    <tr class="border-b border-slate-100">
+                                        <td class="py-1 px-2 text-slate-500">{{ $pi->gruppe }}</td>
+                                        <td class="py-1 px-2 text-slate-700">{{ $pi->name }}</td>
+                                        <td class="py-1 px-2 text-right font-mono">{{ $pi->quantity }}</td>
+                                        <td class="py-1 px-2 text-slate-500">{{ $pi->gebinde }}</td>
+                                        <td class="py-1 px-2 text-right font-mono font-semibold text-green-700">{{ $pi->vk ? number_format((float)$pi->vk, 2, ',', '.').' €' : '—' }}</td>
+                                        <td class="py-1 px-2 text-center text-slate-500">{{ $pi->article?->mwst ?? '—' }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="py-4 text-center text-slate-400">Keine Positionen in dieser Vorlage</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="flex justify-end pt-3">
+                        <button wire:click="applySelectedPackage"
+                                class="flex items-center gap-1.5 px-4 py-2 rounded-md bg-purple-600 hover:bg-purple-700 text-white border-0 cursor-pointer text-[0.72rem] font-bold">
+                            @svg('heroicon-o-plus', 'w-3.5 h-3.5')
+                            Vorlage einfügen
+                        </button>
+                    </div>
+                @else
+                    <div class="flex-1 flex items-center justify-center text-[0.7rem] text-slate-400">
+                        Wähle eine Vorlage links zur Vorschau.
+                    </div>
+                @endif
+            </div>
+        </div>
+    </x-ui-modal>
+
     {{-- Modal: Freigabe anfordern --}}
     <x-ui-modal wire:model="showApprovalModal" size="md" :hideFooter="true">
         <x-slot name="header">Freigabe anfordern</x-slot>
