@@ -307,9 +307,9 @@
             .events-detail-page section > header h3::before {
                 content: "";
                 display: inline-block;
-                width: 3px;
-                height: 0.9em;
-                border-radius: 2px;
+                width: 4px;
+                height: 1rem;
+                border-radius: 9999px;
                 background: #3b82f6;
                 flex-shrink: 0;
             }
