@@ -483,18 +483,14 @@ class Quotes extends Component
         $bausteine = SettingsService::bausteine($event->team_id);
 
         // Team-Mitglieder fuer den Approver-Picker
-        $teamUsers = collect();
-        try {
-            $team = \Platform\Core\Models\Team::find($event->team_id);
-            if ($team) {
-                $teamUsers = $team->allUsers()
-                    ->reject(fn ($u) => (int) $u->id === (int) Auth::id())
-                    ->values()
-                    ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'email' => $u->email]);
-            }
-        } catch (\Throwable $e) {
-            $teamUsers = collect();
-        }
+        $team = \Platform\Core\Models\Team::find($event->team_id);
+        $teamUsers = $team
+            ? $team->users()->orderBy('name')->get(['users.id', 'users.name', 'users.email'])
+                ->reject(fn ($u) => (int) $u->id === (int) Auth::id())
+                ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'email' => $u->email])
+                ->values()
+                ->all()
+            : [];
 
         // Artikel-Suche (performant fuer >50k Artikel: team-gefiltert, active,
         // LIMIT 20, prefix-matches zuerst). Suchquelle ist das Name-Feld der
