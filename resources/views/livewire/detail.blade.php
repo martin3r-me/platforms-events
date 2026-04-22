@@ -296,11 +296,22 @@
             .events-detail-page section > header + div {
                 padding-top: 0.5rem !important;
             }
-            /* Farblicher Strich links vor dem Panel-Titel */
+            /* Farblicher Strich links vor dem Panel-Titel (wie in Basis-Tab) */
             .events-detail-page section > header h3 {
-                border-left: 3px solid var(--ui-primary, #3b82f6);
-                padding-left: 0.55rem;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding-left: 0;
                 line-height: 1.1;
+            }
+            .events-detail-page section > header h3::before {
+                content: "";
+                display: inline-block;
+                width: 3px;
+                height: 0.9em;
+                border-radius: 2px;
+                background: #3b82f6;
+                flex-shrink: 0;
             }
         </style>
         <div class="events-detail-page">
