@@ -235,8 +235,9 @@ class Orders extends Component
             $s = \Carbon\Carbon::createFromFormat('H:i', $von);
             $e = \Carbon\Carbon::createFromFormat('H:i', $bis);
             if ($e->lessThan($s)) $e->addDay();
-            return round($e->diffInMinutes($s) / 60.0, 2);
-        } catch (\Throwable $e) {
+            $minutes = abs($s->diffInMinutes($e));
+            return round($minutes / 60.0, 2);
+        } catch (\Throwable $ex) {
             return null;
         }
     }
