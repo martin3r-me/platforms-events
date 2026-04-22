@@ -216,11 +216,17 @@
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model.blur="newPosition.uhrzeit" type="text" placeholder="Von"
+                        <input wire:model.blur="newPosition.uhrzeit" type="text" placeholder="HH:MM" maxlength="5"
+                               inputmode="numeric"
+                               x-data
+                               x-on:input="let v = $el.value.replace(/[^0-9]/g, '').substring(0, 4); if (v.length >= 3) v = v.substring(0, 2) + ':' + v.substring(2); $el.value = v;"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono bg-white">
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model.blur="newPosition.bis" type="text" placeholder="Bis"
+                        <input wire:model.blur="newPosition.bis" type="text" placeholder="HH:MM" maxlength="5"
+                               inputmode="numeric"
+                               x-data
+                               x-on:input="let v = $el.value.replace(/[^0-9]/g, '').substring(0, 4); if (v.length >= 3) v = v.substring(0, 2) + ':' + v.substring(2); $el.value = v;"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono bg-white">
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
