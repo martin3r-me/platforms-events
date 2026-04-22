@@ -284,7 +284,7 @@
         </x-ui-page-sidebar>
     </x-slot>
 
-    <x-ui-page-container>
+    <x-ui-page-container background="bg-slate-100">
         {{-- Abstand zur Navbar --}}
         <div aria-hidden="true" style="height: 0.375rem;"></div>
 
