@@ -9,6 +9,8 @@ use Platform\Events\Models\Event;
 use Platform\Events\Models\OrderItem;
 use Platform\Events\Models\OrderPosition;
 use Platform\Events\Models\QuoteItem;
+use Platform\Events\Services\ArticleSearchService;
+use Platform\Events\Services\PositionCalculator;
 use Platform\Events\Services\SettingsService;
 
 class Orders extends Component
@@ -207,62 +209,7 @@ class Orders extends Component
 
     public function updatedNewPosition($value, $key): void
     {
-        if (in_array($key, ['uhrzeit', 'bis'], true)) {
-            $this->autoComputeAnz2FromTime();
-        }
-        if (in_array($key, ['anz', 'anz2', 'preis', 'ek'], true)) {
-            $this->autoComputeGesamt();
-        }
-        if ($key === 'gesamt') {
-            $this->autoComputeEkFromGesamt();
-        }
-    }
-
-    protected function autoComputeAnz2FromTime(): void
-    {
-        $von = trim((string) ($this->newPosition['uhrzeit'] ?? ''));
-        $bis = trim((string) ($this->newPosition['bis'] ?? ''));
-        if ($von === '' || $bis === '') return;
-        $hours = $this->hoursDiff($von, $bis);
-        if ($hours === null) return;
-        $this->newPosition['anz2'] = (string) (fmod($hours, 1) == 0 ? (int) $hours : round($hours, 2));
-        $this->autoComputeGesamt();
-    }
-
-    protected function hoursDiff(string $von, string $bis): ?float
-    {
-        try {
-            $s = \Carbon\Carbon::createFromFormat('H:i', $von);
-            $e = \Carbon\Carbon::createFromFormat('H:i', $bis);
-            if ($e->lessThan($s)) $e->addDay();
-            $minutes = abs($s->diffInMinutes($e));
-            return round($minutes / 60.0, 2);
-        } catch (\Throwable $ex) {
-            return null;
-        }
-    }
-
-    protected function autoComputeGesamt(): void
-    {
-        $anz = (float) ($this->newPosition['anz'] ?? 0);
-        $anz2 = (float) ($this->newPosition['anz2'] ?? 0);
-        // Fuer Bestellungen: EK statt VK als Multiplikator
-        $preis = (float) ($this->newPosition['ek'] ?? ($this->newPosition['preis'] ?? 0));
-        if ($anz <= 0 || $preis <= 0) return;
-        $mult = $anz2 > 0 ? $anz * $anz2 : $anz;
-        $this->newPosition['gesamt'] = round($mult * $preis, 2);
-    }
-
-    protected function autoComputeEkFromGesamt(): void
-    {
-        $anz = (float) ($this->newPosition['anz'] ?? 0);
-        $anz2 = (float) ($this->newPosition['anz2'] ?? 0);
-        $gesamt = (float) ($this->newPosition['gesamt'] ?? 0);
-        if ($gesamt <= 0 || $anz <= 0) return;
-        $mult = $anz2 > 0 ? $anz * $anz2 : $anz;
-        if ($mult > 0) {
-            $this->newPosition['ek'] = round($gesamt / $mult, 2);
-        }
+        $this->newPosition = PositionCalculator::apply($this->newPosition, (string) $key, 'ek');
     }
 
     public function pickArticle(int $articleId): void
@@ -360,23 +307,9 @@ class Orders extends Component
 
         $bausteine = SettingsService::bausteine($event->team_id);
 
-        $articleMatches = collect();
-        $query = trim((string) ($this->newPosition['name'] ?? ''));
-        if (mb_strlen($query) >= 2 && $this->view === 'editor') {
-            $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $query) . '%';
-            $prefixLike = str_replace(['%', '_'], ['\\%', '\\_'], $query) . '%';
-            $articleMatches = Article::where('team_id', $event->team_id)
-                ->where('is_active', true)
-                ->where(function ($q) use ($like) {
-                    $q->where('name', 'like', $like)
-                      ->orWhere('article_number', 'like', $like)
-                      ->orWhere('external_code', 'like', $like);
-                })
-                ->orderByRaw('CASE WHEN name LIKE ? THEN 0 WHEN article_number LIKE ? THEN 1 ELSE 2 END', [$prefixLike, $prefixLike])
-                ->orderBy('name')
-                ->limit(20)
-                ->get(['id', 'article_number', 'name', 'gebinde', 'ek', 'vk', 'mwst']);
-        }
+        $articleMatches = $this->view === 'editor'
+            ? ArticleSearchService::search($event->team_id, (string) ($this->newPosition['name'] ?? ''))
+            : collect();
 
         return view('events::livewire.detail.orders', [
             'event'          => $event,

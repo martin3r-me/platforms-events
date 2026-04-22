@@ -14,6 +14,8 @@ use Platform\Events\Models\Quote;
 use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\QuotePosition;
 use Platform\Events\Services\ActivityLogger;
+use Platform\Events\Services\ArticleSearchService;
+use Platform\Events\Services\PositionCalculator;
 use Platform\Events\Services\SettingsService;
 
 class Quotes extends Component
@@ -408,67 +410,11 @@ class Quotes extends Component
 
     /**
      * Automatische Positions-Berechnungen bei Feld-Aenderungen.
-     * - uhrzeit/bis -> anz2 = Stunden-Differenz
-     * - anz/anz2/preis -> gesamt = anz * (anz2 oder 1) * preis
-     * - gesamt direkt gesetzt -> preis = gesamt / (anz * (anz2 oder 1))
+     * Die Logik steckt im PositionCalculator-Service (gemeinsam mit Orders).
      */
     public function updatedNewPosition($value, $key): void
     {
-        if (in_array($key, ['uhrzeit', 'bis'], true)) {
-            $this->autoComputeAnz2FromTime();
-        }
-        if (in_array($key, ['anz', 'anz2', 'preis'], true)) {
-            $this->autoComputeGesamt();
-        }
-        if ($key === 'gesamt') {
-            $this->autoComputePreisFromGesamt();
-        }
-    }
-
-    protected function autoComputeAnz2FromTime(): void
-    {
-        $von = trim((string) ($this->newPosition['uhrzeit'] ?? ''));
-        $bis = trim((string) ($this->newPosition['bis'] ?? ''));
-        if ($von === '' || $bis === '') return;
-        $hours = $this->hoursDiff($von, $bis);
-        if ($hours === null) return;
-        $this->newPosition['anz2'] = (string) (fmod($hours, 1) == 0 ? (int) $hours : round($hours, 2));
-        $this->autoComputeGesamt();
-    }
-
-    protected function hoursDiff(string $von, string $bis): ?float
-    {
-        try {
-            $s = \Carbon\Carbon::createFromFormat('H:i', $von);
-            $e = \Carbon\Carbon::createFromFormat('H:i', $bis);
-            if ($e->lessThan($s)) $e->addDay();
-            $minutes = abs($s->diffInMinutes($e));
-            return round($minutes / 60.0, 2);
-        } catch (\Throwable $ex) {
-            return null;
-        }
-    }
-
-    protected function autoComputeGesamt(): void
-    {
-        $anz = (float) ($this->newPosition['anz'] ?? 0);
-        $anz2 = (float) ($this->newPosition['anz2'] ?? 0);
-        $preis = (float) ($this->newPosition['preis'] ?? 0);
-        if ($anz <= 0 || $preis <= 0) return;
-        $mult = $anz2 > 0 ? $anz * $anz2 : $anz;
-        $this->newPosition['gesamt'] = round($mult * $preis, 2);
-    }
-
-    protected function autoComputePreisFromGesamt(): void
-    {
-        $anz = (float) ($this->newPosition['anz'] ?? 0);
-        $anz2 = (float) ($this->newPosition['anz2'] ?? 0);
-        $gesamt = (float) ($this->newPosition['gesamt'] ?? 0);
-        if ($gesamt <= 0 || $anz <= 0) return;
-        $mult = $anz2 > 0 ? $anz * $anz2 : $anz;
-        if ($mult > 0) {
-            $this->newPosition['preis'] = round($gesamt / $mult, 2);
-        }
+        $this->newPosition = PositionCalculator::apply($this->newPosition, (string) $key, 'preis');
     }
 
     /**
@@ -596,37 +542,19 @@ class Quotes extends Component
 
         $pos->{$field} = $value;
 
-        // Wenn sich eine Zeit aenderte: Anz2 neu aus Stunden-Differenz
-        if (in_array($field, ['uhrzeit', 'bis'], true)) {
-            $von = trim((string) $pos->uhrzeit);
-            $bis = trim((string) $pos->bis);
-            if ($von !== '' && $bis !== '') {
-                $h = $this->hoursDiff($von, $bis);
-                if ($h !== null) {
-                    $pos->anz2 = (string) (fmod($h, 1) == 0 ? (int) $h : round($h, 2));
-                }
-            }
-        }
+        // Abhaengige Felder via Service rechnen und ins Model uebertragen
+        $data = PositionCalculator::apply([
+            'anz'     => $pos->anz,
+            'anz2'    => $pos->anz2,
+            'uhrzeit' => $pos->uhrzeit,
+            'bis'     => $pos->bis,
+            'preis'   => $pos->preis,
+            'gesamt'  => $pos->gesamt,
+        ], $field, 'preis');
 
-        // Gesamt = Anz * (Anz2 oder 1) * Preis, ausser wenn Gesamt direkt gesetzt wurde
-        if ($field !== 'gesamt' && in_array($field, ['anz','anz2','uhrzeit','bis','preis'], true)) {
-            $anz  = (float) $pos->anz;
-            $anz2 = (float) $pos->anz2;
-            $mult = $anz2 > 0 ? $anz * $anz2 : $anz;
-            if ($anz > 0 && (float) $pos->preis > 0) {
-                $pos->gesamt = round($mult * (float) $pos->preis, 2);
-            }
-        }
-
-        // Gesamt -> Preis rueckwaerts
-        if ($field === 'gesamt') {
-            $anz  = (float) $pos->anz;
-            $anz2 = (float) $pos->anz2;
-            $mult = $anz2 > 0 ? $anz * $anz2 : $anz;
-            if ($mult > 0) {
-                $pos->preis = round((float) $pos->gesamt / $mult, 2);
-            }
-        }
+        $pos->anz2   = $data['anz2']   ?? $pos->anz2;
+        $pos->preis  = $data['preis']  ?? $pos->preis;
+        $pos->gesamt = $data['gesamt'] ?? $pos->gesamt;
 
         $pos->save();
 
@@ -911,26 +839,10 @@ class Quotes extends Component
                 ->all()
             : [];
 
-        // Artikel-Suche (performant fuer >50k Artikel: team-gefiltert, active,
-        // LIMIT 20, prefix-matches zuerst). Suchquelle ist das Name-Feld der
-        // neuen Position.
-        $articleMatches = collect();
-        $query = trim((string) ($this->newPosition['name'] ?? ''));
-        if (mb_strlen($query) >= 2 && $this->view === 'editor') {
-            $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $query) . '%';
-            $prefixLike = str_replace(['%', '_'], ['\\%', '\\_'], $query) . '%';
-            $articleMatches = Article::where('team_id', $event->team_id)
-                ->where('is_active', true)
-                ->where(function ($q) use ($like) {
-                    $q->where('name', 'like', $like)
-                      ->orWhere('article_number', 'like', $like)
-                      ->orWhere('external_code', 'like', $like);
-                })
-                ->orderByRaw('CASE WHEN name LIKE ? THEN 0 WHEN article_number LIKE ? THEN 1 ELSE 2 END', [$prefixLike, $prefixLike])
-                ->orderBy('name')
-                ->limit(20)
-                ->get(['id', 'article_number', 'name', 'gebinde', 'ek', 'vk', 'mwst']);
-        }
+        // Artikel-Suche via ArticleSearchService (nur im Editor-Modus)
+        $articleMatches = $this->view === 'editor'
+            ? ArticleSearchService::search($event->team_id, (string) ($this->newPosition['name'] ?? ''))
+            : collect();
 
         return view('events::livewire.detail.quotes', [
             'event'          => $event,

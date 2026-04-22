@@ -509,24 +509,10 @@ class Articles extends Component
                 ->orderBy('sort_order')->get();
         }
 
-        // Artikel-Suche im Package-Item-Modal (performant fuer 50k+)
-        $packageArticleMatches = collect();
-        $q = trim((string) ($this->newPackageItem['name'] ?? ''));
-        if ($this->showPackageItemsModal && mb_strlen($q) >= 2) {
-            $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $q) . '%';
-            $prefixLike = str_replace(['%', '_'], ['\\%', '\\_'], $q) . '%';
-            $packageArticleMatches = Article::where('team_id', $team->id)
-                ->where('is_active', true)
-                ->where(function ($sub) use ($like) {
-                    $sub->where('name', 'like', $like)
-                        ->orWhere('article_number', 'like', $like)
-                        ->orWhere('external_code', 'like', $like);
-                })
-                ->orderByRaw('CASE WHEN name LIKE ? THEN 0 WHEN article_number LIKE ? THEN 1 ELSE 2 END', [$prefixLike, $prefixLike])
-                ->orderBy('name')
-                ->limit(20)
-                ->get(['id','article_number','name','gebinde','vk','mwst']);
-        }
+        // Artikel-Suche im Package-Item-Modal via Service
+        $packageArticleMatches = $this->showPackageItemsModal
+            ? \Platform\Events\Services\ArticleSearchService::search($team->id, (string) ($this->newPackageItem['name'] ?? ''))
+            : collect();
 
         // Bausteine fuer die Gruppe-Spalte im Package-Item-Modal
         $bausteine = \Platform\Events\Services\SettingsService::bausteine($team->id);
