@@ -285,6 +285,14 @@
     </x-slot>
 
     <x-ui-page-container background="bg-slate-100">
+        <style>
+            /* Panel-Header ohne Trennlinie, damit die Kachel oben und unten
+               gleichmaessig geschlossen wirkt (Events-Modul scope). */
+            .events-detail-page section > header {
+                border-bottom: 0 !important;
+            }
+        </style>
+        <div class="events-detail-page">
         {{-- Abstand zur Navbar --}}
         <div aria-hidden="true" style="height: 0.375rem;"></div>
 
@@ -1355,5 +1363,6 @@
             })();
         </script>
         @endonce
+        </div>
     </x-ui-page-container>
 </x-ui-page>
