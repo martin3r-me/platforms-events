@@ -1012,6 +1012,15 @@ class Detail extends Component
         foreach (self::CRM_CONTACT_SLOTS as $slot => $cfg) {
             $companyCfg = self::CRM_SLOTS[$cfg['company_slot']];
             $companyId = $this->event?->{$companyCfg['id']};
+
+            // Fallback: Wenn der eigene Slot keine Firma hat, nimm die Veranstalter-Firma
+            // als Contact-Quelle (haeufiger Fall: Rechnungs-/Liefer-Kontakt ist identisch
+            // mit dem Veranstalter-ASP).
+            if (!$companyId && $slot !== 'organizer' && $slot !== 'organizer_onsite') {
+                $orgCompanyId = $this->event?->{self::CRM_SLOTS['organizer']['id']};
+                if ($orgCompanyId) $companyId = $orgCompanyId;
+            }
+
             $currentId = $this->event?->{$cfg['id']};
             $contacts = [];
             $currentLabel = null;
