@@ -191,9 +191,12 @@ class Detail extends Component
         }
 
         // Wechselt die Firma, sind die bisherigen Kontakt-Bindungen nicht mehr gueltig.
+        // Neben der ID auch den Text-Fallback leeren, damit das Feld nicht den
+        // alten Kontakt-Namen weiter anzeigt.
         foreach (self::CRM_CONTACT_SLOTS as $contactSlot => $contactCfg) {
             if ($contactCfg['company_slot'] === $slot) {
                 $this->event->{$contactCfg['id']} = null;
+                $this->event->{$contactCfg['label']} = null;
             }
         }
 
