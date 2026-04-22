@@ -61,26 +61,28 @@
     @scroll.window.passive="open = false"
     class="w-full"
 >
-    <button type="button" x-ref="trigger" @click="toggle()"
-            class="w-full flex items-center justify-between gap-2 border border-[var(--ui-border)] rounded-md px-2.5 py-1.5 bg-white hover:border-[var(--ui-primary)]/40 text-[0.7rem] text-left transition">
-        <span class="flex items-center gap-1.5 min-w-0">
+    <div x-ref="trigger"
+         class="w-full flex items-center gap-1 border border-[var(--ui-border)] rounded-md bg-white px-2 py-1 hover:border-[var(--ui-primary)]/40 transition">
+        <button type="button" @click="toggle()"
+                class="flex-1 flex items-center gap-1.5 min-w-0 text-left bg-transparent border-0 cursor-pointer">
             @svg('heroicon-o-user', 'w-3 h-3 text-slate-400 flex-shrink-0')
-            <span x-show="selected" x-text="selected" class="truncate text-[var(--ui-secondary)] font-medium"></span>
-            <span x-show="!selected" class="text-slate-400">{{ $placeholder }}</span>
-        </span>
-        <span class="flex items-center gap-1 flex-shrink-0">
-            @if($clearable)
-                <button type="button" x-show="selected" @click.stop="clear()" x-cloak
-                        class="p-0.5 text-slate-400 hover:text-red-500" title="Auswahl löschen">
-                    @svg('heroicon-o-x-mark', 'w-2.5 h-2.5')
-                </button>
-            @endif
-            <svg class="w-2.5 h-2.5 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''"
+            <span x-show="selected" x-text="selected" class="truncate text-[0.7rem] font-medium text-[var(--ui-secondary)]"></span>
+            <span x-show="!selected" class="text-[0.7rem] text-slate-400">{{ $placeholder }}</span>
+        </button>
+        @if($clearable)
+            <button type="button" x-show="selected" @click.stop="clear()" x-cloak
+                    class="p-0.5 text-slate-400 hover:text-red-500 flex-shrink-0 bg-transparent border-0 cursor-pointer" title="Auswahl löschen">
+                @svg('heroicon-o-x-mark', 'w-3 h-3')
+            </button>
+        @endif
+        <button type="button" @click="toggle()"
+                class="p-0.5 text-slate-400 flex-shrink-0 bg-transparent border-0 cursor-pointer">
+            <svg class="w-2.5 h-2.5 transition-transform" :class="open ? 'rotate-180' : ''"
                  fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
             </svg>
-        </span>
-    </button>
+        </button>
+    </div>
 
     <template x-teleport="body">
         <div x-show="open" x-cloak
