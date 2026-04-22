@@ -208,10 +208,11 @@ class Orders extends Component
     public function pickArticle(int $articleId): void
     {
         $event = $this->event();
-        $article = Article::where('team_id', $event->team_id)->find($articleId);
+        $article = Article::with('group:id,name')->where('team_id', $event->team_id)->find($articleId);
         if (!$article) return;
 
         $this->newPosition['name']     = (string) $article->name;
+        $this->newPosition['gruppe']   = (string) ($article->group?->name ?? $this->newPosition['gruppe'] ?? '');
         $this->newPosition['inhalt']   = (string) ($article->description ?? $article->offer_text ?? '');
         $this->newPosition['gebinde']  = (string) ($article->gebinde ?? '');
         $this->newPosition['ek']       = (float) ($article->ek ?? 0);
