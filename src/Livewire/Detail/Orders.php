@@ -268,8 +268,15 @@ class Orders extends Component
     protected function recalculateItem(OrderItem $item): void
     {
         $positions = $item->posList()->get();
+
+        $bausteinNames = collect(SettingsService::bausteine($item->team_id))
+            ->map(fn ($b) => mb_strtolower(trim((string) ($b['name'] ?? ''))))
+            ->filter()
+            ->all();
+        $isBaustein = fn ($gruppe) => in_array(mb_strtolower(trim((string) $gruppe)), $bausteinNames, true);
+
         $item->update([
-            'artikel'    => $positions->count(),
+            'artikel'    => $positions->filter(fn ($p) => !$isBaustein($p->gruppe))->count(),
             'positionen' => $positions->count(),
             'einkauf'    => (float) $positions->sum('gesamt'),
         ]);

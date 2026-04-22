@@ -134,7 +134,7 @@
                             <input type="text" value="{{ $p->uhrzeit }}" maxlength="5" inputmode="numeric"
                                    x-data="{ invalid: false }"
                                    x-on:input="let v = $el.value.replace(/[^0-9]/g,'').substring(0,4); if (v.length >= 3) v = v.substring(0,2)+':'+v.substring(2); $el.value = v; invalid = false;"
-                                   x-on:blur="const v = $el.value.trim(); invalid = v !== '' && !/^([01]?\d|2[0-3]):[0-5]\d$/.test(v); if (v !== @js((string)$p->uhrzeit)) $wire.updatePositionField({{ $p->id }}, 'uhrzeit', v)"
+                                   x-on:blur="let v = $el.value.trim(); const ok = v === '' || /^([01]?\d|2[0-3]):[0-5]\d$/.test(v); if (!ok) { v = ''; $el.value = ''; } invalid = false; if (v !== @js((string)$p->uhrzeit)) $wire.updatePositionField({{ $p->id }}, 'uhrzeit', v)"
                                    :class="invalid ? 'ring-1 ring-red-500 border-red-500 bg-red-50' : ''"
                                    class="{{ $inp }} font-mono text-slate-500">
                         </td>
@@ -142,7 +142,7 @@
                             <input type="text" value="{{ $p->bis }}" maxlength="5" inputmode="numeric"
                                    x-data="{ invalid: false }"
                                    x-on:input="let v = $el.value.replace(/[^0-9]/g,'').substring(0,4); if (v.length >= 3) v = v.substring(0,2)+':'+v.substring(2); $el.value = v; invalid = false;"
-                                   x-on:blur="const v = $el.value.trim(); invalid = v !== '' && !/^([01]?\d|2[0-3]):[0-5]\d$/.test(v); if (v !== @js((string)$p->bis)) $wire.updatePositionField({{ $p->id }}, 'bis', v)"
+                                   x-on:blur="let v = $el.value.trim(); const ok = v === '' || /^([01]?\d|2[0-3]):[0-5]\d$/.test(v); if (!ok) { v = ''; $el.value = ''; } invalid = false; if (v !== @js((string)$p->bis)) $wire.updatePositionField({{ $p->id }}, 'bis', v)"
                                    :class="invalid ? 'ring-1 ring-red-500 border-red-500 bg-red-50' : ''"
                                    class="{{ $inp }} font-mono text-slate-500">
                         </td>

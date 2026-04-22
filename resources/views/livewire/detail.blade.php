@@ -142,7 +142,7 @@
                                 class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[0.72rem] transition
                                        {{ $qArticlesActive ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
                             @svg('heroicon-o-list-bullet', 'w-3.5 h-3.5 flex-shrink-0')
-                            <span class="flex-1 text-left">Alle Artikel</span>
+                            <span class="flex-1 text-left">Alle Positionen</span>
                             @if($counts['angebote_positionen'] > 0)
                                 <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full {{ $qArticlesActive ? 'bg-[var(--ui-primary)]/20 text-[var(--ui-primary)]' : 'bg-blue-100 text-blue-700' }}">{{ $counts['angebote_positionen'] }}</span>
                             @endif

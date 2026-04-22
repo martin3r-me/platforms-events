@@ -116,13 +116,22 @@ class QuoteOrderConverter
     }
 
     /**
-     * Aktualisiert positionen-Count und einkauf-Summe auf dem OrderItem.
+     * Aktualisiert artikel/positionen-Count und einkauf-Summe auf dem
+     * OrderItem. artikel = alle nicht-Baustein-Zeilen, positionen = alle.
      */
     public static function syncOrderItemSummary(OrderItem $item): void
     {
         $positions = $item->posList()->get();
+
+        $bausteinNames = collect(SettingsService::bausteine($item->team_id))
+            ->map(fn ($b) => mb_strtolower(trim((string) ($b['name'] ?? ''))))
+            ->filter()
+            ->all();
+        $isBaustein = fn ($gruppe) => in_array(mb_strtolower(trim((string) $gruppe)), $bausteinNames, true);
+
         $item->update([
-            'positionen' => $positions->where('gesamt', '>', 0)->count(),
+            'artikel'    => $positions->filter(fn ($p) => !$isBaustein($p->gruppe))->count(),
+            'positionen' => $positions->count(),
             'einkauf'    => (float) $positions->sum('ek'),
         ]);
     }

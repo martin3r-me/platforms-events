@@ -15,15 +15,6 @@
             </span>
         </div>
         <div class="flex items-center gap-1.5">
-            @if($dayQuoteItems->isNotEmpty())
-                <select onchange="if(this.value) { @this.convertFromQuote(this.value); this.value = ''; }"
-                        class="border border-slate-200 rounded-md px-2 py-1 text-[0.62rem] bg-white cursor-pointer">
-                    <option value="">Aus Angebot übernehmen …</option>
-                    @foreach($dayQuoteItems as $qi)
-                        <option value="{{ $qi->id }}">{{ $qi->typ }} ({{ $qi->positionen }} Pos.)</option>
-                    @endforeach
-                </select>
-            @endif
             <button wire:click="openItemCreate({{ $day->id }})"
                     class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white border-0 cursor-pointer text-[0.62rem] font-semibold">
                 @svg('heroicon-o-plus', 'w-2.5 h-2.5')
@@ -34,7 +25,7 @@
 
     @if($dayItems->isEmpty())
         <div class="px-3.5 py-4 text-center text-[0.65rem] text-[var(--ui-muted)]">
-            Noch keine Vorgänge — über „+ Neuer Vorgang" oder „Aus Angebot übernehmen" anlegen.
+            Noch keine Vorgänge — auf der Angebots-Seite „In Bestellung" klicken oder hier „+ Neuer Vorgang" anlegen.
         </div>
     @else
         <div class="flex flex-wrap">

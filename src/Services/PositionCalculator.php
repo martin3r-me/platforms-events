@@ -16,6 +16,25 @@ use Carbon\Carbon;
 class PositionCalculator
 {
     /**
+     * Prueft, ob ein String ein valides HH:MM-Format hat (00:00 bis 23:59).
+     */
+    public static function isValidTime(?string $s): bool
+    {
+        if ($s === null) return false;
+        $s = trim($s);
+        if ($s === '') return false;
+        return (bool) preg_match('/^([01]?\d|2[0-3]):[0-5]\d$/', $s);
+    }
+
+    /**
+     * Liefert den Wert, wenn er ein valides HH:MM ist, sonst leer-String.
+     */
+    public static function sanitizeTime(?string $s): string
+    {
+        return self::isValidTime($s) ? trim((string) $s) : '';
+    }
+
+    /**
      * Differenz in Stunden zwischen zwei HH:MM-Zeiten. Overnight erkannt.
      * Gibt null zurueck, wenn das Format ungueltig ist.
      */
@@ -77,6 +96,14 @@ class PositionCalculator
      */
     public static function apply(array $position, string $changedField, string $priceField = 'preis'): array
     {
+        // Ungueltige HH:MM-Werte verwerfen, bevor weitergerechnet wird
+        if (in_array($changedField, ['uhrzeit', 'bis'], true) && isset($position[$changedField])) {
+            $v = (string) $position[$changedField];
+            if ($v !== '' && !self::isValidTime($v)) {
+                $position[$changedField] = '';
+            }
+        }
+
         // Zeit -> Anz.2
         if (in_array($changedField, ['uhrzeit', 'bis'], true)) {
             $h = self::anz2FromTime($position['uhrzeit'] ?? null, $position['bis'] ?? null);
