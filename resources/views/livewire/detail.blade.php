@@ -298,20 +298,21 @@
             }
             /* Farblicher Strich links vor dem Panel-Titel (wie in Basis-Tab) */
             .events-detail-page section > header h3 {
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                padding-left: 0;
-                line-height: 1.1;
+                display: flex !important;
+                align-items: center !important;
+                gap: 0.5rem !important;
+                padding-left: 0 !important;
+                line-height: 1.1 !important;
             }
             .events-detail-page section > header h3::before {
-                content: "";
-                display: inline-block;
-                width: 4px;
-                height: 1rem;
-                border-radius: 9999px;
-                background: #3b82f6;
-                flex-shrink: 0;
+                content: "" !important;
+                display: inline-block !important;
+                width: 4px !important;
+                height: 1rem !important;
+                min-height: 16px !important;
+                border-radius: 9999px !important;
+                background: #3b82f6 !important;
+                flex-shrink: 0 !important;
             }
         </style>
         <div class="events-detail-page">
