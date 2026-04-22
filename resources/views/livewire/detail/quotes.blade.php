@@ -218,12 +218,27 @@
             @else
                 <div class="space-y-2">
                     @foreach($quotes as $q)
-                        @php $qs = $quoteStatusMeta[$q->status] ?? $quoteStatusMeta['draft']; @endphp
+                        @php
+                            $qs = $quoteStatusMeta[$q->status] ?? $quoteStatusMeta['draft'];
+                            $apStatus = $q->approval_status ?? 'none';
+                            $apMeta = match ($apStatus) {
+                                'pending'  => ['bg' => '#fef3c7', 'color' => '#b45309', 'label' => 'Freigabe: ausstehend'],
+                                'approved' => ['bg' => '#dcfce7', 'color' => '#15803d', 'label' => 'Freigegeben'],
+                                'rejected' => ['bg' => '#fee2e2', 'color' => '#b91c1c', 'label' => 'Abgelehnt'],
+                                default    => null,
+                            };
+                            $isApprover = $apStatus === 'pending' && (int) $q->approver_id === (int) $currentUserId;
+                            $canSend = $apStatus === 'approved' || $apStatus === 'none';
+                        @endphp
                         <div class="bg-white border rounded-xl px-4 py-3 {{ $activeQuote && $activeQuote->id === $q->id ? 'border-blue-300 ring-1 ring-blue-100' : 'border-[var(--ui-border)]' }}">
                             <div class="flex items-center gap-2.5 flex-wrap">
                                 <span class="text-[0.56rem] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200 flex-shrink-0">v{{ $q->version }}</span>
                                 <span class="text-[0.58rem] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
                                       style="background: {{ $qs['bg'] }}; color: {{ $qs['color'] }};">{{ $qs['label'] }}</span>
+                                @if($apMeta)
+                                    <span class="text-[0.58rem] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
+                                          style="background: {{ $apMeta['bg'] }}; color: {{ $apMeta['color'] }};">{{ $apMeta['label'] }}</span>
+                                @endif
                                 @if(!$q->is_current)
                                     <span class="text-[0.54rem] font-semibold text-[var(--ui-muted)] italic">Alte Version</span>
                                 @endif
@@ -239,9 +254,40 @@
                                     @if($q->sent_at)
                                         <p class="text-[0.58rem] text-[var(--ui-muted)] mt-0.5">Versendet {{ $q->sent_at->format('d.m.Y H:i') }}</p>
                                     @endif
+                                    @if($apStatus === 'pending' && $q->approver)
+                                        <p class="text-[0.58rem] text-amber-700 mt-0.5">Wartet auf Freigabe von <strong>{{ $q->approver->name }}</strong>@if($q->approval_requested_at) (angefragt {{ $q->approval_requested_at->format('d.m.Y H:i') }})@endif</p>
+                                    @elseif($apStatus === 'approved' && $q->approver)
+                                        <p class="text-[0.58rem] text-green-700 mt-0.5">Freigegeben von <strong>{{ $q->approver->name }}</strong>@if($q->approval_decided_at) am {{ $q->approval_decided_at->format('d.m.Y H:i') }}@endif</p>
+                                    @elseif($apStatus === 'rejected' && $q->approver)
+                                        <p class="text-[0.58rem] text-red-700 mt-0.5">Abgelehnt von <strong>{{ $q->approver->name }}</strong>@if($q->approval_decided_at) am {{ $q->approval_decided_at->format('d.m.Y H:i') }}@endif</p>
+                                    @endif
+                                    @if($q->approval_comment)
+                                        <p class="text-[0.58rem] text-[var(--ui-muted)] italic mt-0.5">„{{ $q->approval_comment }}"</p>
+                                    @endif
                                 </div>
 
                                 <div class="flex gap-1.5 flex-wrap">
+                                    @if($isApprover)
+                                        <button wire:click="approveQuote({{ $q->id }})"
+                                                class="px-2.5 py-1 border-0 rounded-md bg-green-600 hover:bg-green-700 text-white text-[0.62rem] font-bold cursor-pointer">
+                                            Freigeben
+                                        </button>
+                                        <button wire:click="rejectQuote({{ $q->id }})" wire:confirm="Angebot wirklich ablehnen?"
+                                                class="px-2.5 py-1 border border-red-200 rounded-md bg-red-50 hover:bg-red-100 text-red-600 text-[0.62rem] font-bold cursor-pointer">
+                                            Ablehnen
+                                        </button>
+                                    @endif
+                                    @if($apStatus === 'none' || $apStatus === 'rejected')
+                                        <button wire:click="openApprovalRequest({{ $q->id }})"
+                                                class="px-2.5 py-1 border border-amber-300 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-700 text-[0.62rem] font-semibold cursor-pointer">
+                                            Freigabe anfordern
+                                        </button>
+                                    @elseif($apStatus === 'pending' && (int) $q->approval_requested_by === (int) $currentUserId)
+                                        <button wire:click="cancelApprovalRequest({{ $q->id }})" wire:confirm="Freigabe-Anfrage zurueckziehen?"
+                                                class="px-2.5 py-1 border border-slate-200 rounded-md bg-white hover:bg-slate-50 text-slate-600 text-[0.62rem] font-semibold cursor-pointer">
+                                            Anfrage zurück
+                                        </button>
+                                    @endif
                                     <a href="{{ route('events.quote.pdf', ['event' => $event->slug, 'quoteId' => $q->id]) }}" target="_blank"
                                        class="px-2.5 py-1 border border-slate-200 rounded-md bg-white hover:bg-slate-50 text-slate-600 text-[0.62rem] font-semibold no-underline">
                                         PDF
@@ -250,12 +296,14 @@
                                             x-data="{ copied: false }"
                                             @click="navigator.clipboard.writeText('{{ route('events.public.quote', ['token' => $q->token]) }}'); copied = true; setTimeout(() => copied = false, 1500)"
                                             :class="copied ? 'bg-green-50 border-green-200 text-green-600' : 'bg-white border-slate-200 text-slate-600'"
-                                            class="px-2.5 py-1 border rounded-md hover:bg-slate-50 text-[0.62rem] font-semibold cursor-pointer">
+                                            class="px-2.5 py-1 border rounded-md hover:bg-slate-50 text-[0.62rem] font-semibold cursor-pointer {{ $canSend ? '' : 'opacity-50 cursor-not-allowed' }}"
+                                            @if(!$canSend) disabled @endif>
                                         <span x-text="copied ? 'Kopiert' : 'Link'"></span>
                                     </button>
                                     @if($q->status === 'draft')
                                         <button wire:click="selectQuote({{ $q->id }}); $wire.setQuoteStatus('sent')"
-                                                class="px-2.5 py-1 border-0 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-[0.62rem] font-bold cursor-pointer">
+                                                @if(!$canSend) disabled title="Erst Freigabe einholen" @endif
+                                                class="px-2.5 py-1 border-0 rounded-md text-white text-[0.62rem] font-bold cursor-pointer {{ $canSend ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-300 cursor-not-allowed' }}">
                                             Versenden
                                         </button>
                                     @endif
@@ -271,6 +319,33 @@
             @endif
         </div>
     @endif
+
+    {{-- Modal: Freigabe anfordern --}}
+    <x-ui-modal wire:model="showApprovalModal" size="md" :hideFooter="true">
+        <x-slot name="header">Freigabe anfordern</x-slot>
+        <form wire:submit.prevent="requestApproval" class="space-y-4">
+            <div>
+                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Vorgesetzter / Freigeber *</label>
+                <select wire:model="approvalApproverId"
+                        class="w-full border border-slate-200 rounded-md px-3 py-2 text-xs">
+                    <option value="">— Team-Mitglied wählen —</option>
+                    @foreach($teamUsers ?? [] as $u)
+                        <option value="{{ $u['id'] }}">{{ $u['name'] }}@if(!empty($u['email'])) ({{ $u['email'] }})@endif</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Hinweis / Kommentar (optional)</label>
+                <textarea wire:model="approvalComment" rows="3"
+                          placeholder="z.B. Bitte bis Freitag freigeben"
+                          class="w-full border border-slate-200 rounded-md px-3 py-2 text-xs"></textarea>
+            </div>
+            <div class="flex justify-end gap-2 pt-4 border-t border-[var(--ui-border)]">
+                <x-ui-button type="button" variant="secondary-outline" size="sm" wire:click="closeApprovalModal">Abbrechen</x-ui-button>
+                <x-ui-button type="submit" variant="primary" size="sm">Freigabe anfordern</x-ui-button>
+            </div>
+        </form>
+    </x-ui-modal>
 
     {{-- Modal: Item anlegen --}}
     <x-ui-modal wire:model="showItemModal" size="md" :hideFooter="true">

@@ -42,6 +42,12 @@ class Quotes extends Component
     public string $itemStatus = 'Entwurf';
     public string $itemMwst = '19%';
 
+    // Approval-Modal
+    public bool $showApprovalModal = false;
+    public ?int $approvalQuoteId = null;
+    public ?int $approvalApproverId = null;
+    public string $approvalComment = '';
+
     public function mount(int $eventId, ?int $initialItemId = null, ?int $initialDayId = null, ?string $initialView = null): void
     {
         $this->eventId = $eventId;
@@ -156,6 +162,84 @@ class Quotes extends Component
 
         $this->activeQuoteId = $newQ->id;
         ActivityLogger::log($event, 'quote', "Angebot v{$newQ->version} angelegt");
+    }
+
+    // ========== Approval ==========
+
+    public function openApprovalRequest(int $quoteId): void
+    {
+        $q = Quote::where('event_id', $this->eventId)->find($quoteId);
+        if (!$q) return;
+        $this->approvalQuoteId = $quoteId;
+        $this->approvalApproverId = null;
+        $this->approvalComment = '';
+        $this->showApprovalModal = true;
+    }
+
+    public function closeApprovalModal(): void
+    {
+        $this->showApprovalModal = false;
+        $this->approvalQuoteId = null;
+        $this->approvalApproverId = null;
+        $this->approvalComment = '';
+    }
+
+    public function requestApproval(): void
+    {
+        if (!$this->approvalQuoteId || !$this->approvalApproverId) return;
+        $q = Quote::where('event_id', $this->eventId)->find($this->approvalQuoteId);
+        if (!$q) return;
+
+        $q->update([
+            'approval_status'       => 'pending',
+            'approver_id'           => $this->approvalApproverId,
+            'approval_requested_by' => Auth::id(),
+            'approval_requested_at' => now(),
+            'approval_decided_at'   => null,
+            'approval_comment'      => trim($this->approvalComment) ?: null,
+        ]);
+
+        $approverName = \Platform\Core\Models\User::find($this->approvalApproverId)?->name ?? 'Unbekannt';
+        ActivityLogger::log($this->event(), 'quote', "Angebot v{$q->version}: Freigabe angefordert bei {$approverName}");
+
+        $this->closeApprovalModal();
+    }
+
+    public function cancelApprovalRequest(int $quoteId): void
+    {
+        $q = Quote::where('event_id', $this->eventId)->find($quoteId);
+        if (!$q) return;
+        $q->update([
+            'approval_status'       => 'none',
+            'approver_id'           => null,
+            'approval_requested_by' => null,
+            'approval_requested_at' => null,
+            'approval_decided_at'   => null,
+            'approval_comment'      => null,
+        ]);
+        ActivityLogger::log($this->event(), 'quote', "Angebot v{$q->version}: Freigabe-Anfrage zurueckgezogen");
+    }
+
+    public function approveQuote(int $quoteId): void
+    {
+        $q = Quote::where('event_id', $this->eventId)->find($quoteId);
+        if (!$q || (int) $q->approver_id !== (int) Auth::id()) return;
+        $q->update([
+            'approval_status'     => 'approved',
+            'approval_decided_at' => now(),
+        ]);
+        ActivityLogger::log($this->event(), 'quote', "Angebot v{$q->version}: Freigegeben");
+    }
+
+    public function rejectQuote(int $quoteId): void
+    {
+        $q = Quote::where('event_id', $this->eventId)->find($quoteId);
+        if (!$q || (int) $q->approver_id !== (int) Auth::id()) return;
+        $q->update([
+            'approval_status'     => 'rejected',
+            'approval_decided_at' => now(),
+        ]);
+        ActivityLogger::log($this->event(), 'quote', "Angebot v{$q->version}: Freigabe abgelehnt");
     }
 
     public function setQuoteStatus(string $status): void
@@ -398,6 +482,20 @@ class Quotes extends Component
 
         $bausteine = SettingsService::bausteine($event->team_id);
 
+        // Team-Mitglieder fuer den Approver-Picker
+        $teamUsers = collect();
+        try {
+            $team = \Platform\Core\Models\Team::find($event->team_id);
+            if ($team) {
+                $teamUsers = $team->allUsers()
+                    ->reject(fn ($u) => (int) $u->id === (int) Auth::id())
+                    ->values()
+                    ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'email' => $u->email]);
+            }
+        } catch (\Throwable $e) {
+            $teamUsers = collect();
+        }
+
         // Artikel-Suche (performant fuer >50k Artikel: team-gefiltert, active,
         // LIMIT 20, prefix-matches zuerst). Suchquelle ist das Name-Feld der
         // neuen Position.
@@ -431,6 +529,8 @@ class Quotes extends Component
             'positions'      => $positions,
             'bausteine'      => $bausteine,
             'articleMatches' => $articleMatches,
+            'teamUsers'      => $teamUsers,
+            'currentUserId'  => Auth::id(),
         ]);
     }
 }

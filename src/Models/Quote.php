@@ -24,15 +24,19 @@ class Quote extends Model
         'sent_at', 'responded_at', 'response_note',
         'last_viewed_at', 'view_count',
         'version', 'parent_id', 'is_current', 'pdf_snapshot',
+        'approval_status', 'approver_id', 'approval_requested_by',
+        'approval_requested_at', 'approval_decided_at', 'approval_comment',
     ];
 
     protected $casts = [
-        'uuid'           => 'string',
-        'valid_until'    => 'date',
-        'sent_at'        => 'datetime',
-        'responded_at'   => 'datetime',
-        'last_viewed_at' => 'datetime',
-        'is_current'     => 'boolean',
+        'uuid'                  => 'string',
+        'valid_until'           => 'date',
+        'sent_at'               => 'datetime',
+        'responded_at'          => 'datetime',
+        'last_viewed_at'        => 'datetime',
+        'is_current'            => 'boolean',
+        'approval_requested_at' => 'datetime',
+        'approval_decided_at'   => 'datetime',
     ];
 
     protected static function booted(): void
@@ -73,5 +77,15 @@ class Quote extends Model
     public function scopeCurrent($query)
     {
         return $query->where('is_current', true);
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(\Platform\Core\Models\User::class, 'approver_id');
+    }
+
+    public function approvalRequester(): BelongsTo
+    {
+        return $this->belongsTo(\Platform\Core\Models\User::class, 'approval_requested_by');
     }
 }
