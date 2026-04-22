@@ -24,14 +24,31 @@ class ProjektFunctionData
 
         $schedule = $event->scheduleItems
             ->sortBy(['datum', 'von'])
-            ->map(fn ($s) => [
-                'datum'        => $s->datum ?? '',
-                'von'          => $s->von ?? '',
-                'bis'          => $s->bis ?? '',
-                'beschreibung' => $s->beschreibung ?? '',
-                'raum'         => $s->raum ?? '',
-                'bemerkung'    => $s->bemerkung ?? '',
-            ])
+            ->map(function ($s) {
+                $raw = $s->datum ?? '';
+                $short = '';
+                $full  = '';
+                if ($raw) {
+                    try {
+                        $c = \Carbon\Carbon::parse($raw);
+                        $short = $c->format('d.m.');
+                        $full  = $c->format('d.m.Y');
+                    } catch (\Throwable $e) {
+                        $short = (string) $raw;
+                        $full  = (string) $raw;
+                    }
+                }
+                return [
+                    'datum'        => $short,
+                    'datum_full'   => $full,
+                    'datum_raw'    => (string) $raw,
+                    'von'          => $s->von ?? '',
+                    'bis'          => $s->bis ?? '',
+                    'beschreibung' => $s->beschreibung ?? '',
+                    'raum'         => $s->raum ?? '',
+                    'bemerkung'    => $s->bemerkung ?? '',
+                ];
+            })
             ->values()
             ->toArray();
 
@@ -52,8 +69,9 @@ class ProjektFunctionData
             $dayOfWeek = $day->day_of_week ?? '';
             $fullDayName = $dayNames[$dayOfWeek] ?? $dayOfWeek;
 
+            $dayYmd = $day->datum?->format('Y-m-d');
             $daySchedule = collect($schedule)
-                ->filter(fn ($s) => $s['datum'] === $datumFormatted || $s['datum'] === ($day->datum?->format('Y-m-d')))
+                ->filter(fn ($s) => ($s['datum_full'] ?? '') === $datumFormatted || ($s['datum_raw'] ?? '') === $dayYmd)
                 ->values()
                 ->toArray();
 
