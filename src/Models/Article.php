@@ -16,13 +16,19 @@ class Article extends Model
 
     protected $table = 'events_articles';
 
+    public const PROCUREMENT_TYPES = [
+        'stock'    => 'Lager (Packliste)',
+        'supplier' => 'Dienstleister (externe Bestellung)',
+        'kitchen'  => 'Küche (Speisen/Getränke herstellen)',
+    ];
+
     protected $fillable = [
         'uuid', 'user_id', 'team_id', 'article_group_id',
         'article_number', 'external_code', 'name', 'description',
         'offer_text', 'invoice_text', 'gebinde',
         'ek', 'vk', 'mwst', 'erloeskonto',
         'lagerort', 'min_bestand', 'current_bestand',
-        'is_active', 'sort_order',
+        'is_active', 'sort_order', 'procurement_type',
     ];
 
     protected $casts = [

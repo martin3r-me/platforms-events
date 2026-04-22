@@ -68,6 +68,7 @@ class Articles extends Component
     public int $articleMinBestand = 0;
     public int $articleCurrentBestand = 0;
     public bool $articleIsActive = true;
+    public string $articleProcurementType = 'stock';
 
     // ========== Group Modal ==========
     public bool $showGroupModal = false;
@@ -139,6 +140,7 @@ class Articles extends Component
         $this->articleMinBestand    = (int) $a->min_bestand;
         $this->articleCurrentBestand = (int) $a->current_bestand;
         $this->articleIsActive      = (bool) $a->is_active;
+        $this->articleProcurementType = $a->procurement_type ?: 'stock';
 
         $this->resetErrorBag();
         $this->showArticleModal = true;
@@ -160,6 +162,7 @@ class Articles extends Component
         ]);
         $this->articleMwst = '19%';
         $this->articleIsActive = true;
+        $this->articleProcurementType = 'stock';
         $this->resetErrorBag();
     }
 
@@ -213,6 +216,9 @@ class Articles extends Component
             'min_bestand'       => $this->articleMinBestand,
             'current_bestand'   => $this->articleCurrentBestand,
             'is_active'         => $this->articleIsActive,
+            'procurement_type'  => in_array($this->articleProcurementType, array_keys(Article::PROCUREMENT_TYPES), true)
+                ? $this->articleProcurementType
+                : 'stock',
         ];
 
         if ($this->editingArticleUuid) {

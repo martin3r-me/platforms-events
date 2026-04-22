@@ -5,12 +5,14 @@ namespace Platform\Events\Livewire\Detail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Component;
+use Platform\Events\Models\Article;
 use Platform\Events\Models\Event;
 use Platform\Events\Models\OrderItem;
 use Platform\Events\Models\OrderPosition;
 use Platform\Events\Models\PickItem;
 use Platform\Events\Models\PickList;
 use Platform\Events\Services\ActivityLogger;
+use Platform\Events\Services\SettingsService;
 
 class PickLists extends Component
 {
@@ -92,6 +94,32 @@ class PickLists extends Component
 
         if ($orderItems->isEmpty()) return;
 
+        // Bausteine (Headline/Speisentexte/Trenntext etc.) aus Settings laden
+        $bausteinNames = collect(SettingsService::bausteine($event->team_id))
+            ->map(fn ($b) => mb_strtolower(trim((string) ($b['name'] ?? ''))))
+            ->filter()
+            ->all();
+        $isBaustein = fn ($g) => in_array(mb_strtolower(trim((string) $g)), $bausteinNames, true);
+
+        // Artikel-Lookup nach Name: nur procurement_type='stock' geht in die Packliste
+        // (supplier -> externe Bestellung, kitchen -> Projekt-Function)
+        $stockArticleNames = Article::where('team_id', $event->team_id)
+            ->where('procurement_type', 'stock')
+            ->pluck('name')
+            ->map(fn ($n) => mb_strtolower(trim((string) $n)))
+            ->all();
+        $nonStockArticleNames = Article::where('team_id', $event->team_id)
+            ->where('procurement_type', '!=', 'stock')
+            ->pluck('name')
+            ->map(fn ($n) => mb_strtolower(trim((string) $n)))
+            ->all();
+        // Entscheidung: Wenn der Artikel eindeutig 'supplier'/'kitchen' ist ->
+        // weglassen. Wenn 'stock' ODER unbekannt (kein Matching) -> einschliessen.
+        $belongsToPicklist = function ($posName) use ($nonStockArticleNames) {
+            $n = mb_strtolower(trim((string) $posName));
+            return !in_array($n, $nonStockArticleNames, true);
+        };
+
         $list = PickList::create([
             'team_id'    => $event->team_id,
             'user_id'    => Auth::id(),
@@ -105,6 +133,11 @@ class PickLists extends Component
         $sort = 0;
         foreach ($orderItems as $orderItem) {
             foreach ($orderItem->posList as $pos) {
+                // Bausteine ueberspringen
+                if ($isBaustein($pos->gruppe)) continue;
+                // Externe/Kueche ueberspringen
+                if (!$belongsToPicklist($pos->name)) continue;
+
                 PickItem::create([
                     'team_id'      => $event->team_id,
                     'user_id'      => Auth::id(),

@@ -344,24 +344,38 @@
                         <textarea wire:model="articleInvoiceText" rows="2" class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30"></textarea>
                     </div>
                 </div>
-                <div class="grid grid-cols-4 gap-3">
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Lagerort</label>
-                        <input wire:model="articleLagerort" type="text" class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Beschaffungs-Typ</label>
+                        <select wire:model="articleProcurementType"
+                                class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            @foreach(\Platform\Events\Models\Article::PROCUREMENT_TYPES as $key => $label)
+                                <option value="{{ $key }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <p class="text-[0.55rem] text-[var(--ui-muted)] mt-1">
+                            Steuert, ob der Artikel in der Packliste (Lager), extern bestellt wird oder in der Küchen-Liste (Projekt-Function) erscheint.
+                        </p>
                     </div>
-                    <div>
-                        <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Min. Bestand</label>
-                        <input wire:model="articleMinBestand" type="number" class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                    </div>
-                    <div>
-                        <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Akt. Bestand</label>
-                        <input wire:model="articleCurrentBestand" type="number" class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                    </div>
-                    <div class="flex items-end">
-                        <label class="flex items-center gap-2 cursor-pointer select-none">
-                            <input wire:model="articleIsActive" type="checkbox" class="w-4 h-4 accent-[var(--ui-primary)] cursor-pointer">
-                            <span class="text-xs text-[var(--ui-secondary)]">Aktiv</span>
-                        </label>
+                    <div class="grid grid-cols-4 gap-3">
+                        <div>
+                            <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Lagerort</label>
+                            <input wire:model="articleLagerort" type="text" class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        </div>
+                        <div>
+                            <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Min.</label>
+                            <input wire:model="articleMinBestand" type="number" class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        </div>
+                        <div>
+                            <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Akt.</label>
+                            <input wire:model="articleCurrentBestand" type="number" class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        </div>
+                        <div class="flex items-end">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input wire:model="articleIsActive" type="checkbox" class="w-4 h-4 accent-[var(--ui-primary)] cursor-pointer">
+                                <span class="text-xs text-[var(--ui-secondary)]">Aktiv</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
                 <div class="flex justify-end gap-2 pt-4 border-t border-[var(--ui-border)]">
