@@ -40,7 +40,14 @@ class ReportPdfController extends Controller
         $team = Auth::user()->currentTeam;
         $event = Event::resolveFromSlug($slug, $team?->id);
         if (!$event) abort(404);
-        $event->load(['days', 'bookings.location', 'scheduleItems', 'notes', 'quotes', 'invoices']);
+        $event->load([
+            'days.quoteItems.posList',
+            'bookings.location',
+            'scheduleItems',
+            'notes',
+            'quotes',
+            'invoices',
+        ]);
         return $event;
     }
 }

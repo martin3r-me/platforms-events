@@ -4,6 +4,7 @@ namespace Platform\Events\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Symfony\Component\Uid\UuidV7;
 
@@ -65,5 +66,15 @@ class EventDay extends Model
     public function team(): BelongsTo
     {
         return $this->belongsTo(\Platform\Core\Models\Team::class);
+    }
+
+    public function quoteItems(): HasMany
+    {
+        return $this->hasMany(QuoteItem::class)->orderBy('sort_order');
+    }
+
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class)->orderBy('sort_order');
     }
 }
