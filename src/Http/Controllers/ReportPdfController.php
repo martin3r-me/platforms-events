@@ -7,6 +7,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Platform\Events\Models\Event;
 use Platform\Events\Services\PdfService;
+use Platform\Events\Services\ProjektFunctionData;
 
 class ReportPdfController extends Controller
 {
@@ -14,8 +15,13 @@ class ReportPdfController extends Controller
     {
         $e = $this->resolveEvent($event);
         $mode = $request->query('mode') === 'manager' ? 'manager' : 'kitchen';
-        $data = ['event' => $e, 'mode' => $mode];
-        $filename = 'ProjektFunction-' . $e->slug . '-' . $mode . '.pdf';
+
+        $data = ProjektFunctionData::build($e);
+        $data['showPrices'] = $mode === 'manager';
+        $data['mode'] = $mode;
+
+        $suffix = $mode === 'manager' ? '-PL' : '';
+        $filename = 'Projekt-Function' . $suffix . '-' . $e->slug . '.pdf';
 
         if ($request->boolean('preview')) {
             return PdfService::stream('events::pdf.projekt-function', $data, $filename);

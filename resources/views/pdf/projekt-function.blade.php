@@ -2,114 +2,266 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Projekt-Function {{ $event->event_number }}</title>
+    <title>Projekt-Function {{ $event['event_number'] ?? '' }}</title>
     <style>
-        body { font-family: 'DejaVu Sans', sans-serif; font-size: 10pt; color: #1e293b; }
-        h1 { font-size: 18pt; margin: 0 0 4px 0; }
-        h2 { font-size: 12pt; margin: 16px 0 6px 0; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
-        h3 { font-size: 10.5pt; margin: 10px 0 4px 0; color: #334155; }
-        .meta { color: #64748b; font-size: 9pt; margin-bottom: 16px; }
-        ul { margin: 4px 0 12px 20px; }
-        li { font-size: 9.5pt; margin-bottom: 3px; }
-        .muted { color: #64748b; font-style: italic; }
-        table.pos { border-collapse: collapse; width: 100%; margin: 4px 0 12px 0; font-size: 8.5pt; }
-        table.pos th, table.pos td { border: 1px solid #e2e8f0; padding: 3px 5px; text-align: left; vertical-align: top; }
-        table.pos th { background: #f8fafc; font-weight: 700; font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.03em; color: #475569; }
-        table.pos td.num { text-align: right; font-variant-numeric: tabular-nums; }
-        .typ-chip { display: inline-block; padding: 1px 6px; border-radius: 8px; background: #eef2ff; color: #3730a3; font-size: 7.5pt; font-weight: 700; }
-        .sum { text-align: right; font-weight: 700; margin-top: 2px; }
+        body { font-family: 'DejaVu Sans', sans-serif; font-size: 9pt; color: #1a1a1a; margin: 0; padding: 20px 28px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f1f5f9; text-align: left; padding: 4px 8px; font-size: 8pt; border-bottom: 2px solid #cbd5e1; }
+        td { padding: 3px 8px; border-bottom: 1px solid #e2e8f0; font-size: 8.5pt; }
+        .page-break { page-break-before: always; }
+        .header { text-align: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #2563eb; }
+        .header h1 { font-size: 16pt; font-weight: bold; margin: 0 0 4px; letter-spacing: 2px; color: #1e293b; }
+        .header p { font-size: 9pt; color: #64748b; margin: 0; }
+        .info-grid { width: 100%; margin-bottom: 16px; }
+        .info-grid td { border: none; padding: 2px 8px 2px 0; vertical-align: top; }
+        .info-label { font-size: 7pt; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-value { font-size: 9pt; font-weight: bold; }
+        .section-title { font-size: 11pt; font-weight: bold; margin: 12px 0 6px; padding: 4px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b; }
+        .section-text { font-size: 8.5pt; color: #374151; margin: 0 0 12px; white-space: pre-wrap; line-height: 1.5; }
+        .day-header { font-size: 14pt; font-weight: bold; margin: 0 0 8px; color: #1e293b; }
+        .vorgang-header { font-size: 10pt; font-weight: bold; text-transform: uppercase; color: #2563eb; margin: 10px 0 4px; padding: 3px 0; border-bottom: 1px solid #dbeafe; }
+        .headline-row td { font-weight: bold; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+        .speisentext-row td { font-style: italic; color: #64748b; font-size: 8pt; }
+        .footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 7pt; color: #94a3b8; border-top: 1px solid #e2e8f0; padding: 4px 0; }
+        .mini-schedule th { font-size: 7.5pt; padding: 3px 6px; }
+        .mini-schedule td { font-size: 8pt; padding: 2px 6px; }
     </style>
 </head>
 <body>
-    <h1>Projekt-Function</h1>
-    <div class="meta">
-        {{ $event->event_number }} · {{ $event->name }}
-        @if($event->customer) · {{ $event->customer }} @endif<br>
-        Zeitraum: {{ $event->start_date?->format('d.m.Y') }}
-        @if($event->end_date) – {{ $event->end_date->format('d.m.Y') }} @endif
-        @if($event->responsible) · Verantwortlich: {{ $event->responsible }} @endif
+
+    {{-- ===== FOOTER ===== --}}
+    <div class="footer">
+        Projekt Function &middot; {{ $event['event_number'] }} &middot; Erstellt: {{ $generated_at }} von {{ $generated_by }}
     </div>
 
-    @foreach($event->days->sortBy('sort_order') as $day)
+    {{-- ===== PAGE 1: OVERVIEW ===== --}}
+    <div class="header">
+        <h1>PROJEKT FUNCTION</h1>
+        <p>{{ $event['name'] }} &middot; {{ $event['event_number'] }}</p>
+    </div>
+
+    {{-- Event Info Grid --}}
+    <table class="info-grid">
+        <tr>
+            <td style="width:33%;">
+                <div class="info-label">Anlass</div>
+                <div class="info-value">{{ $event['event_type'] ?: '—' }}</div>
+            </td>
+            <td style="width:33%;">
+                <div class="info-label">Status</div>
+                <div class="info-value">{{ $event['status'] ?: '—' }}</div>
+            </td>
+            <td style="width:34%;">
+                <div class="info-label">VA-Nr</div>
+                <div class="info-value">{{ $event['event_number'] }}</div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="info-label">Veranstalter</div>
+                <div class="info-value">{{ $event['customer'] ?: '—' }}</div>
+            </td>
+            <td colspan="2">
+                <div class="info-label">Lieferadresse</div>
+                <div class="info-value">{{ $event['location'] ?: '—' }}</div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="info-label">ASP</div>
+                <div class="info-value">{{ $event['organizer_contact'] ?: '—' }}</div>
+            </td>
+            <td colspan="2">
+                <div class="info-label">ASP Vor Ort</div>
+                <div class="info-value">{{ $event['organizer_contact_onsite'] ?: '—' }}</div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="info-label">Projektleiter</div>
+                <div class="info-value">{{ $event['responsible'] ?: '—' }}</div>
+            </td>
+            <td>
+                <div class="info-label">KST</div>
+                <div class="info-value">{{ $event['cost_center'] ?: '—' }}</div>
+            </td>
+            <td>
+                <div class="info-label">Kostenträger</div>
+                <div class="info-value">{{ $event['cost_carrier'] ?: '—' }}</div>
+            </td>
+        </tr>
+        @if(!empty($event['delivery_supplier']) || !empty($event['delivery_contact']))
+        <tr>
+            <td>
+                <div class="info-label">Lieferant</div>
+                <div class="info-value">{{ $event['delivery_supplier'] ?: '—' }}</div>
+            </td>
+            <td colspan="2">
+                <div class="info-label">Lieferkontakt</div>
+                <div class="info-value">{{ $event['delivery_contact'] ?: '—' }}</div>
+            </td>
+        </tr>
+        @endif
+        <tr>
+            <td colspan="3">
+                <div class="info-label">Personen</div>
+                <div class="info-value">
+                    @foreach($days as $day)
+                        {{ $day['datum'] }}:
+                        @if($day['pers_von'] && $day['pers_bis'])
+                            {{ $day['pers_von'] }}–{{ $day['pers_bis'] }}
+                        @elseif($day['pers_von'])
+                            {{ $day['pers_von'] }}
+                        @else
+                            —
+                        @endif
+                        @if(!$loop->last) &middot; @endif
+                    @endforeach
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    {{-- Liefertext --}}
+    @if(!empty($liefertext))
+        <div class="section-title">Liefertext</div>
+        <div class="section-text">{{ $liefertext }}</div>
+    @endif
+
+    {{-- Vereinbarungen --}}
+    @if(!empty($vereinbarungen))
+        <div class="section-title">Vereinbarungen</div>
+        <div class="section-text">{{ $vereinbarungen }}</div>
+    @endif
+
+    {{-- Ablaufplan (global) --}}
+    @if(count($schedule) > 0)
+        <div class="section-title">Ablaufplan</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:14%;">Datum</th>
+                    <th style="width:9%;">Von</th>
+                    <th style="width:9%;">Bis</th>
+                    <th style="width:32%;">Aktivität</th>
+                    <th style="width:14%;">Raum</th>
+                    <th style="width:22%;">Bemerkung</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($schedule as $item)
+                <tr>
+                    <td>{{ $item['datum'] }}</td>
+                    <td>{{ $item['von'] }}</td>
+                    <td>{{ $item['bis'] }}</td>
+                    <td>{{ $item['beschreibung'] }}</td>
+                    <td>{{ $item['raum'] }}</td>
+                    <td>{{ $item['bemerkung'] }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
+    {{-- ===== PAGE 2+: PER DAY ===== --}}
+    @foreach($days as $day)
         @php
-            $bookings = $event->bookings->filter(fn($b) => $b->datum === $day->datum?->format('Y-m-d'));
-            $schedule = $event->scheduleItems->filter(fn($s) => $s->datum === $day->datum?->format('Y-m-d') || $s->datum === $day->datum?->format('d.m.Y'));
-            $items = ($day->quoteItems ?? collect())->sortBy('sort_order');
-            if (($mode ?? 'kitchen') === 'kitchen') {
-                $items = $items->filter(function ($q) {
-                    $t = mb_strtolower((string) ($q->typ ?? ''));
-                    return str_contains($t, 'speis') || str_contains($t, 'getr');
-                });
-            }
+            $hasVorgaenge = collect($day['vorgaenge'])->contains(fn($v) => count($v['positionen']) > 0);
         @endphp
-        <h2>{{ $day->label }} · {{ $day->datum?->format('d.m.Y') }} · {{ $day->day_of_week }}</h2>
+        @if($hasVorgaenge)
+        <div class="page-break"></div>
 
-        @if($bookings->isNotEmpty())
-            <strong>Räume</strong>
-            <ul>
-                @foreach($bookings as $b)
-                    <li><strong>{{ $b->location?->kuerzel ?: $b->raum }}</strong>: {{ $b->beginn }}–{{ $b->ende }}@if($b->pers) · {{ $b->pers }} Pers @endif@if($b->bestuhlung) · {{ $b->bestuhlung }} @endif</li>
-                @endforeach
-            </ul>
+        <div class="day-header">{{ $day['full_day'] }}, {{ $day['datum'] }}</div>
+
+        @if($day['von'] || $day['bis'])
+            <div style="font-size:8pt; color:#64748b; margin-bottom:8px;">
+                Veranstaltungszeit: {{ $day['von'] }}@if($day['bis']) – {{ $day['bis'] }}@endif
+                @if($day['pers_von'] || $day['pers_bis'])
+                    &middot; Personen: {{ $day['pers_von'] }}@if($day['pers_bis'])–{{ $day['pers_bis'] }}@endif
+                @endif
+            </div>
         @endif
 
-        @if($schedule->isNotEmpty())
-            <strong>Ablauf</strong>
-            <ul>
-                @foreach($schedule as $s)
-                    <li>{{ $s->von }}@if($s->bis)–{{ $s->bis }}@endif · {{ $s->beschreibung }}@if($s->raum) @ {{ $s->raum }} @endif</li>
-                @endforeach
-            </ul>
+        {{-- Day schedule --}}
+        @if(count($day['schedule']) > 0)
+            <table class="mini-schedule" style="margin-bottom:10px;">
+                <thead>
+                    <tr>
+                        <th style="width:12%;">Von</th>
+                        <th style="width:12%;">Bis</th>
+                        <th style="width:38%;">Aktivität</th>
+                        <th style="width:16%;">Raum</th>
+                        <th style="width:22%;">Bemerkung</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($day['schedule'] as $sItem)
+                    <tr>
+                        <td>{{ $sItem['von'] }}</td>
+                        <td>{{ $sItem['bis'] }}</td>
+                        <td>{{ $sItem['beschreibung'] }}</td>
+                        <td>{{ $sItem['raum'] }}</td>
+                        <td>{{ $sItem['bemerkung'] }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
         @endif
 
-        @foreach($items as $item)
-            @php $positions = ($item->posList ?? collect())->sortBy('sort_order'); @endphp
-            <h3>
-                <span class="typ-chip">{{ $item->typ ?: 'Vorgang' }}</span>
-                @if($item->status) <span class="muted" style="font-weight: normal;">· {{ $item->status }}</span>@endif
-            </h3>
-            @if($positions->isEmpty())
-                <p class="muted">Keine Positionen</p>
-            @else
-                <table class="pos">
+        {{-- Vorgaenge --}}
+        @foreach($day['vorgaenge'] as $vorgang)
+            @if(count($vorgang['positionen']) > 0)
+                <div class="vorgang-header">{{ $vorgang['typ'] }}</div>
+                @php $cols = ($showPrices ?? false) ? 7 : 4; @endphp
+                <table>
                     <thead>
                         <tr>
-                            <th style="width:100px;">Gruppe</th>
-                            <th>Name</th>
-                            <th style="width:40px;">Anz</th>
-                            <th style="width:60px;">Uhrzeit</th>
-                            @if(($mode ?? 'kitchen') === 'manager')
-                                <th style="width:60px;">Preis</th>
-                                <th style="width:60px;">Gesamt</th>
+                            <th style="width:8%;">Anz.</th>
+                            <th style="width:{{ ($showPrices ?? false) ? '28%' : '42%' }};">Artikel</th>
+                            <th style="width:12%;">Gebinde</th>
+                            @if($showPrices ?? false)
+                                <th style="width:10%; text-align:right;">EK €</th>
+                                <th style="width:10%; text-align:right;">VK €</th>
+                                <th style="width:10%; text-align:right;">Gesamt €</th>
                             @endif
-                            <th>Bemerkung</th>
+                            <th style="width:{{ ($showPrices ?? false) ? '22%' : '35%' }};">Bemerkung</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($positions as $p)
-                            <tr>
-                                <td>{{ $p->gruppe }}</td>
-                                <td>{{ $p->name }}</td>
-                                <td class="num">{{ $p->anz }}@if($p->anz2) / {{ $p->anz2 }}@endif</td>
-                                <td>{{ $p->uhrzeit }}@if($p->bis)–{{ $p->bis }}@endif</td>
-                                @if(($mode ?? 'kitchen') === 'manager')
-                                    <td class="num">@if($p->preis !== null && $p->preis !== '') {{ number_format((float) $p->preis, 2, ',', '.') }} @endif</td>
-                                    <td class="num">@if($p->gesamt !== null && $p->gesamt !== '') {{ number_format((float) $p->gesamt, 2, ',', '.') }} @endif</td>
-                                @endif
-                                <td>{{ $p->bemerkung }}</td>
-                            </tr>
+                        @foreach($vorgang['positionen'] as $pos)
+                            @if(($pos['gruppe'] ?? '') === 'Headline')
+                                <tr class="headline-row">
+                                    <td colspan="{{ $cols }}">{{ $pos['name'] }}</td>
+                                </tr>
+                            @elseif(in_array(($pos['gruppe'] ?? ''), ['Speisentexte', 'Trenntext'], true))
+                                <tr class="speisentext-row">
+                                    <td colspan="{{ $cols }}">{{ $pos['name'] }}</td>
+                                </tr>
+                            @else
+                                <tr>
+                                    <td>{{ $pos['anz'] }}</td>
+                                    <td>
+                                        {{ $pos['name'] }}
+                                        @if(!empty($pos['inhalt']))
+                                            <br><span style="font-size:7.5pt; color:#64748b;">{{ $pos['inhalt'] }}</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $pos['gebinde'] }}</td>
+                                    @if($showPrices ?? false)
+                                        <td style="text-align:right; font-family:'DejaVu Sans Mono', monospace; font-size:8pt;">{{ $pos['ek'] }}</td>
+                                        <td style="text-align:right; font-family:'DejaVu Sans Mono', monospace; font-size:8pt;">{{ $pos['preis'] }}</td>
+                                        <td style="text-align:right; font-family:'DejaVu Sans Mono', monospace; font-size:8pt; font-weight:bold;">{{ $pos['gesamt'] }}</td>
+                                    @endif
+                                    <td>{{ $pos['bemerkung'] }}</td>
+                                </tr>
+                            @endif
                         @endforeach
                     </tbody>
                 </table>
-                @if(($mode ?? 'kitchen') === 'manager' && $item->umsatz)
-                    <div class="sum">Umsatz: {{ number_format((float) $item->umsatz, 2, ',', '.') }} €</div>
-                @endif
             @endif
         @endforeach
-
-        @if($bookings->isEmpty() && $schedule->isEmpty() && $items->isEmpty())
-            <p class="muted">Keine Räume/Ablaufpunkte/Vorgänge</p>
         @endif
     @endforeach
+
 </body>
 </html>
