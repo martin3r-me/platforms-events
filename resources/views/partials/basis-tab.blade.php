@@ -365,7 +365,7 @@
                     </div>
                     <div>
                         <label class="{{ $lbl }}">Uhrzeit</label>
-                        <input wire:model.blur="event.inquiry_time" type="text" placeholder="10:00" class="{{ $inMn }} text-center">
+                        @include('events::partials.time-input', ['model' => 'event.inquiry_time', 'placeholder' => '10:00', 'class' => $inMn.' text-center'])
                     </div>
                 </div>
                 <div>
@@ -416,7 +416,7 @@
                     </div>
                     <div>
                         <label class="{{ $lbl }}">Uhrzeit</label>
-                        <input wire:model.blur="event.forwarding_time" type="text" placeholder="14:30" class="{{ $inMn }} text-center">
+                        @include('events::partials.time-input', ['model' => 'event.forwarding_time', 'placeholder' => '14:30', 'class' => $inMn.' text-center'])
                     </div>
                 </div>
             </div>

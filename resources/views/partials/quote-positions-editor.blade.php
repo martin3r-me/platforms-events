@@ -23,6 +23,21 @@
 
     $totalArticles = $positions->filter(fn($p) => !$isBaustein((string) $p->gruppe))->count();
     $totalGesamt = (float) $positions->sum('gesamt');
+
+    // MwSt-Aufschluesselung pro Satz: Netto(gesamt), Steuer, Brutto
+    $mwstBreakdown = $positions
+        ->filter(fn($p) => !$isBaustein((string) $p->gruppe))
+        ->groupBy(fn($p) => (string) ($p->mwst ?: '0%'))
+        ->map(function ($group, $rate) {
+            $net = (float) $group->sum('gesamt');
+            $pct = (float) filter_var($rate, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+            $tax = round($net * ($pct / 100), 2);
+            return ['rate' => $rate, 'pct' => $pct, 'net' => $net, 'tax' => $tax, 'gross' => $net + $tax];
+        })
+        ->sortBy('pct')
+        ->values();
+    $totalTax = (float) $mwstBreakdown->sum('tax');
+    $totalGross = $totalGesamt + $totalTax;
 @endphp
 <div id="positions-editor-{{ $activeItem->id }}"
      x-data
@@ -42,13 +57,6 @@
                     class="border border-slate-200 rounded-md px-2 py-1 text-[0.65rem] bg-white cursor-pointer font-semibold">
                 @foreach(['Entwurf','Angebot','Vertrag','Definitiv','Storno'] as $s)
                     <option value="{{ $s }}" @selected($activeItem->status === $s)>{{ $s }}</option>
-                @endforeach
-            </select>
-            <label class="text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">MwSt.</label>
-            <select wire:change="updateItemMwst($event.target.value)"
-                    class="border border-slate-200 rounded-md px-2 py-1 text-[0.65rem] bg-white cursor-pointer">
-                @foreach(['0%','7%','19%'] as $m)
-                    <option value="{{ $m }}" @selected($activeItem->mwst === $m)>{{ $m }}</option>
                 @endforeach
             </select>
         </div>
@@ -112,9 +120,25 @@
                 <tfoot>
                     <tr class="bg-slate-50 border-t-2 border-slate-200">
                         <td colspan="10" class="py-2 px-2.5 text-right text-[0.58rem] font-bold uppercase tracking-wider text-slate-500">
-                            Positionen <span class="text-[var(--ui-secondary)] font-mono ml-1">{{ $totalArticles }}</span> · Gesamt
+                            Positionen <span class="text-[var(--ui-secondary)] font-mono ml-1">{{ $totalArticles }}</span> · Netto
                         </td>
-                        <td class="py-2 px-1.5 text-right font-mono font-bold text-green-700 text-[0.72rem]">{{ $fmt($totalGesamt) }} €</td>
+                        <td class="py-2 px-1.5 text-right font-mono font-semibold text-slate-600 text-[0.7rem]">{{ $fmt($totalGesamt) }} €</td>
+                        <td colspan="2"></td>
+                    </tr>
+                    @foreach($mwstBreakdown as $row)
+                        <tr class="bg-slate-50">
+                            <td colspan="10" class="py-1 px-2.5 text-right text-[0.56rem] text-slate-500">
+                                MwSt {{ $row['rate'] }} <span class="text-[var(--ui-muted)]">(von Netto {{ $fmt($row['net']) }} €)</span>
+                            </td>
+                            <td class="py-1 px-1.5 text-right font-mono text-slate-600 text-[0.65rem]">{{ $fmt($row['tax']) }} €</td>
+                            <td colspan="2"></td>
+                        </tr>
+                    @endforeach
+                    <tr class="bg-slate-100 border-t border-slate-200">
+                        <td colspan="10" class="py-2 px-2.5 text-right text-[0.6rem] font-bold uppercase tracking-wider text-slate-600">
+                            Gesamt (brutto)
+                        </td>
+                        <td class="py-2 px-1.5 text-right font-mono font-bold text-green-700 text-[0.75rem]">{{ $fmt($totalGross) }} €</td>
                         <td colspan="2"></td>
                     </tr>
                 </tfoot>

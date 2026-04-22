@@ -704,12 +704,10 @@
                                             </select>
                                         </td>
                                         <td class="px-2 py-1.5">
-                                            <input wire:model.blur="inlineBookings.{{ $b->uuid }}.beginn" type="text" placeholder="—"
-                                                   class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-mono bg-transparent focus:bg-white">
+                                            @include('events::partials.time-input', ['model' => 'inlineBookings.'.$b->uuid.'.beginn', 'placeholder' => '—', 'class' => 'w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-mono bg-transparent focus:bg-white'])
                                         </td>
                                         <td class="px-2 py-1.5">
-                                            <input wire:model.blur="inlineBookings.{{ $b->uuid }}.ende" type="text" placeholder="—"
-                                                   class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-mono bg-transparent focus:bg-white">
+                                            @include('events::partials.time-input', ['model' => 'inlineBookings.'.$b->uuid.'.ende', 'placeholder' => '—', 'class' => 'w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-mono bg-transparent focus:bg-white'])
                                         </td>
                                         <td class="px-2 py-1.5">
                                             <input wire:model.blur="inlineBookings.{{ $b->uuid }}.pers" type="text" placeholder="—"
@@ -783,12 +781,10 @@
                                 </label>
                             </div>
                             <div class="col-span-1">
-                                <input wire:model.defer="newBookingInline.beginn" type="text" placeholder="Beginn"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                @include('events::partials.time-input', ['model' => 'newBookingInline.beginn', 'modifier' => 'defer', 'placeholder' => 'Beginn', 'class' => 'w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30'])
                             </div>
                             <div class="col-span-1">
-                                <input wire:model.defer="newBookingInline.ende" type="text" placeholder="Ende"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                @include('events::partials.time-input', ['model' => 'newBookingInline.ende', 'modifier' => 'defer', 'placeholder' => 'Ende', 'class' => 'w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30'])
                             </div>
                             <div class="col-span-1">
                                 <input wire:model.defer="newBookingInline.pers" type="text" placeholder="Pers."
@@ -897,12 +893,10 @@
                                             </select>
                                         </td>
                                         <td class="px-2 py-1.5">
-                                            <input wire:model.blur="inlineSchedule.{{ $item->uuid }}.von" type="text" placeholder="—"
-                                                   class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-mono bg-transparent focus:bg-white">
+                                            @include('events::partials.time-input', ['model' => 'inlineSchedule.'.$item->uuid.'.von', 'placeholder' => '—', 'class' => 'w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-mono bg-transparent focus:bg-white'])
                                         </td>
                                         <td class="px-2 py-1.5">
-                                            <input wire:model.blur="inlineSchedule.{{ $item->uuid }}.bis" type="text" placeholder="—"
-                                                   class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-mono bg-transparent focus:bg-white">
+                                            @include('events::partials.time-input', ['model' => 'inlineSchedule.'.$item->uuid.'.bis', 'placeholder' => '—', 'class' => 'w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-mono bg-transparent focus:bg-white'])
                                         </td>
                                         <td class="px-2 py-1.5">
                                             <input wire:model.blur="inlineSchedule.{{ $item->uuid }}.beschreibung" type="text" placeholder="Beschreibung…"
@@ -959,12 +953,10 @@
                                 </select>
                             </div>
                             <div class="col-span-1">
-                                <input wire:model.defer="newScheduleInline.von" type="text" placeholder="Von"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                @include('events::partials.time-input', ['model' => 'newScheduleInline.von', 'modifier' => 'defer', 'placeholder' => 'Von', 'class' => 'w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30'])
                             </div>
                             <div class="col-span-1">
-                                <input wire:model.defer="newScheduleInline.bis" type="text" placeholder="Bis"
-                                       class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                @include('events::partials.time-input', ['model' => 'newScheduleInline.bis', 'modifier' => 'defer', 'placeholder' => 'Bis', 'class' => 'w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30'])
                             </div>
                             <div class="col-span-4">
                                 <input wire:model.defer="newScheduleInline.beschreibung" type="text" placeholder="Beschreibung…"
@@ -1023,13 +1015,11 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Von</label>
-                        <input wire:model="dayForm.von" type="text" placeholder="10:00"
-                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        @include('events::partials.time-input', ['model' => 'dayForm.von', 'modifier' => 'defer', 'placeholder' => '10:00', 'class' => 'w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30'])
                     </div>
                     <div>
                         <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Bis</label>
-                        <input wire:model="dayForm.bis" type="text" placeholder="18:00"
-                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        @include('events::partials.time-input', ['model' => 'dayForm.bis', 'modifier' => 'defer', 'placeholder' => '18:00', 'class' => 'w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30'])
                     </div>
                     <div>
                         <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Pers. von</label>
@@ -1094,13 +1084,11 @@
                     </div>
                     <div>
                         <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Von</label>
-                        <input wire:model="bookingForm.beginn" type="text" placeholder="10:00"
-                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        @include('events::partials.time-input', ['model' => 'bookingForm.beginn', 'modifier' => 'defer', 'placeholder' => '10:00', 'class' => 'w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30'])
                     </div>
                     <div>
                         <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Bis</label>
-                        <input wire:model="bookingForm.ende" type="text" placeholder="18:00"
-                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        @include('events::partials.time-input', ['model' => 'bookingForm.ende', 'modifier' => 'defer', 'placeholder' => '18:00', 'class' => 'w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30'])
                     </div>
                 </div>
 
@@ -1167,13 +1155,11 @@
                     </div>
                     <div>
                         <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Von</label>
-                        <input wire:model="scheduleForm.von" type="text" placeholder="10:00"
-                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        @include('events::partials.time-input', ['model' => 'scheduleForm.von', 'modifier' => 'defer', 'placeholder' => '10:00', 'class' => 'w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30'])
                     </div>
                     <div>
                         <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Bis</label>
-                        <input wire:model="scheduleForm.bis" type="text" placeholder="11:00"
-                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        @include('events::partials.time-input', ['model' => 'scheduleForm.bis', 'modifier' => 'defer', 'placeholder' => '11:00', 'class' => 'w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30'])
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">

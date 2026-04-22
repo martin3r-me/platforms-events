@@ -66,9 +66,28 @@
                         </div>
                     @endif
 
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
                         @if($v->positionen > 0)
-                            <span class="text-[0.6rem] text-[var(--ui-muted)]">MwSt: {{ $v->mwst }}</span>
+                            @php
+                                $positions = $v->posList ?? collect();
+                                $mwstSums = $positions
+                                    ->groupBy(fn($p) => (string) ($p->mwst ?: '0%'))
+                                    ->map(function ($group, $rate) {
+                                        $net = (float) $group->sum('gesamt');
+                                        $pct = (float) filter_var($rate, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+                                        return ['rate' => $rate, 'pct' => $pct, 'tax' => round($net * ($pct / 100), 2)];
+                                    })
+                                    ->sortBy('pct')
+                                    ->values();
+                            @endphp
+                            <div class="flex items-center gap-1.5 flex-wrap text-[0.58rem] text-[var(--ui-muted)]">
+                                @foreach($mwstSums as $ms)
+                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200">
+                                        MwSt {{ $ms['rate'] }}
+                                        <span class="font-mono font-semibold text-slate-600">{{ $fmt($ms['tax']) }} €</span>
+                                    </span>
+                                @endforeach
+                            </div>
                         @else
                             <span></span>
                         @endif

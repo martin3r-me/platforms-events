@@ -522,6 +522,7 @@ class Quotes extends Component
         $activeQuote = $this->activeQuoteId ? Quote::find($this->activeQuoteId) : null;
 
         $items = QuoteItem::whereIn('event_day_id', $event->days->pluck('id'))
+            ->with(['posList:id,quote_item_id,gesamt,mwst,gruppe'])
             ->orderBy('sort_order')->get()->groupBy('event_day_id');
 
         $activeItem = null;
