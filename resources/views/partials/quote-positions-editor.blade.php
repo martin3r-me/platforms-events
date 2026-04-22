@@ -80,6 +80,12 @@
             {{ session('quoteSyncError') }}
         </div>
     @endif
+    @if(session('positionError'))
+        <div class="px-4 py-2 bg-red-50 border-b border-red-200 text-[0.68rem] text-red-700 flex items-center gap-1.5">
+            @svg('heroicon-o-exclamation-triangle', 'w-3.5 h-3.5')
+            {{ session('positionError') }}
+        </div>
+    @endif
 
     {{-- Positions-Tabelle --}}
     <div class="overflow-x-auto">
@@ -134,7 +140,7 @@
                             <input type="text" value="{{ $p->uhrzeit }}" maxlength="5" inputmode="numeric"
                                    x-data="{ invalid: false }"
                                    x-on:input="let v = $el.value.replace(/[^0-9]/g,'').substring(0,4); if (v.length >= 3) v = v.substring(0,2)+':'+v.substring(2); $el.value = v; invalid = false;"
-                                   x-on:blur="let v = $el.value.trim(); const ok = v === '' || /^([01]?\d|2[0-3]):[0-5]\d$/.test(v); if (!ok) { v = ''; $el.value = ''; } invalid = false; if (v !== @js((string)$p->uhrzeit)) $wire.updatePositionField({{ $p->id }}, 'uhrzeit', v)"
+                                   x-on:blur="const v = $el.value.trim(); const ok = v === '' || /^([01]?\d|2[0-3]):[0-5]\d$/.test(v); invalid = !ok; if (ok && v !== @js((string)$p->uhrzeit)) $wire.updatePositionField({{ $p->id }}, 'uhrzeit', v)"
                                    :class="invalid ? 'ring-1 ring-red-500 border-red-500 bg-red-50' : ''"
                                    class="{{ $inp }} font-mono text-slate-500">
                         </td>
@@ -142,7 +148,7 @@
                             <input type="text" value="{{ $p->bis }}" maxlength="5" inputmode="numeric"
                                    x-data="{ invalid: false }"
                                    x-on:input="let v = $el.value.replace(/[^0-9]/g,'').substring(0,4); if (v.length >= 3) v = v.substring(0,2)+':'+v.substring(2); $el.value = v; invalid = false;"
-                                   x-on:blur="let v = $el.value.trim(); const ok = v === '' || /^([01]?\d|2[0-3]):[0-5]\d$/.test(v); if (!ok) { v = ''; $el.value = ''; } invalid = false; if (v !== @js((string)$p->bis)) $wire.updatePositionField({{ $p->id }}, 'bis', v)"
+                                   x-on:blur="const v = $el.value.trim(); const ok = v === '' || /^([01]?\d|2[0-3]):[0-5]\d$/.test(v); invalid = !ok; if (ok && v !== @js((string)$p->bis)) $wire.updatePositionField({{ $p->id }}, 'bis', v)"
                                    :class="invalid ? 'ring-1 ring-red-500 border-red-500 bg-red-50' : ''"
                                    class="{{ $inp }} font-mono text-slate-500">
                         </td>

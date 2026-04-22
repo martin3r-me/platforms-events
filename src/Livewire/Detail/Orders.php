@@ -231,6 +231,18 @@ class Orders extends Component
     public function addPosition(): void
     {
         if (!$this->activeItemId) return;
+
+        $uhrzeit = (string) ($this->newPosition['uhrzeit'] ?? '');
+        $bis     = (string) ($this->newPosition['bis'] ?? '');
+        if ($uhrzeit !== '' && !PositionCalculator::isValidTime($uhrzeit)) {
+            session()->flash('positionError', 'Uhrzeit "' . $uhrzeit . '" ist nicht zulaessig.');
+            return;
+        }
+        if ($bis !== '' && !PositionCalculator::isValidTime($bis)) {
+            session()->flash('positionError', 'Uhrzeit "' . $bis . '" ist nicht zulaessig.');
+            return;
+        }
+
         $event = $this->event();
         $item = OrderItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($this->activeItemId);
         if (!$item) return;

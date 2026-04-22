@@ -460,6 +460,19 @@ class Quotes extends Component
     public function addPosition(): void
     {
         if (!$this->activeItemId) return;
+
+        // Server-seitige Validierung von Zeiten
+        $uhrzeit = (string) ($this->newPosition['uhrzeit'] ?? '');
+        $bis     = (string) ($this->newPosition['bis'] ?? '');
+        if ($uhrzeit !== '' && !PositionCalculator::isValidTime($uhrzeit)) {
+            session()->flash('positionError', 'Uhrzeit "' . $uhrzeit . '" ist nicht zulaessig.');
+            return;
+        }
+        if ($bis !== '' && !PositionCalculator::isValidTime($bis)) {
+            session()->flash('positionError', 'Uhrzeit "' . $bis . '" ist nicht zulaessig.');
+            return;
+        }
+
         $event = $this->event();
         $item = QuoteItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($this->activeItemId);
         if (!$item) return;
@@ -500,6 +513,15 @@ class Quotes extends Component
         $allowed = ['gruppe','name','anz','anz2','uhrzeit','bis','gebinde','ek','preis','mwst','gesamt','bemerkung'];
         if (!in_array($field, $allowed, true)) return;
         if (!$this->activeItemId) return;
+
+        // Server-seitige Defensive: ungueltige Zeiten nicht speichern
+        if (in_array($field, ['uhrzeit','bis'], true)) {
+            $v = trim((string) $value);
+            if ($v !== '' && !PositionCalculator::isValidTime($v)) {
+                session()->flash('positionError', 'Uhrzeit "' . $v . '" ist nicht zulaessig.');
+                return;
+            }
+        }
 
         $pos = QuotePosition::where('quote_item_id', $this->activeItemId)->find($positionId);
         if (!$pos) return;

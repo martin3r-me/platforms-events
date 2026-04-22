@@ -44,6 +44,12 @@
                    class="w-[140px] border border-slate-200 rounded-md px-2 py-1 text-[0.65rem] bg-white">
         </div>
     </div>
+    @if(session('positionError'))
+        <div class="px-4 py-2 bg-red-50 border-b border-red-200 text-[0.68rem] text-red-700 flex items-center gap-1.5">
+            @svg('heroicon-o-exclamation-triangle', 'w-3.5 h-3.5')
+            {{ session('positionError') }}
+        </div>
+    @endif
 
     <div class="overflow-x-auto">
         <table class="w-full border-collapse text-[0.65rem]">

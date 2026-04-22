@@ -1,6 +1,16 @@
 @php
     $fmt = $fmt ?? fn($v) => number_format((float)$v, 2, ',', '.');
     $dayItems = $dayItems ?? collect();
+
+    // Live Artikel-Summe pro Tag (Positionen ohne Bausteine)
+    $teamBausteinNames = collect(\Platform\Events\Services\SettingsService::bausteine($day->team_id ?? 0))
+        ->map(fn ($b) => mb_strtolower(trim((string) ($b['name'] ?? ''))))
+        ->filter()
+        ->all();
+    $isBausteinGruppe = fn ($g) => in_array(mb_strtolower(trim((string) $g)), $teamBausteinNames, true);
+    $dayArtikelCount = $dayItems->reduce(function ($acc, $it) use ($isBausteinGruppe) {
+        return $acc + ($it->posList ?? collect())->filter(fn ($p) => !$isBausteinGruppe($p->gruppe))->count();
+    }, 0);
 @endphp
 <div class="bg-white border border-[var(--ui-border)] rounded-lg overflow-hidden">
     <div class="flex items-center justify-between px-3.5 py-2.5 border-b border-slate-100 bg-slate-50">
@@ -10,7 +20,7 @@
             <span class="text-[0.62rem] text-[var(--ui-muted)]">
                 {{ $day->datum?->format('d.m.Y') }}
                 · {{ $dayItems->count() }} {{ $dayItems->count() === 1 ? 'Vorgang' : 'Vorgänge' }}
-                · {{ $dayItems->sum('artikel') }} Artikel
+                · {{ $dayArtikelCount }} Artikel
             </span>
         </div>
         <div class="flex items-center gap-1.5">
@@ -38,6 +48,17 @@
     @else
         <div class="flex flex-wrap">
             @foreach($dayItems as $i => $v)
+                @php
+                    // Live-Zaehlung aus posList: Positionen gesamt + Artikel (ohne Bausteine)
+                    $vPositions = $v->posList ?? collect();
+                    $vBausteinNames = collect(\Platform\Events\Services\SettingsService::bausteine($v->team_id))
+                        ->map(fn ($b) => mb_strtolower(trim((string) ($b['name'] ?? ''))))
+                        ->filter()
+                        ->all();
+                    $vIsBaustein = fn ($g) => in_array(mb_strtolower(trim((string) $g)), $vBausteinNames, true);
+                    $vPositionenCount = $vPositions->count();
+                    $vArtikelCount = $vPositions->filter(fn ($p) => !$vIsBaustein($p->gruppe))->count();
+                @endphp
                 <div class="p-3.5 flex-1 min-w-[220px] flex flex-col gap-2.5 {{ $i > 0 ? 'border-l border-slate-100' : '' }}">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-1.5">
@@ -56,14 +77,14 @@
                         </div>
                     </div>
 
-                    @if($v->positionen > 0)
+                    @if($vPositionenCount > 0)
                         <div class="grid grid-cols-3 gap-1.5">
                             <div class="bg-slate-50 rounded px-2 py-1.5 text-center">
-                                <p class="text-[1rem] font-bold text-[var(--ui-secondary)] m-0 leading-none">{{ $v->artikel }}</p>
+                                <p class="text-[1rem] font-bold text-[var(--ui-secondary)] m-0 leading-none">{{ $vArtikelCount }}</p>
                                 <p class="text-[0.55rem] text-[var(--ui-muted)] mt-1 font-medium">Artikel</p>
                             </div>
                             <div class="bg-slate-50 rounded px-2 py-1.5 text-center">
-                                <p class="text-[1rem] font-bold text-[var(--ui-secondary)] m-0 leading-none">{{ $v->positionen }}</p>
+                                <p class="text-[1rem] font-bold text-[var(--ui-secondary)] m-0 leading-none">{{ $vPositionenCount }}</p>
                                 <p class="text-[0.55rem] text-[var(--ui-muted)] mt-1 font-medium">Positionen</p>
                             </div>
                             <div class="bg-green-50 rounded px-2 py-1.5 text-center">
@@ -78,9 +99,9 @@
                     @endif
 
                     <div class="flex items-center justify-between gap-2 flex-wrap">
-                        @if($v->positionen > 0)
+                        @if($vPositionenCount > 0)
                             @php
-                                $positions = $v->posList ?? collect();
+                                $positions = $vPositions;
                                 $mwstSums = $positions
                                     ->groupBy(fn($p) => (string) ($p->mwst ?: '0%'))
                                     ->map(function ($group, $rate) {

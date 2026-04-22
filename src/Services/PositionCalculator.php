@@ -96,14 +96,6 @@ class PositionCalculator
      */
     public static function apply(array $position, string $changedField, string $priceField = 'preis'): array
     {
-        // Ungueltige HH:MM-Werte verwerfen, bevor weitergerechnet wird
-        if (in_array($changedField, ['uhrzeit', 'bis'], true) && isset($position[$changedField])) {
-            $v = (string) $position[$changedField];
-            if ($v !== '' && !self::isValidTime($v)) {
-                $position[$changedField] = '';
-            }
-        }
-
         // Zeit -> Anz.2
         if (in_array($changedField, ['uhrzeit', 'bis'], true)) {
             $h = self::anz2FromTime($position['uhrzeit'] ?? null, $position['bis'] ?? null);

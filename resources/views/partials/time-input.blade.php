@@ -18,15 +18,7 @@
        "
        x-on:blur="
            const v = $el.value.trim();
-           const ok = v === '' || /^([01]?\d|2[0-3]):[0-5]\d$/.test(v);
-           if (!ok) {
-               $el.value = '';
-               $el.dispatchEvent(new Event('input', { bubbles: true }));
-               $el.dispatchEvent(new Event('change', { bubbles: true }));
-               invalid = false;
-           } else {
-               invalid = false;
-           }
+           invalid = v !== '' && !/^([01]?\d|2[0-3]):[0-5]\d$/.test(v);
        "
        :class="invalid ? 'ring-1 ring-red-500 border-red-500 bg-red-50' : ''"
        class="{{ $class }}">
