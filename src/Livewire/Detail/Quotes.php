@@ -510,7 +510,7 @@ class Quotes extends Component
      */
     public function updatePositionField(int $positionId, string $field, $value): void
     {
-        $allowed = ['gruppe','name','anz','anz2','uhrzeit','bis','gebinde','ek','preis','mwst','gesamt','bemerkung'];
+        $allowed = ['gruppe','name','anz','anz2','uhrzeit','bis','gebinde','ek','preis','mwst','gesamt','bemerkung','procurement_type'];
         if (!in_array($field, $allowed, true)) return;
         if (!$this->activeItemId) return;
 

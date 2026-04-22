@@ -18,6 +18,8 @@ AI-Tools, API-Controllern und Kommandos.
 | `QuoteOrderConverter`      | Wandelt QuoteItems in OrderItems (inkl. Typ-Dedupe) und synchronisiert Positionen.        |
 | `ArticlePackageApplicator` | Fuegt ein ArticlePackage als QuotePositions an einen QuoteItem an.                        |
 | `ContactPickerResolver`    | Liefert die CRM-Contact-Slot-Daten fuer den Contact-Picker (inkl. Veranstalter-Fallback). |
+| `ProcurementTypeResolver`  | Aufloesung stock/supplier/kitchen: Position-Override vor Artikel-Stamm.                   |
+| `PickListGenerator`        | Packliste aus Bestellungen mit Baustein-Filter + Typ-Klassifizierung; analyze/generate.   |
 
 ## Ideen fuer weitere Extraktionen
 

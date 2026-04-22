@@ -12,6 +12,7 @@ use Platform\Events\Models\OrderPosition;
 use Platform\Events\Models\PickItem;
 use Platform\Events\Models\PickList;
 use Platform\Events\Services\ActivityLogger;
+use Platform\Events\Services\PickListGenerator;
 use Platform\Events\Services\SettingsService;
 
 class PickLists extends Component
@@ -85,75 +86,55 @@ class PickLists extends Component
         }
     }
 
+    // Review-Modal fuer unklassifizierte Artikel
+    public bool $showReviewModal = false;
+    public array $reviewAnalysis = [];           // Ergebnis von analyze()
+    public array $reviewDecisions = [];          // nameLower => 'stock'|'supplier'|'kitchen'|'ignore'
+
     public function generateFromOrders(): void
     {
         $event = $this->event();
-        $orderItems = OrderItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))
-            ->with('posList')
-            ->get();
+        $analysis = PickListGenerator::analyze($event);
 
-        if ($orderItems->isEmpty()) return;
-
-        // Bausteine (Headline/Speisentexte/Trenntext etc.) aus Settings laden
-        $bausteinNames = collect(SettingsService::bausteine($event->team_id))
-            ->map(fn ($b) => mb_strtolower(trim((string) ($b['name'] ?? ''))))
-            ->filter()
-            ->all();
-        $isBaustein = fn ($g) => in_array(mb_strtolower(trim((string) $g)), $bausteinNames, true);
-
-        // Artikel-Lookup nach Name: nur procurement_type='stock' geht in die Packliste
-        // (supplier -> externe Bestellung, kitchen -> Projekt-Function)
-        $stockArticleNames = Article::where('team_id', $event->team_id)
-            ->where('procurement_type', 'stock')
-            ->pluck('name')
-            ->map(fn ($n) => mb_strtolower(trim((string) $n)))
-            ->all();
-        $nonStockArticleNames = Article::where('team_id', $event->team_id)
-            ->where('procurement_type', '!=', 'stock')
-            ->pluck('name')
-            ->map(fn ($n) => mb_strtolower(trim((string) $n)))
-            ->all();
-        // Entscheidung: Wenn der Artikel eindeutig 'supplier'/'kitchen' ist ->
-        // weglassen. Wenn 'stock' ODER unbekannt (kein Matching) -> einschliessen.
-        $belongsToPicklist = function ($posName) use ($nonStockArticleNames) {
-            $n = mb_strtolower(trim((string) $posName));
-            return !in_array($n, $nonStockArticleNames, true);
-        };
-
-        $list = PickList::create([
-            'team_id'    => $event->team_id,
-            'user_id'    => Auth::id(),
-            'event_id'   => $event->id,
-            'title'      => 'Generiert aus Bestellungen ' . now()->format('d.m.Y'),
-            'status'     => 'open',
-            'token'      => Str::random(48),
-            'created_by' => Auth::user()?->name,
-        ]);
-
-        $sort = 0;
-        foreach ($orderItems as $orderItem) {
-            foreach ($orderItem->posList as $pos) {
-                // Bausteine ueberspringen
-                if ($isBaustein($pos->gruppe)) continue;
-                // Externe/Kueche ueberspringen
-                if (!$belongsToPicklist($pos->name)) continue;
-
-                PickItem::create([
-                    'team_id'      => $event->team_id,
-                    'user_id'      => Auth::id(),
-                    'pick_list_id' => $list->id,
-                    'name'         => $pos->name,
-                    'quantity'     => (int) (((float) $pos->anz) ?: 1),
-                    'gebinde'      => $pos->gebinde,
-                    'gruppe'       => $pos->gruppe ?: $orderItem->typ,
-                    'status'       => 'open',
-                    'sort_order'   => $sort++,
-                ]);
-            }
+        // Wenn nichts zu entscheiden ist -> direkt erzeugen
+        if (empty($analysis['unclassified'])) {
+            $this->doGenerate($event, []);
+            return;
         }
 
+        // Review-Modal zeigen
+        $this->reviewAnalysis = $analysis;
+        $this->reviewDecisions = [];
+        foreach ($analysis['unclassified'] as $u) {
+            $this->reviewDecisions[mb_strtolower(trim($u['name']))] = 'stock';
+        }
+        $this->showReviewModal = true;
+    }
+
+    public function confirmReviewAndGenerate(): void
+    {
+        $event = $this->event();
+        $this->doGenerate($event, $this->reviewDecisions);
+        $this->showReviewModal = false;
+        $this->reviewAnalysis = [];
+        $this->reviewDecisions = [];
+    }
+
+    public function closeReviewModal(): void
+    {
+        $this->showReviewModal = false;
+        $this->reviewAnalysis = [];
+        $this->reviewDecisions = [];
+    }
+
+    protected function doGenerate(Event $event, array $overrides): void
+    {
+        $list = PickListGenerator::generate($event, $overrides);
+        if (!$list) return;
+
+        $count = $list->items()->count();
         $this->activeListId = $list->id;
-        ActivityLogger::log($event, 'picklist', "Packliste generiert aus Bestellungen ({$sort} Positionen)");
+        ActivityLogger::log($event, 'picklist', "Packliste generiert aus Bestellungen ({$count} Positionen)");
     }
 
     public function deleteList(int $listId): void

@@ -162,6 +162,63 @@
         @endif
     @endif
 
+    {{-- Review-Modal: unklassifizierte Artikel vor Packliste-Erzeugung --}}
+    <x-ui-modal wire:model="showReviewModal" size="xl" :hideFooter="true">
+        <x-slot name="header">
+            <span class="flex items-center gap-2">
+                @svg('heroicon-o-exclamation-triangle', 'w-4 h-4 text-amber-600')
+                Unklassifizierte Artikel
+            </span>
+        </x-slot>
+        <div class="space-y-3">
+            <p class="text-[0.72rem] text-[var(--ui-secondary)] m-0">
+                Folgende Artikel sind weder im Stamm noch in der Position einem Beschaffungs-Typ zugeordnet.
+                Bitte vor dem Erzeugen der Packliste entscheiden.
+            </p>
+            @if(!empty($reviewAnalysis))
+                <div class="grid grid-cols-4 gap-2 bg-slate-50 rounded-md p-2 text-[0.62rem]">
+                    <div><span class="text-[var(--ui-muted)]">Positionen gesamt:</span> <span class="font-mono font-bold">{{ $reviewAnalysis['total'] }}</span></div>
+                    <div><span class="text-[var(--ui-muted)]">Lager:</span> <span class="font-mono font-bold text-blue-600">{{ $reviewAnalysis['stock'] }}</span></div>
+                    <div><span class="text-[var(--ui-muted)]">Extern/Küche:</span> <span class="font-mono font-bold text-slate-500">{{ $reviewAnalysis['skipped'] }}</span></div>
+                    <div><span class="text-[var(--ui-muted)]">Bausteine:</span> <span class="font-mono font-bold text-slate-400">{{ $reviewAnalysis['bausteine'] }}</span></div>
+                </div>
+            @endif
+            <div class="border border-slate-200 rounded-md overflow-hidden">
+                <table class="w-full text-[0.7rem]">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                            <th class="text-left px-3 py-1.5 font-semibold text-[var(--ui-muted)]">Artikel</th>
+                            <th class="text-right px-3 py-1.5 font-semibold text-[var(--ui-muted)] w-20">Anzahl</th>
+                            <th class="text-left px-3 py-1.5 font-semibold text-[var(--ui-muted)] w-64">Zuordnung</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach(($reviewAnalysis['unclassified'] ?? []) as $u)
+                            @php $key = mb_strtolower(trim($u['name'])); @endphp
+                            <tr class="border-b border-slate-100">
+                                <td class="px-3 py-1.5 text-[var(--ui-secondary)]">{{ $u['name'] }}</td>
+                                <td class="px-3 py-1.5 text-right font-mono text-slate-500">{{ $u['count'] }}×</td>
+                                <td class="px-3 py-1.5">
+                                    <select wire:model="reviewDecisions.{{ $key }}"
+                                            class="w-full border border-slate-200 rounded px-2 py-1 text-[0.68rem] bg-white">
+                                        <option value="stock">Lager (Packliste)</option>
+                                        <option value="supplier">Extern (Dienstleister)</option>
+                                        <option value="kitchen">Küche (Projekt-Function)</option>
+                                        <option value="ignore">Ignorieren</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex justify-end gap-2 pt-3 border-t border-[var(--ui-border)]">
+                <x-ui-button type="button" variant="secondary-outline" size="sm" wire:click="closeReviewModal">Abbrechen</x-ui-button>
+                <x-ui-button type="button" variant="primary" size="sm" wire:click="confirmReviewAndGenerate">Packliste erzeugen</x-ui-button>
+            </div>
+        </div>
+    </x-ui-modal>
+
     <x-ui-modal wire:model="showCreateModal" size="md" :hideFooter="true">
         <x-slot name="header">Neue Packliste</x-slot>
         <form wire:submit.prevent="createList" class="space-y-4">
