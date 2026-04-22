@@ -8,14 +8,14 @@ use Livewire\Component;
 use Platform\Events\Models\Article;
 use Platform\Events\Models\ArticlePackage;
 use Platform\Events\Models\Event;
-use Platform\Events\Models\OrderItem;
-use Platform\Events\Models\OrderPosition;
 use Platform\Events\Models\Quote;
 use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\QuotePosition;
 use Platform\Events\Services\ActivityLogger;
+use Platform\Events\Services\ArticlePackageApplicator;
 use Platform\Events\Services\ArticleSearchService;
 use Platform\Events\Services\PositionCalculator;
+use Platform\Events\Services\QuoteOrderConverter;
 use Platform\Events\Services\SettingsService;
 
 class Quotes extends Component
@@ -422,7 +422,7 @@ class Quotes extends Component
      */
     /**
      * Fuegt alle Artikel eines ArticlePackage als QuotePositions an den aktiven
-     * Vorgang an.
+     * Vorgang an. Delegiert an ArticlePackageApplicator.
      */
     public function applyPackage(int $packageId): void
     {
@@ -431,49 +431,13 @@ class Quotes extends Component
         $item = QuoteItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($this->activeItemId);
         if (!$item) return;
 
-        $package = ArticlePackage::with(['items' => fn($q) => $q->orderBy('sort_order')])
-            ->where('team_id', $event->team_id)
-            ->find($packageId);
+        $package = ArticlePackage::where('team_id', $event->team_id)->find($packageId);
         if (!$package) return;
 
-        $maxSort = (int) QuotePosition::where('quote_item_id', $item->id)->max('sort_order');
-        $created = 0;
-
-        foreach ($package->items as $pi) {
-            $article = $pi->article_id
-                ? Article::with('group:id,name')->where('team_id', $event->team_id)->find($pi->article_id)
-                : null;
-
-            $name    = (string) ($pi->name ?? $article?->name ?? '');
-            $gruppe  = (string) ($pi->gruppe ?? $article?->group?->name ?? '');
-            $gebinde = (string) ($pi->gebinde ?? $article?->gebinde ?? '');
-            $anz     = (string) ($pi->quantity ?? 1);
-            $ek      = (float)  ($article->ek ?? 0);
-            $preis   = (float)  ($pi->vk ?? $article?->vk ?? 0);
-            $mwst    = (string) ($article?->mwst ?? '7%');
-            $gesamt  = (float)  ($pi->gesamt ?: ((float) $anz) * $preis);
-
-            QuotePosition::create([
-                'team_id'       => $event->team_id,
-                'user_id'       => Auth::id(),
-                'quote_item_id' => $item->id,
-                'gruppe'        => $gruppe,
-                'name'          => $name,
-                'anz'           => $anz,
-                'gebinde'       => $gebinde,
-                'basis_ek'      => $ek,
-                'ek'            => $ek,
-                'preis'         => $preis,
-                'mwst'          => $mwst,
-                'gesamt'        => $gesamt,
-                'sort_order'    => ++$maxSort,
-            ]);
-            $created++;
-        }
-
-        if ($created > 0) {
+        $created = ArticlePackageApplicator::apply($package, $item);
+        if ($created->isNotEmpty()) {
             $this->recalculateItem($item);
-            ActivityLogger::log($event, 'quote', 'Vorlage "' . $package->name . '" eingefuegt (' . $created . ' Positionen)');
+            ActivityLogger::log($event, 'quote', 'Vorlage "' . $package->name . '" eingefuegt (' . $created->count() . ' Positionen)');
         }
     }
 
@@ -586,137 +550,37 @@ class Quotes extends Component
     }
 
     /**
-     * Konvertiert einen QuoteItem (Angebots-Vorgang) in einen OrderItem
-     * (Bestell-Vorgang) inkl. aller Positionen. Bei Typ-Konflikt am selben Tag
-     * wird ein Suffix "(2)", "(3)" angehaengt.
+     * Konvertiert einen QuoteItem in einen OrderItem. Delegiert an
+     * QuoteOrderConverter.
      */
     public function convertQuoteItemToOrder(int $quoteItemId): void
     {
         $event = $this->event();
-        $quoteItem = QuoteItem::with('posList')
-            ->whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))
+        $quoteItem = QuoteItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))
             ->find($quoteItemId);
         if (!$quoteItem) return;
-
-        $dayId = $quoteItem->event_day_id;
-
-        // Dedupe typ: "Speisen" -> "Speisen (2)" falls schon existiert
         $baseTyp = (string) $quoteItem->typ;
-        $existingTyps = OrderItem::where('event_day_id', $dayId)->pluck('typ')->toArray();
-        $typ = $baseTyp;
-        $counter = 2;
-        while (in_array($typ, $existingTyps, true)) {
-            $typ = $baseTyp . ' (' . $counter . ')';
-            $counter++;
-        }
-
-        $maxSort = (int) OrderItem::where('event_day_id', $dayId)->max('sort_order');
-
-        $orderItem = OrderItem::create([
-            'team_id'      => $event->team_id,
-            'user_id'      => Auth::id(),
-            'event_day_id' => $dayId,
-            'typ'          => $typ,
-            'status'       => 'Offen',
-            'lieferant'    => '',
-            'artikel'      => (int) $quoteItem->artikel,
-            'positionen'   => (int) $quoteItem->positionen,
-            'einkauf'      => 0,
-            'sort_order'   => $maxSort + 1,
-        ]);
-
-        foreach ($quoteItem->posList as $pos) {
-            OrderPosition::create([
-                'team_id'       => $event->team_id,
-                'user_id'       => Auth::id(),
-                'order_item_id' => $orderItem->id,
-                'gruppe'        => $pos->gruppe,
-                'name'          => $pos->name,
-                'anz'           => $pos->anz,
-                'anz2'          => $pos->anz2,
-                'uhrzeit'       => $pos->uhrzeit,
-                'bis'           => $pos->bis,
-                'inhalt'        => $pos->inhalt,
-                'gebinde'       => $pos->gebinde,
-                'basis_ek'      => $pos->basis_ek,
-                'ek'            => $pos->ek,
-                'preis'         => $pos->preis,
-                'mwst'          => $pos->mwst,
-                'gesamt'        => $pos->gesamt,
-                'bemerkung'     => $pos->bemerkung,
-                'sort_order'    => $pos->sort_order,
-            ]);
-        }
-
-        $this->syncOrderItemSummary($orderItem);
+        QuoteOrderConverter::convertItem($quoteItem);
         ActivityLogger::log($event, 'quote', 'Vorgang "' . $baseTyp . '" in Bestellung ueberfuehrt');
     }
 
     /**
-     * Synchronisiert einen bestehenden OrderItem mit den aktuellen Positionen
-     * des QuoteItem. Matching via exakter Typ oder Basis-Typ + "(N)"-Suffix.
-     * Bestehende OrderPositions werden geloescht und neu angelegt.
+     * Synchronisiert einen bestehenden OrderItem mit dem QuoteItem.
+     * Delegiert an QuoteOrderConverter.
      */
     public function syncQuoteItemToOrder(int $quoteItemId): void
     {
         $event = $this->event();
-        $quoteItem = QuoteItem::with('posList')
-            ->whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))
+        $quoteItem = QuoteItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))
             ->find($quoteItemId);
         if (!$quoteItem) return;
 
-        $dayId = $quoteItem->event_day_id;
-        $baseTyp = preg_replace('/\s*\(\d+\)$/', '', (string) $quoteItem->typ);
-
-        $orderItem = OrderItem::where('event_day_id', $dayId)
-            ->where(function ($q) use ($quoteItem, $baseTyp) {
-                $q->where('typ', $quoteItem->typ)
-                  ->orWhere('typ', $baseTyp)
-                  ->orWhere('typ', 'like', $baseTyp . ' (%');
-            })
-            ->first();
-
+        $orderItem = QuoteOrderConverter::syncItem($quoteItem);
         if (!$orderItem) {
             session()->flash('quoteSyncError', 'Kein passender Bestell-Vorgang gefunden. Bitte zuerst "In Bestellung" ausfuehren.');
             return;
         }
-
-        $orderItem->posList()->delete();
-
-        foreach ($quoteItem->posList as $pos) {
-            OrderPosition::create([
-                'team_id'       => $event->team_id,
-                'user_id'       => Auth::id(),
-                'order_item_id' => $orderItem->id,
-                'gruppe'        => $pos->gruppe,
-                'name'          => $pos->name,
-                'anz'           => $pos->anz,
-                'anz2'          => $pos->anz2,
-                'uhrzeit'       => $pos->uhrzeit,
-                'bis'           => $pos->bis,
-                'inhalt'        => $pos->inhalt,
-                'gebinde'       => $pos->gebinde,
-                'basis_ek'      => $pos->basis_ek,
-                'ek'            => $pos->ek,
-                'preis'         => $pos->preis,
-                'mwst'          => $pos->mwst,
-                'gesamt'        => $pos->gesamt,
-                'bemerkung'     => $pos->bemerkung,
-                'sort_order'    => $pos->sort_order,
-            ]);
-        }
-
-        $this->syncOrderItemSummary($orderItem);
         ActivityLogger::log($event, 'quote', 'Bestellung "' . $orderItem->typ . '" mit Angebot synchronisiert');
-    }
-
-    protected function syncOrderItemSummary(OrderItem $item): void
-    {
-        $positions = $item->posList()->get();
-        $item->update([
-            'positionen' => $positions->where('gesamt', '>', 0)->count(),
-            'einkauf'    => (float) $positions->sum('ek'),
-        ]);
     }
 
     /**
@@ -724,14 +588,7 @@ class Quotes extends Component
      */
     public function convertAllQuoteItemsOfDayToOrder(int $dayId): void
     {
-        $event = $this->event();
-        $itemIds = QuoteItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))
-            ->where('event_day_id', $dayId)
-            ->orderBy('sort_order')
-            ->pluck('id');
-        foreach ($itemIds as $id) {
-            $this->convertQuoteItemToOrder((int) $id);
-        }
+        QuoteOrderConverter::convertAllForDay($this->event(), $dayId);
     }
 
     /**
@@ -739,13 +596,7 @@ class Quotes extends Component
      */
     public function convertAllQuoteItemsToOrder(): void
     {
-        $event = $this->event();
-        $itemIds = QuoteItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))
-            ->orderBy('sort_order')
-            ->pluck('id');
-        foreach ($itemIds as $id) {
-            $this->convertQuoteItemToOrder((int) $id);
-        }
+        QuoteOrderConverter::convertAllForEvent($this->event());
     }
 
     public function deletePosition(int $positionId): void

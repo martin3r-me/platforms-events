@@ -1008,52 +1008,15 @@ class Detail extends Component
             ];
         }
 
-        // Kontakt-Slots: Kontakte der jeweils gebundenen Firma ueber CrmCompanyContactsProviderInterface.
-        $crmContactAvailable = app()->bound(\Platform\Core\Contracts\CrmCompanyContactsProviderInterface::class);
-        $contactsProvider = $crmContactAvailable ? app(\Platform\Core\Contracts\CrmCompanyContactsProviderInterface::class) : null;
-        $contactResolver  = app()->bound(\Platform\Core\Contracts\CrmContactResolverInterface::class)
-            ? app(\Platform\Core\Contracts\CrmContactResolverInterface::class)
-            : null;
-        $crmContactSlots = [];
-        foreach (self::CRM_CONTACT_SLOTS as $slot => $cfg) {
-            $companyCfg = self::CRM_SLOTS[$cfg['company_slot']];
-            $companyId = $this->event?->{$companyCfg['id']};
-
-            // Fallback: Wenn der eigene Slot keine Firma hat, nimm die Veranstalter-Firma
-            // als Contact-Quelle (haeufiger Fall: Rechnungs-/Liefer-Kontakt ist identisch
-            // mit dem Veranstalter-ASP).
-            if (!$companyId && $slot !== 'organizer' && $slot !== 'organizer_onsite') {
-                $orgCompanyId = $this->event?->{self::CRM_SLOTS['organizer']['id']};
-                if ($orgCompanyId) $companyId = $orgCompanyId;
-            }
-
-            $currentId = $this->event?->{$cfg['id']};
-            $contacts = [];
-            $currentLabel = null;
-
-            if ($contactsProvider && $companyId) {
-                $contacts = $contactsProvider->contacts((int) $companyId);
-                if ($currentId) {
-                    foreach ($contacts as $c) {
-                        if ((int) ($c['id'] ?? 0) === (int) $currentId) {
-                            $currentLabel = $c['name'] ?? null;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            $currentUrl = $currentId && $contactResolver ? $contactResolver->url((int) $currentId) : null;
-
-            $crmContactSlots[$slot] = [
-                'contacts'     => $contacts,
-                'currentId'    => $currentId,
-                'currentLabel' => $currentLabel ?: $this->event?->{$cfg['label']},
-                'currentUrl'   => $currentUrl,
-                'hasCompany'   => (bool) $companyId,
-                'fallback'     => $this->event?->{$cfg['label']},
-            ];
-        }
+        // Contact-Slots via Service auflösen (Fallback auf Veranstalter,
+        // Liste, Label, URL, hasCompany-Flag).
+        $contactResolver = new \Platform\Events\Services\ContactPickerResolver(
+            self::CRM_SLOTS,
+            self::CRM_CONTACT_SLOTS
+        );
+        $contactData = $this->event ? $contactResolver->resolve($this->event) : ['available' => false, 'slots' => []];
+        $crmContactAvailable = $contactData['available'];
+        $crmContactSlots = $contactData['slots'];
 
         $notesByType = $notes->groupBy('type');
 
