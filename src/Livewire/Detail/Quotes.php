@@ -791,6 +791,35 @@ class Quotes extends Component
         ]);
     }
 
+    /**
+     * Konvertiert alle QuoteItems eines Tages in OrderItems.
+     */
+    public function convertAllQuoteItemsOfDayToOrder(int $dayId): void
+    {
+        $event = $this->event();
+        $itemIds = QuoteItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))
+            ->where('event_day_id', $dayId)
+            ->orderBy('sort_order')
+            ->pluck('id');
+        foreach ($itemIds as $id) {
+            $this->convertQuoteItemToOrder((int) $id);
+        }
+    }
+
+    /**
+     * Konvertiert alle QuoteItems des gesamten Events in OrderItems.
+     */
+    public function convertAllQuoteItemsToOrder(): void
+    {
+        $event = $this->event();
+        $itemIds = QuoteItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))
+            ->orderBy('sort_order')
+            ->pluck('id');
+        foreach ($itemIds as $id) {
+            $this->convertQuoteItemToOrder((int) $id);
+        }
+    }
+
     public function deletePosition(int $positionId): void
     {
         if (!$this->activeItemId) return;

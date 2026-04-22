@@ -13,11 +13,22 @@
                 · {{ $dayItems->sum('artikel') }} Artikel
             </span>
         </div>
-        <button wire:click="openItemCreate({{ $day->id }})"
-                class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white border-0 cursor-pointer text-[0.62rem] font-semibold">
-            @svg('heroicon-o-plus', 'w-2.5 h-2.5')
-            Neuer Vorgang
-        </button>
+        <div class="flex items-center gap-1.5">
+            @if($dayItems->isNotEmpty())
+                <button wire:click="convertAllQuoteItemsOfDayToOrder({{ $day->id }})"
+                        wire:confirm="Alle {{ $dayItems->count() }} Vorgänge dieses Tages in Bestellungen überführen?"
+                        class="flex items-center gap-1 px-2 py-1 rounded border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 text-[0.6rem] font-bold cursor-pointer"
+                        title="Alle Vorgänge dieses Tages in Bestellungen überführen">
+                    @svg('heroicon-o-arrows-right-left', 'w-3 h-3')
+                    Alle in Bestellung
+                </button>
+            @endif
+            <button wire:click="openItemCreate({{ $day->id }})"
+                    class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white border-0 cursor-pointer text-[0.62rem] font-semibold">
+                @svg('heroicon-o-plus', 'w-2.5 h-2.5')
+                Neuer Vorgang
+            </button>
+        </div>
     </div>
 
     @if($dayItems->isEmpty())

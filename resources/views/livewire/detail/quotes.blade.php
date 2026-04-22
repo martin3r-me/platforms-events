@@ -153,6 +153,14 @@
                 <p class="text-[1rem] font-bold text-[var(--ui-secondary)]">Angebote · Übersicht</p>
                 <p class="text-[0.65rem] text-[var(--ui-muted)]">Alle Vorgänge je Tag mit Artikel- und Umsatzzusammenfassung</p>
             </div>
+            @if($totalVorgaenge > 0)
+                <button wire:click="convertAllQuoteItemsToOrder"
+                        wire:confirm="Alle {{ $totalVorgaenge }} Vorgänge aller Tage in Bestellungen überführen?"
+                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 text-[0.68rem] font-bold cursor-pointer">
+                    @svg('heroicon-o-arrows-right-left', 'w-3.5 h-3.5')
+                    Alle in Bestellung
+                </button>
+            @endif
         </div>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-4">

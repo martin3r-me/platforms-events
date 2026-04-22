@@ -891,13 +891,16 @@ class Detail extends Component
         $quoteItems = QuoteItem::whereIn('event_day_id', $dayIds)->orderBy('sort_order')->get();
         $orderItems = OrderItem::whereIn('event_day_id', $dayIds)->orderBy('sort_order')->get();
 
-        $quoteTree = $days->map(function (EventDay $day) use ($quoteItems) {
+        // Farbpalette fuer Tages-Bullets, wenn EventDay keine eigene Farbe hat
+        $dayPalette = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16', '#ec4899', '#14b8a6'];
+
+        $quoteTree = $days->values()->map(function (EventDay $day, int $idx) use ($quoteItems, $dayPalette) {
             $dayItems = $quoteItems->where('event_day_id', $day->id)->values();
             return [
                 'day_id'       => $day->id,
                 'label'        => $day->label,
-                'datum'        => $day->datum?->format('Y-m-d'),
-                'color'        => $day->color ?: '#6366f1',
+                'datum'        => $day->datum?->format('d.m.Y'),
+                'color'        => $day->color ?: $dayPalette[$idx % count($dayPalette)],
                 'positions'    => (int) $dayItems->sum('positionen'),
                 'types'        => $dayItems->map(fn ($i) => [
                     'id'         => $i->id,
@@ -907,13 +910,13 @@ class Detail extends Component
             ];
         })->values();
 
-        $orderTree = $days->map(function (EventDay $day) use ($orderItems) {
+        $orderTree = $days->values()->map(function (EventDay $day, int $idx) use ($orderItems, $dayPalette) {
             $dayItems = $orderItems->where('event_day_id', $day->id)->values();
             return [
                 'day_id'       => $day->id,
                 'label'        => $day->label,
-                'datum'        => $day->datum?->format('Y-m-d'),
-                'color'        => $day->color ?: '#6366f1',
+                'datum'        => $day->datum?->format('d.m.Y'),
+                'color'        => $day->color ?: $dayPalette[$idx % count($dayPalette)],
                 'positions'    => (int) $dayItems->sum('positionen'),
                 'types'        => $dayItems->map(fn ($i) => [
                     'id'        => $i->id,
