@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Platform\Events\Models\Article;
+use Platform\Events\Models\ArticlePackage;
 use Platform\Events\Models\Event;
 use Platform\Events\Models\Quote;
 use Platform\Events\Models\QuoteItem;
@@ -440,6 +441,63 @@ class Quotes extends Component
     /**
      * Fuellt die neue Position mit den Daten des gewaehlten Artikels.
      */
+    /**
+     * Fuegt alle Artikel eines ArticlePackage als QuotePositions an den aktiven
+     * Vorgang an.
+     */
+    public function applyPackage(int $packageId): void
+    {
+        if (!$this->activeItemId) return;
+        $event = $this->event();
+        $item = QuoteItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($this->activeItemId);
+        if (!$item) return;
+
+        $package = ArticlePackage::with(['items' => fn($q) => $q->orderBy('sort_order')])
+            ->where('team_id', $event->team_id)
+            ->find($packageId);
+        if (!$package) return;
+
+        $maxSort = (int) QuotePosition::where('quote_item_id', $item->id)->max('sort_order');
+        $created = 0;
+
+        foreach ($package->items as $pi) {
+            $article = $pi->article_id
+                ? Article::with('group:id,name')->where('team_id', $event->team_id)->find($pi->article_id)
+                : null;
+
+            $name    = (string) ($pi->name ?? $article?->name ?? '');
+            $gruppe  = (string) ($pi->gruppe ?? $article?->group?->name ?? '');
+            $gebinde = (string) ($pi->gebinde ?? $article?->gebinde ?? '');
+            $anz     = (string) ($pi->quantity ?? 1);
+            $ek      = (float)  ($article->ek ?? 0);
+            $preis   = (float)  ($pi->vk ?? $article?->vk ?? 0);
+            $mwst    = (string) ($article?->mwst ?? '7%');
+            $gesamt  = (float)  ($pi->gesamt ?: ((float) $anz) * $preis);
+
+            QuotePosition::create([
+                'team_id'       => $event->team_id,
+                'user_id'       => Auth::id(),
+                'quote_item_id' => $item->id,
+                'gruppe'        => $gruppe,
+                'name'          => $name,
+                'anz'           => $anz,
+                'gebinde'       => $gebinde,
+                'basis_ek'      => $ek,
+                'ek'            => $ek,
+                'preis'         => $preis,
+                'mwst'          => $mwst,
+                'gesamt'        => $gesamt,
+                'sort_order'    => ++$maxSort,
+            ]);
+            $created++;
+        }
+
+        if ($created > 0) {
+            $this->recalculateItem($item);
+            ActivityLogger::log($event, 'quote', "Vorlage „{$package->name}" eingefuegt ({$created} Positionen)");
+        }
+    }
+
     public function pickArticle(int $articleId): void
     {
         $event = $this->event();
@@ -548,6 +606,13 @@ class Quotes extends Component
 
         $bausteine = SettingsService::bausteine($event->team_id);
 
+        // Artikel-Vorlagen (Packages) fuer den "Vorlage einfuegen"-Button
+        $articlePackages = ArticlePackage::where('team_id', $event->team_id)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name', 'description', 'color']);
+
         // Team-Mitglieder fuer den Approver-Picker
         $team = \Platform\Core\Models\Team::find($event->team_id);
         $teamUsers = $team
@@ -591,6 +656,7 @@ class Quotes extends Component
             'positions'      => $positions,
             'bausteine'      => $bausteine,
             'articleMatches' => $articleMatches,
+            'articlePackages'=> $articlePackages,
             'teamUsers'      => $teamUsers,
             'currentUserId'  => Auth::id(),
         ]);
