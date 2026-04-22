@@ -336,7 +336,7 @@
                             @if($event->status_changed_at)
                                 <span class="flex items-center gap-1 text-slate-400">
                                     @svg('heroicon-o-arrow-path', 'w-3 h-3')
-                                    {{ $event->status_changed_at->locale('de')->diffForHumans() }}
+                                    {{ $event->status_changed_at->diffForHumans() }}
                                 </span>
                             @endif
                         </div>

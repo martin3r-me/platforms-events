@@ -28,7 +28,7 @@
         </div>
         <span class="text-[0.62rem] text-[var(--ui-muted)] font-mono">
             @if($lastChange)
-                Letzte Änderung: {{ $lastChange->locale('de')->diffForHumans() }}
+                Letzte Änderung: {{ $lastChange->diffForHumans() }}
             @endif
         </span>
     </div>
@@ -71,7 +71,7 @@
                     @forelse($items as $a)
                         <div class="flex justify-between items-center gap-2">
                             <span class="text-[0.65rem] text-slate-700 truncate">{{ $a->description }}</span>
-                            <span class="text-[0.6rem] text-[var(--ui-muted)] font-mono flex-shrink-0">{{ $a->created_at->locale('de')->diffForHumans(null, true) }}</span>
+                            <span class="text-[0.6rem] text-[var(--ui-muted)] font-mono flex-shrink-0">{{ $a->created_at->diffForHumans(null, true) }}</span>
                         </div>
                     @empty
                         <div class="text-[0.62rem] text-[var(--ui-muted)] italic">Noch keine Aktivitäten</div>
