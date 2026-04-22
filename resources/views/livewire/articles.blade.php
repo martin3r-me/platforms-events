@@ -277,8 +277,10 @@
             <form wire:submit.prevent="saveArticle" class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-[140px_1fr_140px] gap-3">
                     <div>
-                        <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Art.-Nr. *</label>
-                        <input wire:model="articleNumber" type="text" class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Art.-Nr.</label>
+                        <input wire:model="articleNumber" type="text" readonly
+                               placeholder="wird automatisch vergeben"
+                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono bg-slate-50 text-slate-500 cursor-not-allowed focus:outline-none">
                         @error('articleNumber') <p class="mt-1 text-[0.62rem] text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div>

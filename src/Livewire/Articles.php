@@ -29,7 +29,7 @@ class Articles extends Component
     #[Validate('required|string|max:500')]
     public string $articleName = '';
 
-    #[Validate('required|string|max:30')]
+    #[Validate('nullable|string|max:30')]
     public string $articleNumber = '';
 
     #[Validate('nullable|string|max:100')]
@@ -167,7 +167,7 @@ class Articles extends Component
     {
         $data = $this->validate([
             'articleName'          => 'required|string|max:500',
-            'articleNumber'        => 'required|string|max:30',
+            'articleNumber'        => 'nullable|string|max:30',
             'articleExternalCode'  => 'nullable|string|max:100',
             'articleGroupId'       => 'nullable|integer',
             'articleDescription'   => 'nullable|string',
@@ -184,9 +184,21 @@ class Articles extends Component
         $user = Auth::user();
         $team = $user->currentTeam;
 
+        // Artikel-Nr. automatisch vergeben, falls nicht gesetzt.
+        // Fortlaufend pro Team: "ART-" + (max+1).
+        $articleNumber = trim((string) $this->articleNumber);
+        if ($articleNumber === '') {
+            $next = (int) Article::where('team_id', $team->id)
+                ->where('article_number', 'like', 'ART-%')
+                ->get()
+                ->map(fn ($a) => (int) preg_replace('/[^0-9]/', '', (string) $a->article_number))
+                ->max();
+            $articleNumber = 'ART-' . str_pad((string) (($next ?: 0) + 1), 5, '0', STR_PAD_LEFT);
+        }
+
         $payload = [
             'article_group_id'  => $this->articleGroupId,
-            'article_number'    => $this->articleNumber,
+            'article_number'    => $articleNumber,
             'external_code'     => $this->articleExternalCode,
             'name'              => $this->articleName,
             'description'       => $this->articleDescription,
