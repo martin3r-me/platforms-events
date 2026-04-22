@@ -286,7 +286,7 @@
 
     <x-ui-page-container>
         {{-- Abstand zur Navbar --}}
-        <div aria-hidden="true" style="height: 0.75rem;"></div>
+        <div aria-hidden="true" style="height: 0.375rem;"></div>
 
         {{-- Header --}}
         <div class="mb-4 bg-white border border-[var(--ui-border)] rounded-lg px-4 py-3.5"
