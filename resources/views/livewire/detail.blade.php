@@ -285,22 +285,6 @@
     </x-slot>
 
     <x-ui-page-container>
-        <x-ui-page-actionbar :breadcrumbs="[
-            ['label' => 'Events', 'route' => 'events.dashboard'],
-            ['label' => 'Veranstaltungen', 'route' => 'events.manage'],
-            ['label' => $event->event_number],
-        ]">
-            <x-ui-button variant="secondary-outline" size="sm" wire:click="duplicate"
-                         wire:confirm="Veranstaltung „{{ $event->name }}“ als Kopie anlegen?">
-                <span class="flex items-center gap-2">
-                    @svg('heroicon-o-document-duplicate', 'w-4 h-4')
-                    Duplizieren
-                </span>
-            </x-ui-button>
-        </x-ui-page-actionbar>
-
-        {{-- Spacer zur Breadcrumb-Leiste --}}
-        <div aria-hidden="true" style="height:0.625rem;"></div>
 
         {{-- Header --}}
         <div class="mb-4 bg-white border border-[var(--ui-border)] rounded-lg px-4 py-3.5"
