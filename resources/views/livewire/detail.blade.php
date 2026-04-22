@@ -296,24 +296,6 @@
             .events-detail-page section > header + div {
                 padding-top: 0.5rem !important;
             }
-            /* Farblicher Strich links vor dem Panel-Titel (wie in Basis-Tab) */
-            .events-detail-page section > header h3 {
-                display: flex !important;
-                align-items: center !important;
-                gap: 0.5rem !important;
-                padding-left: 0 !important;
-                line-height: 1.1 !important;
-            }
-            .events-detail-page section > header h3::before {
-                content: "" !important;
-                display: inline-block !important;
-                width: 4px !important;
-                height: 1rem !important;
-                min-height: 16px !important;
-                border-radius: 9999px !important;
-                background: #3b82f6 !important;
-                flex-shrink: 0 !important;
-            }
         </style>
         <div class="events-detail-page">
         {{-- Abstand zur Navbar --}}
@@ -384,11 +366,27 @@
         @if($activeTab === 'details')
             <div class="pt-1 space-y-4">
 
-                <x-ui-panel title="Interne Infos" subtitle="Nur intern sichtbar, nicht auf Kunden-PDFs">
-                    @include('events::partials.note-stream', ['type' => 'intern', 'notes' => $notesByType->get('intern', collect())])
+                <x-ui-panel>
+                    <div class="flex items-center gap-2 px-4 pt-3 pb-1">
+                        <span class="w-1 h-4 rounded-full bg-blue-500 flex-shrink-0"></span>
+                        <div class="min-w-0">
+                            <h3 class="text-[0.82rem] font-bold text-[var(--ui-secondary)] m-0 leading-tight">Interne Infos</h3>
+                            <div class="text-[0.65rem] text-[var(--ui-muted)] mt-0.5">Nur intern sichtbar, nicht auf Kunden-PDFs</div>
+                        </div>
+                    </div>
+                    <div class="px-4 pb-4">
+                        @include('events::partials.note-stream', ['type' => 'intern', 'notes' => $notesByType->get('intern', collect())])
+                    </div>
                 </x-ui-panel>
 
-                    <x-ui-panel title="Projektverantwortung" subtitle="Unterschriften-Namen + digitale Freigabe">
+                    <x-ui-panel>
+                        <div class="flex items-center gap-2 px-4 pt-3 pb-1">
+                            <span class="w-1 h-4 rounded-full bg-blue-500 flex-shrink-0"></span>
+                            <div class="min-w-0">
+                                <h3 class="text-[0.82rem] font-bold text-[var(--ui-secondary)] m-0 leading-tight">Projektverantwortung</h3>
+                                <div class="text-[0.65rem] text-[var(--ui-muted)] mt-0.5">Unterschriften-Namen + digitale Freigabe</div>
+                            </div>
+                        </div>
                         <div class="p-5 space-y-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
@@ -664,7 +662,14 @@
         {{-- ================= Tab: Räume (Buchungen) – Inline-Edit ================= --}}
         @if($activeTab === 'buchungen')
             <div class="pt-1 space-y-4">
-                <x-ui-panel title="Räume" subtitle="{{ $bookings->count() }} Buchung(en)">
+                <x-ui-panel>
+                    <div class="flex items-center gap-2 px-4 pt-3 pb-1">
+                        <span class="w-1 h-4 rounded-full bg-blue-500 flex-shrink-0"></span>
+                        <div class="min-w-0">
+                            <h3 class="text-[0.82rem] font-bold text-[var(--ui-secondary)] m-0 leading-tight">Räume</h3>
+                            <div class="text-[0.65rem] text-[var(--ui-muted)] mt-0.5">{{ $bookings->count() }} Buchung(en)</div>
+                        </div>
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="w-full border-collapse text-xs">
                             <thead>
@@ -851,7 +856,15 @@
         {{-- ================= Tab: Ablauf – Inline-Edit ================= --}}
         @if($activeTab === 'ablauf')
             <div class="pt-1 space-y-4">
-                <x-ui-panel title="Ablaufplan" subtitle="{{ $schedule->count() }} Eintrag/Einträge">
+                <x-ui-panel>
+                    <div class="flex items-center gap-2 px-4 pt-3 pb-1">
+                        <span class="w-1 h-4 rounded-full bg-blue-500 flex-shrink-0"></span>
+                        <div class="min-w-0">
+                            <h3 class="text-[0.82rem] font-bold text-[var(--ui-secondary)] m-0 leading-tight">Ablaufplan</h3>
+                            <div class="text-[0.65rem] text-[var(--ui-muted)] mt-0.5">{{ $schedule->count() }} Eintrag/Einträge</div>
+                        </div>
+                    </div>
+
                     <div class="overflow-x-auto">
                         <table class="w-full border-collapse text-xs">
                             <thead>
