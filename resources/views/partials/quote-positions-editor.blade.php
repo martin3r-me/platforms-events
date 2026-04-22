@@ -52,6 +52,20 @@
             <span class="text-[0.6rem] text-[var(--ui-muted)]">· {{ $totalArticles }} Artikel · {{ $fmt($totalGesamt) }} €</span>
         </div>
         <div class="flex items-center gap-2">
+            <button wire:click="convertQuoteItemToOrder({{ $activeItem->id }})"
+                    wire:confirm="Vorgang „{{ $activeItem->typ }}" mit allen Positionen in Bestellung überführen?"
+                    class="flex items-center gap-1 px-2 py-1 rounded border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 text-[0.6rem] font-bold cursor-pointer"
+                    title="Angebots-Vorgang als Bestell-Vorgang kopieren">
+                @svg('heroicon-o-arrows-right-left', 'w-3 h-3')
+                In Bestellung
+            </button>
+            <button wire:click="syncQuoteItemToOrder({{ $activeItem->id }})"
+                    wire:confirm="Bestellung mit aktuellen Angebots-Positionen aktualisieren?"
+                    class="flex items-center gap-1 px-2 py-1 rounded border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[0.6rem] font-bold cursor-pointer"
+                    title="Bestehende Bestellung synchronisieren">
+                @svg('heroicon-o-arrow-path', 'w-3 h-3')
+                Sync
+            </button>
             <label class="text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Status</label>
             <select wire:change="updateItemStatus($event.target.value)"
                     class="border border-slate-200 rounded-md px-2 py-1 text-[0.65rem] bg-white cursor-pointer font-semibold">
@@ -61,6 +75,11 @@
             </select>
         </div>
     </div>
+    @if(session('quoteSyncError'))
+        <div class="px-4 py-2 bg-amber-50 border-b border-amber-200 text-[0.68rem] text-amber-700">
+            {{ session('quoteSyncError') }}
+        </div>
+    @endif
 
     {{-- Positions-Tabelle --}}
     <div class="overflow-x-auto">

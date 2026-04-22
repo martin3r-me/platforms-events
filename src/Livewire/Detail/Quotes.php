@@ -8,6 +8,8 @@ use Livewire\Component;
 use Platform\Events\Models\Article;
 use Platform\Events\Models\ArticlePackage;
 use Platform\Events\Models\Event;
+use Platform\Events\Models\OrderItem;
+use Platform\Events\Models\OrderPosition;
 use Platform\Events\Models\Quote;
 use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\QuotePosition;
@@ -653,6 +655,140 @@ class Quotes extends Component
         $tmp = $pos->sort_order;
         $pos->update(['sort_order' => $neighbor->sort_order]);
         $neighbor->update(['sort_order' => $tmp]);
+    }
+
+    /**
+     * Konvertiert einen QuoteItem (Angebots-Vorgang) in einen OrderItem
+     * (Bestell-Vorgang) inkl. aller Positionen. Bei Typ-Konflikt am selben Tag
+     * wird ein Suffix "(2)", "(3)" angehaengt.
+     */
+    public function convertQuoteItemToOrder(int $quoteItemId): void
+    {
+        $event = $this->event();
+        $quoteItem = QuoteItem::with('posList')
+            ->whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))
+            ->find($quoteItemId);
+        if (!$quoteItem) return;
+
+        $dayId = $quoteItem->event_day_id;
+
+        // Dedupe typ: "Speisen" -> "Speisen (2)" falls schon existiert
+        $baseTyp = (string) $quoteItem->typ;
+        $existingTyps = OrderItem::where('event_day_id', $dayId)->pluck('typ')->toArray();
+        $typ = $baseTyp;
+        $counter = 2;
+        while (in_array($typ, $existingTyps, true)) {
+            $typ = $baseTyp . ' (' . $counter . ')';
+            $counter++;
+        }
+
+        $maxSort = (int) OrderItem::where('event_day_id', $dayId)->max('sort_order');
+
+        $orderItem = OrderItem::create([
+            'team_id'      => $event->team_id,
+            'user_id'      => Auth::id(),
+            'event_day_id' => $dayId,
+            'typ'          => $typ,
+            'status'       => 'Offen',
+            'lieferant'    => '',
+            'artikel'      => (int) $quoteItem->artikel,
+            'positionen'   => (int) $quoteItem->positionen,
+            'einkauf'      => 0,
+            'sort_order'   => $maxSort + 1,
+        ]);
+
+        foreach ($quoteItem->posList as $pos) {
+            OrderPosition::create([
+                'team_id'       => $event->team_id,
+                'user_id'       => Auth::id(),
+                'order_item_id' => $orderItem->id,
+                'gruppe'        => $pos->gruppe,
+                'name'          => $pos->name,
+                'anz'           => $pos->anz,
+                'anz2'          => $pos->anz2,
+                'uhrzeit'       => $pos->uhrzeit,
+                'bis'           => $pos->bis,
+                'inhalt'        => $pos->inhalt,
+                'gebinde'       => $pos->gebinde,
+                'basis_ek'      => $pos->basis_ek,
+                'ek'            => $pos->ek,
+                'preis'         => $pos->preis,
+                'mwst'          => $pos->mwst,
+                'gesamt'        => $pos->gesamt,
+                'bemerkung'     => $pos->bemerkung,
+                'sort_order'    => $pos->sort_order,
+            ]);
+        }
+
+        $this->syncOrderItemSummary($orderItem);
+        ActivityLogger::log($event, 'quote', 'Vorgang "' . $baseTyp . '" in Bestellung ueberfuehrt');
+    }
+
+    /**
+     * Synchronisiert einen bestehenden OrderItem mit den aktuellen Positionen
+     * des QuoteItem. Matching via exakter Typ oder Basis-Typ + "(N)"-Suffix.
+     * Bestehende OrderPositions werden geloescht und neu angelegt.
+     */
+    public function syncQuoteItemToOrder(int $quoteItemId): void
+    {
+        $event = $this->event();
+        $quoteItem = QuoteItem::with('posList')
+            ->whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))
+            ->find($quoteItemId);
+        if (!$quoteItem) return;
+
+        $dayId = $quoteItem->event_day_id;
+        $baseTyp = preg_replace('/\s*\(\d+\)$/', '', (string) $quoteItem->typ);
+
+        $orderItem = OrderItem::where('event_day_id', $dayId)
+            ->where(function ($q) use ($quoteItem, $baseTyp) {
+                $q->where('typ', $quoteItem->typ)
+                  ->orWhere('typ', $baseTyp)
+                  ->orWhere('typ', 'like', $baseTyp . ' (%');
+            })
+            ->first();
+
+        if (!$orderItem) {
+            session()->flash('quoteSyncError', 'Kein passender Bestell-Vorgang gefunden. Bitte zuerst "In Bestellung" ausfuehren.');
+            return;
+        }
+
+        $orderItem->posList()->delete();
+
+        foreach ($quoteItem->posList as $pos) {
+            OrderPosition::create([
+                'team_id'       => $event->team_id,
+                'user_id'       => Auth::id(),
+                'order_item_id' => $orderItem->id,
+                'gruppe'        => $pos->gruppe,
+                'name'          => $pos->name,
+                'anz'           => $pos->anz,
+                'anz2'          => $pos->anz2,
+                'uhrzeit'       => $pos->uhrzeit,
+                'bis'           => $pos->bis,
+                'inhalt'        => $pos->inhalt,
+                'gebinde'       => $pos->gebinde,
+                'basis_ek'      => $pos->basis_ek,
+                'ek'            => $pos->ek,
+                'preis'         => $pos->preis,
+                'mwst'          => $pos->mwst,
+                'gesamt'        => $pos->gesamt,
+                'bemerkung'     => $pos->bemerkung,
+                'sort_order'    => $pos->sort_order,
+            ]);
+        }
+
+        $this->syncOrderItemSummary($orderItem);
+        ActivityLogger::log($event, 'quote', 'Bestellung "' . $orderItem->typ . '" mit Angebot synchronisiert');
+    }
+
+    protected function syncOrderItemSummary(OrderItem $item): void
+    {
+        $positions = $item->posList()->get();
+        $item->update([
+            'positionen' => $positions->where('gesamt', '>', 0)->count(),
+            'einkauf'    => (float) $positions->sum('ek'),
+        ]);
     }
 
     public function deletePosition(int $positionId): void

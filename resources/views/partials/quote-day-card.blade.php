@@ -91,11 +91,27 @@
                         @else
                             <span></span>
                         @endif
-                        <button wire:click="openPositions({{ $v->id }})"
-                                class="text-[0.62rem] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-transparent border-0 cursor-pointer">
-                            Öffnen
-                            @svg('heroicon-o-chevron-right', 'w-2.5 h-2.5')
-                        </button>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <button wire:click="convertQuoteItemToOrder({{ $v->id }})"
+                                    wire:confirm="Vorgang „{{ $v->typ }}" mit allen Positionen in Bestellung überführen?"
+                                    class="text-[0.6rem] font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1 bg-transparent border-0 cursor-pointer"
+                                    title="Alle Positionen als Bestell-Vorgang kopieren">
+                                @svg('heroicon-o-arrows-right-left', 'w-2.5 h-2.5')
+                                In Bestellung
+                            </button>
+                            <button wire:click="syncQuoteItemToOrder({{ $v->id }})"
+                                    wire:confirm="Bestellung für „{{ $v->typ }}" mit aktuellen Angebots-Positionen aktualisieren?"
+                                    class="text-[0.6rem] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-transparent border-0 cursor-pointer"
+                                    title="Existierende Bestellung mit aktuellem Angebot synchronisieren">
+                                @svg('heroicon-o-arrow-path', 'w-2.5 h-2.5')
+                                Sync
+                            </button>
+                            <button wire:click="openPositions({{ $v->id }})"
+                                    class="text-[0.62rem] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-transparent border-0 cursor-pointer">
+                                Öffnen
+                                @svg('heroicon-o-chevron-right', 'w-2.5 h-2.5')
+                            </button>
+                        </div>
                     </div>
                 </div>
             @endforeach
