@@ -503,12 +503,68 @@
                 <div class="bg-[var(--ui-muted-5)] rounded-md p-3 space-y-2">
                     <p class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Neuer Eintrag</p>
                     <div class="grid grid-cols-6 gap-2">
-                        <div class="col-span-2">
-                            <input wire:model="newPackageItem.name" type="text" placeholder="Name"
+                        {{-- Name mit Artikel-Suche --}}
+                        <div class="col-span-2 relative" x-data="{ showArticles: false }">
+                            <input wire:model.live.debounce.300ms="newPackageItem.name" type="text"
+                                   placeholder="Name / Artikel suchen"
+                                   @focus="showArticles = true"
+                                   @click.outside="showArticles = false"
                                    class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            @if(($packageArticleMatches ?? collect())->isNotEmpty())
+                                <div x-show="showArticles" x-cloak
+                                     class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded shadow-lg z-50 max-h-64 overflow-y-auto min-w-[320px]">
+                                    @foreach($packageArticleMatches as $art)
+                                        <button type="button"
+                                                wire:click="pickArticleForPackageItem({{ $art->id }})"
+                                                @click="showArticles = false"
+                                                class="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-slate-50 transition border-0 bg-transparent cursor-pointer">
+                                            <span class="text-[0.58rem] font-mono font-bold text-slate-500 min-w-[70px] flex-shrink-0">{{ $art->article_number }}</span>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="text-[0.7rem] text-slate-700 truncate">{{ $art->name }}</div>
+                                                @if($art->gebinde)
+                                                    <div class="text-[0.58rem] text-slate-400">{{ $art->gebinde }}</div>
+                                                @endif
+                                            </div>
+                                            @if($art->vk > 0)
+                                                <span class="text-[0.62rem] font-mono text-slate-500 flex-shrink-0">{{ number_format($art->vk, 2, ',', '.') }} €</span>
+                                            @endif
+                                        </button>
+                                    @endforeach
+                                </div>
+                            @endif
                         </div>
-                        <input wire:model="newPackageItem.gruppe" type="text" placeholder="Gruppe"
-                               class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+
+                        {{-- Gruppe mit Baustein-Picker --}}
+                        <div class="relative" x-data="{ showBausteine: false }">
+                            <div class="flex gap-1">
+                                <input wire:model="newPackageItem.gruppe" type="text" placeholder="Gruppe"
+                                       class="flex-1 min-w-0 border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                @if(!empty($bausteine))
+                                    <button type="button" @click="showBausteine = !showBausteine"
+                                            class="px-2 rounded border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[0.6rem] font-bold cursor-pointer flex-shrink-0"
+                                            title="Baustein wählen">
+                                        @svg('heroicon-o-rectangle-stack', 'w-3 h-3')
+                                    </button>
+                                @endif
+                            </div>
+                            @if(!empty($bausteine))
+                                <div x-show="showBausteine" x-cloak
+                                     @click.outside="showBausteine = false"
+                                     class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded p-1 shadow-lg z-50 min-w-[160px]">
+                                    @foreach($bausteine as $b)
+                                        <button type="button"
+                                                wire:click="$set('newPackageItem.gruppe', @js($b['name'] ?? ''))"
+                                                @click="showBausteine = false"
+                                                class="flex items-center gap-2 w-full px-2.5 py-1.5 rounded hover:bg-slate-50 text-left text-[0.65rem] font-medium text-slate-700 border-0 bg-transparent cursor-pointer">
+                                            <span class="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                                                  style="background: {{ $b['bg'] ?? '#f8fafc' }}; border: 1px solid {{ $b['text'] ?? '#64748b' }};"></span>
+                                            <span>{{ $b['name'] ?? '' }}</span>
+                                        </button>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+
                         <input wire:model="newPackageItem.quantity" type="number" placeholder="Anz"
                                class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                         <input wire:model="newPackageItem.gebinde" type="text" placeholder="Gebinde"
