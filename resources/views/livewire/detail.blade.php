@@ -298,7 +298,6 @@
                     <div class="min-w-0">
                         <div class="flex items-center gap-2 flex-wrap">
                             <h1 class="text-base font-bold text-[var(--ui-secondary)] truncate m-0 leading-tight">{{ $event->name ?: $event->event_number }}</h1>
-                            <span class="text-[0.62rem] font-bold font-mono text-[var(--ui-primary)] flex-shrink-0">{{ $event->event_number }}</span>
                         </div>
                         <div class="mt-0.5 flex items-center gap-2.5 text-[0.65rem] text-[var(--ui-muted)] flex-wrap leading-tight">
                             @if($event->start_date)
@@ -328,14 +327,19 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 flex-shrink-0">
-                    <span class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Status</span>
-                    <select wire:change="setStatus($event.target.value); $event.target.blur()"
-                            class="border border-[var(--ui-border)] rounded-md px-2.5 py-1 text-[0.72rem] font-semibold bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30 {{ $statusClass }}">
-                        @foreach($statusOptions as $s)
-                            <option value="{{ $s }}" @if($currentStatus === $s) selected @endif>{{ $s }}</option>
-                        @endforeach
-                    </select>
+                <div class="flex items-center gap-3 flex-shrink-0">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-md border border-[var(--ui-border)] bg-[var(--ui-muted-5)] text-[0.72rem] font-bold font-mono text-[var(--ui-primary)]">
+                        {{ $event->event_number }}
+                    </span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Status</span>
+                        <select wire:change="setStatus($event.target.value); $event.target.blur()"
+                                class="border border-[var(--ui-border)] rounded-md px-2.5 py-1 text-[0.72rem] font-semibold bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30 {{ $statusClass }}">
+                            @foreach($statusOptions as $s)
+                                <option value="{{ $s }}" @if($currentStatus === $s) selected @endif>{{ $s }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
