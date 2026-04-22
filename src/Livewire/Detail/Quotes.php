@@ -494,7 +494,7 @@ class Quotes extends Component
 
         if ($created > 0) {
             $this->recalculateItem($item);
-            ActivityLogger::log($event, 'quote', "Vorlage „{$package->name}" eingefuegt ({$created} Positionen)");
+            ActivityLogger::log($event, 'quote', 'Vorlage "' . $package->name . '" eingefuegt (' . $created . ' Positionen)');
         }
     }
 
