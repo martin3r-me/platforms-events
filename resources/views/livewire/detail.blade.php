@@ -286,10 +286,15 @@
 
     <x-ui-page-container background="bg-slate-100">
         <style>
-            /* Panel-Header ohne Trennlinie, damit die Kachel oben und unten
-               gleichmaessig geschlossen wirkt (Events-Modul scope). */
+            /* Panel-Header ohne Trennlinie + engerer Abstand zwischen Header
+               und Body, damit die Kachel oben und unten gleichmaessig
+               geschlossen wirkt (Events-Modul scope). */
             .events-detail-page section > header {
                 border-bottom: 0 !important;
+                padding-bottom: 0.25rem !important;
+            }
+            .events-detail-page section > header + div {
+                padding-top: 0.5rem !important;
             }
         </style>
         <div class="events-detail-page">
