@@ -87,25 +87,96 @@
                     @php
                         $rs = $rowInlineStyle((string) $p->gruppe);
                         $text = $isBaustein((string) $p->gruppe);
+                        $inp = 'w-full border border-transparent hover:border-slate-200 focus:border-[var(--ui-primary)]/60 rounded px-1 py-0.5 text-[0.65rem] bg-transparent focus:bg-white';
                     @endphp
-                    <tr class="border-b border-slate-100 hover:bg-slate-50/40" style="{{ $rs['style'] }}">
-                        <td class="py-1.5 px-2.5 text-slate-600">{{ $p->gruppe }}</td>
-                        <td class="py-1.5 px-2" style="{{ $rs['nameStyle'] ?: '' }}">{{ $p->name }}</td>
-                        <td class="py-1.5 px-1.5 text-right font-mono">{{ $text ? '' : $p->anz }}</td>
-                        <td class="py-1.5 px-1.5 text-right font-mono text-slate-500">{{ $text ? '' : $p->anz2 }}</td>
-                        <td class="py-1.5 px-1.5 font-mono text-slate-500">{{ $text ? '' : $p->uhrzeit }}</td>
-                        <td class="py-1.5 px-1.5 font-mono text-slate-500">{{ $text ? '' : $p->bis }}</td>
-                        <td class="py-1.5 px-1.5 text-slate-500">{{ $text ? '' : $p->gebinde }}</td>
-                        <td class="py-1.5 px-1.5 text-right font-mono text-slate-400">{{ $text ? '' : ($p->ek ? $fmt($p->ek) : '') }}</td>
-                        <td class="py-1.5 px-1.5 text-right font-mono font-semibold">{{ $text ? '' : $fmt($p->preis) }}</td>
-                        <td class="py-1.5 px-1.5 text-center text-slate-500">{{ $text ? '' : $p->mwst }}</td>
-                        <td class="py-1.5 px-1.5 text-right font-mono font-bold text-green-700">{{ $text ? '' : $fmt($p->gesamt) }}</td>
-                        <td class="py-1.5 px-1.5 text-slate-500 italic truncate max-w-[200px]" title="{{ $p->bemerkung }}">{{ $p->bemerkung }}</td>
-                        <td class="py-1.5 px-1.5">
-                            <button wire:click="deletePosition({{ $p->id }})" wire:confirm="Position löschen?"
-                                    class="text-red-500 hover:text-red-700">
-                                @svg('heroicon-o-trash', 'w-3 h-3')
-                            </button>
+                    <tr wire:key="pos-{{ $p->id }}" class="border-b border-slate-100 hover:bg-slate-50/40 group" style="{{ $rs['style'] }}">
+                        <td class="py-1 px-2">
+                            <input type="text" value="{{ $p->gruppe }}"
+                                   x-data @blur="if ($el.value !== @js($p->gruppe)) $wire.updatePositionField({{ $p->id }}, 'gruppe', $el.value)"
+                                   class="{{ $inp }} text-slate-600">
+                        </td>
+                        <td class="py-1 px-1.5">
+                            <input type="text" value="{{ $p->name }}"
+                                   x-data @blur="if ($el.value !== @js($p->name)) $wire.updatePositionField({{ $p->id }}, 'name', $el.value)"
+                                   style="{{ $rs['nameStyle'] ?: '' }}"
+                                   class="{{ $inp }}">
+                        </td>
+                        <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
+                            <input type="text" value="{{ $p->anz }}"
+                                   x-data @blur="if ($el.value !== @js((string)$p->anz)) $wire.updatePositionField({{ $p->id }}, 'anz', $el.value)"
+                                   class="{{ $inp }} font-mono text-right">
+                        </td>
+                        <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
+                            <input type="text" value="{{ $p->anz2 }}"
+                                   x-data @blur="if ($el.value !== @js((string)$p->anz2)) $wire.updatePositionField({{ $p->id }}, 'anz2', $el.value)"
+                                   class="{{ $inp }} font-mono text-right text-slate-500">
+                        </td>
+                        <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
+                            <input type="text" value="{{ $p->uhrzeit }}" maxlength="5" inputmode="numeric"
+                                   x-data="{ invalid: false }"
+                                   x-on:input="let v = $el.value.replace(/[^0-9]/g,'').substring(0,4); if (v.length >= 3) v = v.substring(0,2)+':'+v.substring(2); $el.value = v; invalid = false;"
+                                   x-on:blur="const v = $el.value.trim(); invalid = v !== '' && !/^([01]?\d|2[0-3]):[0-5]\d$/.test(v); if (v !== @js((string)$p->uhrzeit)) $wire.updatePositionField({{ $p->id }}, 'uhrzeit', v)"
+                                   :class="invalid ? 'ring-1 ring-red-500 border-red-500 bg-red-50' : ''"
+                                   class="{{ $inp }} font-mono text-slate-500">
+                        </td>
+                        <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
+                            <input type="text" value="{{ $p->bis }}" maxlength="5" inputmode="numeric"
+                                   x-data="{ invalid: false }"
+                                   x-on:input="let v = $el.value.replace(/[^0-9]/g,'').substring(0,4); if (v.length >= 3) v = v.substring(0,2)+':'+v.substring(2); $el.value = v; invalid = false;"
+                                   x-on:blur="const v = $el.value.trim(); invalid = v !== '' && !/^([01]?\d|2[0-3]):[0-5]\d$/.test(v); if (v !== @js((string)$p->bis)) $wire.updatePositionField({{ $p->id }}, 'bis', v)"
+                                   :class="invalid ? 'ring-1 ring-red-500 border-red-500 bg-red-50' : ''"
+                                   class="{{ $inp }} font-mono text-slate-500">
+                        </td>
+                        <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
+                            <input type="text" value="{{ $p->gebinde }}"
+                                   x-data @blur="if ($el.value !== @js((string)$p->gebinde)) $wire.updatePositionField({{ $p->id }}, 'gebinde', $el.value)"
+                                   class="{{ $inp }} text-slate-500">
+                        </td>
+                        <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
+                            <input type="number" step="0.01" value="{{ $p->ek }}"
+                                   x-data @blur="if (parseFloat($el.value) !== parseFloat(@js((string)$p->ek))) $wire.updatePositionField({{ $p->id }}, 'ek', $el.value)"
+                                   class="{{ $inp }} font-mono text-right text-slate-400">
+                        </td>
+                        <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
+                            <input type="number" step="0.01" value="{{ $p->preis }}"
+                                   x-data @blur="if (parseFloat($el.value) !== parseFloat(@js((string)$p->preis))) $wire.updatePositionField({{ $p->id }}, 'preis', $el.value)"
+                                   class="{{ $inp }} font-mono text-right font-semibold">
+                        </td>
+                        <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
+                            <select x-data @change="$wire.updatePositionField({{ $p->id }}, 'mwst', $el.value)"
+                                    class="{{ $inp }} text-center text-slate-500">
+                                @foreach(['0%','7%','19%'] as $m)
+                                    <option value="{{ $m }}" @selected($p->mwst === $m)>{{ $m }}</option>
+                                @endforeach
+                            </select>
+                        </td>
+                        <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
+                            <input type="number" step="0.01" value="{{ $p->gesamt }}"
+                                   x-data @blur="if (parseFloat($el.value) !== parseFloat(@js((string)$p->gesamt))) $wire.updatePositionField({{ $p->id }}, 'gesamt', $el.value)"
+                                   class="{{ $inp }} font-mono text-right font-bold text-green-700">
+                        </td>
+                        <td class="py-1 px-1">
+                            <input type="text" value="{{ $p->bemerkung }}"
+                                   x-data @blur="if ($el.value !== @js((string)$p->bemerkung)) $wire.updatePositionField({{ $p->id }}, 'bemerkung', $el.value)"
+                                   class="{{ $inp }} text-slate-500 italic">
+                        </td>
+                        <td class="py-1 px-1 whitespace-nowrap">
+                            <div class="flex items-center gap-0.5">
+                                <button wire:click="movePosition({{ $p->id }}, 'up')"
+                                        class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-700 p-0.5"
+                                        title="Nach oben">
+                                    @svg('heroicon-o-chevron-up', 'w-3 h-3')
+                                </button>
+                                <button wire:click="movePosition({{ $p->id }}, 'down')"
+                                        class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-700 p-0.5"
+                                        title="Nach unten">
+                                    @svg('heroicon-o-chevron-down', 'w-3 h-3')
+                                </button>
+                                <button wire:click="deletePosition({{ $p->id }})" wire:confirm="Position löschen?"
+                                        class="text-red-500 hover:text-red-700 p-0.5">
+                                    @svg('heroicon-o-trash', 'w-3 h-3')
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -205,63 +276,65 @@
                             @endif
 
                             {{-- Vorlage (ArticlePackage) einfuegen --}}
-                            @if(!empty($articlePackages) && count($articlePackages) > 0)
-                                <div x-data="{
-                                        open: false,
-                                        pos: { top: 0, left: 0 },
-                                        recalc() {
-                                            const r = this.$refs.trigger.getBoundingClientRect();
-                                            this.pos = { top: r.bottom + window.scrollY + 4, left: r.left + window.scrollX };
-                                        },
-                                        toggle() {
-                                            if (!this.open) this.recalc();
-                                            this.open = !this.open;
-                                        }
-                                     }"
-                                     @keydown.escape.window="open = false"
-                                     @resize.window="recalc()"
-                                     @scroll.window.passive="open = false"
-                                     class="relative">
-                                    <button type="button" x-ref="trigger" @click="toggle()"
-                                            class="flex items-center gap-1 px-2 py-0.5 rounded border border-purple-200 bg-white hover:bg-purple-50 text-purple-700 text-[0.6rem] font-bold cursor-pointer">
-                                        @svg('heroicon-o-rectangle-group', 'w-3 h-3')
-                                        Vorlage einfügen
-                                        <svg class="w-2 h-2 transition-transform" :class="open ? 'rotate-180' : ''"
-                                             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-                                        </svg>
-                                    </button>
-                                    <template x-teleport="body">
-                                        <div x-show="open" x-cloak
-                                             @click.outside="open = false"
-                                             :style="'position:absolute; top:' + pos.top + 'px; left:' + pos.left + 'px; z-index:9999; min-width:260px;'"
-                                             class="bg-white border border-slate-200 rounded-md p-1 shadow-xl max-h-72 overflow-y-auto">
-                                            @foreach($articlePackages as $pkg)
-                                                <button type="button"
-                                                        wire:click="applyPackage({{ $pkg->id }})"
-                                                        @click="open = false"
-                                                        class="flex items-start gap-2 w-full px-2.5 py-1.5 rounded hover:bg-slate-50 text-left text-[0.65rem] font-medium text-slate-700 border-0 bg-transparent cursor-pointer">
-                                                    <span class="w-2.5 h-2.5 rounded-sm mt-0.5 flex-shrink-0"
-                                                          style="background: {{ $pkg->color ?: '#8b5cf6' }};"></span>
-                                                    <div class="flex-1 min-w-0">
-                                                        <div class="truncate">{{ $pkg->name }}</div>
-                                                        @if($pkg->description)
-                                                            <div class="text-[0.55rem] text-slate-400 truncate">{{ $pkg->description }}</div>
-                                                        @endif
-                                                    </div>
-                                                </button>
-                                            @endforeach
-                                            <div class="border-t border-slate-100 mt-1 pt-1">
-                                                <a href="{{ route('events.articles') }}"
-                                                   class="flex items-center gap-1.5 px-2.5 py-1.5 text-[0.6rem] text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded no-underline">
-                                                    @svg('heroicon-o-cog-6-tooth', 'w-3 h-3')
-                                                    Vorlagen verwalten
-                                                </a>
+                            <div x-data="{
+                                    open: false,
+                                    pos: { top: 0, left: 0 },
+                                    recalc() {
+                                        const r = this.$refs.trigger.getBoundingClientRect();
+                                        this.pos = { top: r.bottom + window.scrollY + 4, left: r.left + window.scrollX };
+                                    },
+                                    toggle() {
+                                        if (!this.open) this.recalc();
+                                        this.open = !this.open;
+                                    }
+                                 }"
+                                 @keydown.escape.window="open = false"
+                                 @resize.window="recalc()"
+                                 @scroll.window.passive="open = false"
+                                 class="relative">
+                                <button type="button" x-ref="trigger" @click="toggle()"
+                                        class="flex items-center gap-1 px-2 py-0.5 rounded border border-purple-200 bg-white hover:bg-purple-50 text-purple-700 text-[0.6rem] font-bold cursor-pointer">
+                                    @svg('heroicon-o-rectangle-group', 'w-3 h-3')
+                                    Vorlage einfügen
+                                    <svg class="w-2 h-2 transition-transform" :class="open ? 'rotate-180' : ''"
+                                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+                                <template x-teleport="body">
+                                    <div x-show="open" x-cloak
+                                         @click.outside="open = false"
+                                         :style="'position:absolute; top:' + pos.top + 'px; left:' + pos.left + 'px; z-index:9999; min-width:260px;'"
+                                         class="bg-white border border-slate-200 rounded-md p-1 shadow-xl max-h-72 overflow-y-auto">
+                                        @forelse(($articlePackages ?? collect()) as $pkg)
+                                            <button type="button"
+                                                    wire:click="applyPackage({{ $pkg->id }})"
+                                                    @click="open = false"
+                                                    class="flex items-start gap-2 w-full px-2.5 py-1.5 rounded hover:bg-slate-50 text-left text-[0.65rem] font-medium text-slate-700 border-0 bg-transparent cursor-pointer">
+                                                <span class="w-2.5 h-2.5 rounded-sm mt-0.5 flex-shrink-0"
+                                                      style="background: {{ $pkg->color ?: '#8b5cf6' }};"></span>
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="truncate">{{ $pkg->name }}</div>
+                                                    @if($pkg->description)
+                                                        <div class="text-[0.55rem] text-slate-400 truncate">{{ $pkg->description }}</div>
+                                                    @endif
+                                                </div>
+                                            </button>
+                                        @empty
+                                            <div class="px-2.5 py-2 text-[0.6rem] text-slate-400 text-center">
+                                                Noch keine Vorlagen angelegt.
                                             </div>
+                                        @endforelse
+                                        <div class="border-t border-slate-100 mt-1 pt-1">
+                                            <a href="{{ route('events.articles') }}"
+                                               class="flex items-center gap-1.5 px-2.5 py-1.5 text-[0.6rem] text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded no-underline">
+                                                @svg('heroicon-o-cog-6-tooth', 'w-3 h-3')
+                                                Vorlagen verwalten
+                                            </a>
                                         </div>
-                                    </template>
-                                </div>
-                            @endif
+                                    </div>
+                                </template>
+                            </div>
 
                             <span class="text-[0.55rem] text-slate-400 ml-auto">Baustein wählen oder Gruppe/Typ frei eingeben — Text-Zeilen ohne Preis.</span>
                         </div>

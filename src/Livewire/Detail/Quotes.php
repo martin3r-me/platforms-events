@@ -548,6 +548,82 @@ class Quotes extends Component
         $this->resetNewPosition();
     }
 
+    /**
+     * Aktualisiert ein einzelnes Feld einer bestehenden QuotePosition und
+     * rechnet abhaengige Felder (Gesamt, Anz2 bei Uhrzeit, Preis bei Gesamt) neu.
+     */
+    public function updatePositionField(int $positionId, string $field, $value): void
+    {
+        $allowed = ['gruppe','name','anz','anz2','uhrzeit','bis','gebinde','ek','preis','mwst','gesamt','bemerkung'];
+        if (!in_array($field, $allowed, true)) return;
+        if (!$this->activeItemId) return;
+
+        $pos = QuotePosition::where('quote_item_id', $this->activeItemId)->find($positionId);
+        if (!$pos) return;
+
+        $pos->{$field} = $value;
+
+        // Wenn sich eine Zeit aenderte: Anz2 neu aus Stunden-Differenz
+        if (in_array($field, ['uhrzeit', 'bis'], true)) {
+            $von = trim((string) $pos->uhrzeit);
+            $bis = trim((string) $pos->bis);
+            if ($von !== '' && $bis !== '') {
+                $h = $this->hoursDiff($von, $bis);
+                if ($h !== null) {
+                    $pos->anz2 = (string) (fmod($h, 1) == 0 ? (int) $h : round($h, 2));
+                }
+            }
+        }
+
+        // Gesamt = Anz * (Anz2 oder 1) * Preis, ausser wenn Gesamt direkt gesetzt wurde
+        if ($field !== 'gesamt' && in_array($field, ['anz','anz2','uhrzeit','bis','preis'], true)) {
+            $anz  = (float) $pos->anz;
+            $anz2 = (float) $pos->anz2;
+            $mult = $anz2 > 0 ? $anz * $anz2 : $anz;
+            if ($anz > 0 && (float) $pos->preis > 0) {
+                $pos->gesamt = round($mult * (float) $pos->preis, 2);
+            }
+        }
+
+        // Gesamt -> Preis rueckwaerts
+        if ($field === 'gesamt') {
+            $anz  = (float) $pos->anz;
+            $anz2 = (float) $pos->anz2;
+            $mult = $anz2 > 0 ? $anz * $anz2 : $anz;
+            if ($mult > 0) {
+                $pos->preis = round((float) $pos->gesamt / $mult, 2);
+            }
+        }
+
+        $pos->save();
+
+        $item = QuoteItem::find($this->activeItemId);
+        if ($item) $this->recalculateItem($item);
+    }
+
+    /**
+     * Verschiebt eine Position eins nach oben oder unten (swap sort_order).
+     */
+    public function movePosition(int $positionId, string $direction): void
+    {
+        if (!$this->activeItemId) return;
+        if (!in_array($direction, ['up', 'down'], true)) return;
+
+        $pos = QuotePosition::where('quote_item_id', $this->activeItemId)->find($positionId);
+        if (!$pos) return;
+
+        $neighbor = QuotePosition::where('quote_item_id', $this->activeItemId)
+            ->where('sort_order', $direction === 'up' ? '<' : '>', $pos->sort_order)
+            ->orderBy('sort_order', $direction === 'up' ? 'desc' : 'asc')
+            ->first();
+
+        if (!$neighbor) return;
+
+        $tmp = $pos->sort_order;
+        $pos->update(['sort_order' => $neighbor->sort_order]);
+        $neighbor->update(['sort_order' => $tmp]);
+    }
+
     public function deletePosition(int $positionId): void
     {
         if (!$this->activeItemId) return;
