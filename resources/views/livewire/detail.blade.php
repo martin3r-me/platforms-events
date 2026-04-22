@@ -285,18 +285,6 @@
     </x-slot>
 
     <x-ui-page-container background="bg-slate-100">
-        <style>
-            /* Panel-Header ohne Trennlinie + engerer Abstand zwischen Header
-               und Body, damit die Kachel oben und unten gleichmaessig
-               geschlossen wirkt (Events-Modul scope). */
-            .events-detail-page section > header {
-                border-bottom: 0 !important;
-                padding-bottom: 0.25rem !important;
-            }
-            .events-detail-page section > header + div {
-                padding-top: 0.5rem !important;
-            }
-        </style>
         <div class="events-detail-page">
         {{-- Abstand zur Navbar --}}
         <div aria-hidden="true" style="height: 0.375rem;"></div>
@@ -367,7 +355,7 @@
             <div class="pt-1 space-y-4">
 
                 <x-ui-panel>
-                    <div class="flex items-center gap-2 px-4 pt-3 pb-1">
+                    <div class="flex items-center gap-2 px-4 py-3 border-b border-[var(--ui-border)]">
                         <span class="w-1 h-4 rounded-full bg-blue-500 flex-shrink-0"></span>
                         <div class="min-w-0">
                             <h3 class="text-[0.82rem] font-bold text-[var(--ui-secondary)] m-0 leading-tight">Interne Infos</h3>
@@ -380,7 +368,7 @@
                 </x-ui-panel>
 
                     <x-ui-panel>
-                        <div class="flex items-center gap-2 px-4 pt-3 pb-1">
+                        <div class="flex items-center gap-2 px-4 py-3 border-b border-[var(--ui-border)]">
                             <span class="w-1 h-4 rounded-full bg-blue-500 flex-shrink-0"></span>
                             <div class="min-w-0">
                                 <h3 class="text-[0.82rem] font-bold text-[var(--ui-secondary)] m-0 leading-tight">Projektverantwortung</h3>
@@ -663,7 +651,7 @@
         @if($activeTab === 'buchungen')
             <div class="pt-1 space-y-4">
                 <x-ui-panel>
-                    <div class="flex items-center gap-2 px-4 pt-3 pb-1">
+                    <div class="flex items-center gap-2 px-4 py-3 border-b border-[var(--ui-border)]">
                         <span class="w-1 h-4 rounded-full bg-blue-500 flex-shrink-0"></span>
                         <div class="min-w-0">
                             <h3 class="text-[0.82rem] font-bold text-[var(--ui-secondary)] m-0 leading-tight">Räume</h3>
@@ -857,7 +845,7 @@
         @if($activeTab === 'ablauf')
             <div class="pt-1 space-y-4">
                 <x-ui-panel>
-                    <div class="flex items-center gap-2 px-4 pt-3 pb-1">
+                    <div class="flex items-center gap-2 px-4 py-3 border-b border-[var(--ui-border)]">
                         <span class="w-1 h-4 rounded-full bg-blue-500 flex-shrink-0"></span>
                         <div class="min-w-0">
                             <h3 class="text-[0.82rem] font-bold text-[var(--ui-secondary)] m-0 leading-tight">Ablaufplan</h3>
