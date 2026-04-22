@@ -133,9 +133,7 @@
                         @foreach([
                             'mail' => ['icon' => 'heroicon-o-envelope',         'label' => 'E-Mail'],
                             'phone' => ['icon' => 'heroicon-o-phone',           'label' => 'Telefon'],
-                            'meeting' => ['icon' => 'heroicon-o-user-group',    'label' => 'Termin'],
-                            'referral' => ['icon' => 'heroicon-o-link',         'label' => 'Empfehlung'],
-                            'other' => ['icon' => 'heroicon-o-ellipsis-horizontal', 'label' => 'Sonstiges'],
+                            'web' => ['icon' => 'heroicon-o-computer-desktop',  'label' => 'Web'],
                         ] as $via => $meta)
                             <button type="button" wire:click="$set('event.orderer_via', '{{ $via }}')"
                                     title="{{ $meta['label'] }}"
