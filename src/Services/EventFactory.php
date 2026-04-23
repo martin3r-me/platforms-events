@@ -69,11 +69,14 @@ class EventFactory
 
     /**
      * Naechste Event-Nummer fuer das Team im Format VA#YYYY-MMx.
+     * Bezieht auch soft-deleted Events ein, damit die DB-Unique-Constraint
+     * auf event_number (die deleted_at nicht kennt) nicht verletzt wird.
      */
     public static function nextEventNumber(int $teamId): string
     {
         $prefix = 'VA#' . now()->year . '-' . now()->format('m');
-        $last = Event::where('team_id', $teamId)
+        $last = Event::withTrashed()
+            ->where('team_id', $teamId)
             ->where('event_number', 'like', $prefix . '%')
             ->orderByRaw('LENGTH(event_number) DESC, event_number DESC')
             ->value('event_number');
