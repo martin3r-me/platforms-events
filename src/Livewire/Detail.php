@@ -627,25 +627,17 @@ class Detail extends Component
         $day = $this->event->days()->whereDate('datum', $target)->first();
 
         if (!$day) {
-            session()->flash('bookingPrefillInfo', 'Tag '.$target.' nicht gefunden.');
             return;
         }
 
-        $von  = trim((string) ($day->von  ?? ''));
-        $bis  = trim((string) ($day->bis  ?? ''));
+        // Leere von/bis als 00:00 behandeln (so wird es in der Sidebar angezeigt).
+        $von  = trim((string) ($day->von  ?? '')) ?: '00:00';
+        $bis  = trim((string) ($day->bis  ?? '')) ?: '00:00';
         $pers = trim((string) ($day->pers_bis ?: $day->pers_von ?: ''));
 
         $this->newBookingInline['beginn'] = $von;
         $this->newBookingInline['ende']   = $bis;
         $this->newBookingInline['pers']   = $pers;
-
-        // Debug: sichtbare Rueckmeldung ob etwas gefunden wurde
-        $parts = [];
-        if ($von !== '' || $bis !== '') $parts[] = "{$von}-{$bis}";
-        if ($pers !== '') $parts[] = "{$pers} Pers.";
-        session()->flash('bookingPrefillInfo', empty($parts)
-            ? 'Tag hat keine Zeit/Personen – nichts zu uebernehmen.'
-            : 'Uebernommen: '.implode(', ', $parts));
     }
 
     public function addInlineBooking(): void
