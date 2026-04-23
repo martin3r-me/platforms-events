@@ -41,6 +41,22 @@ window.tinymceEditor = function (opts) {
                     self.initial = content;
                 }
             });
+
+            // Cleanup erfolgt via x-init Return-Function (siehe Template),
+            // damit bei Livewire-Morph kein verwaister TinyMCE-Geist bleibt.
+        },
+
+        destroy() {
+            this._removeStaleEditor();
+            this._editor = null;
+        },
+
+        _removeStaleEditor() {
+            if (!window.tinymce) return;
+            try {
+                const existing = window.tinymce.get(this.uid);
+                if (existing) existing.remove();
+            } catch (e) {}
         },
 
         _waitForTinyAndObserve(rootEl) {
@@ -55,8 +71,18 @@ window.tinymceEditor = function (opts) {
 
         _observe(rootEl) {
             const self = this;
-            const editorIsAlive = () =>
-                self._editor && document.body.contains(self._editor.getContainer?.() || null);
+            // "Alive" meint: wir haben lokal einen Editor UND sein Container
+            // haengt noch im aktuellen Dokument UND die globale tinymce-Registry
+            // fuer unsere UID zeigt auf genau diese Instanz. Das filtert Faelle,
+            // in denen der Morph die DOM-Elemente ersetzt und eine Alt-Instanz
+            // nur noch als Geist zurueckbleibt.
+            const editorIsAlive = () => {
+                if (!self._editor) return false;
+                const container = self._editor.getContainer?.();
+                if (!container || !document.body.contains(container)) return false;
+                if (window.tinymce && window.tinymce.get(self.uid) !== self._editor) return false;
+                return true;
+            };
 
             if (rootEl.offsetParent !== null && !editorIsAlive()) return self._boot();
 
@@ -85,6 +111,12 @@ window.tinymceEditor = function (opts) {
             const self = this;
             const target = document.getElementById(this.uid);
             if (!target) return;
+
+            // Vorherige tinymce-Instanz fuer diese UID sauber entfernen, sonst
+            // scheitert tinymce.init() still oder initialisiert gegen ein
+            // losgeloestes DOM.
+            self._removeStaleEditor();
+            self._editor = null;
 
             // Frische Initial-Daten aus Livewire holen (wire:ignore friert den
             // Blade-interpolierten Wert auf der ersten Seitenrenderung ein).
@@ -179,6 +211,6 @@ window.tinymceEditor = function (opts) {
 </style>
 <div wire:ignore
      x-data="tinymceEditor({ uid: @js($uid), wireProperty: @js($wireProperty), initial: @js((string) $initial), height: {{ (int) $height }} })"
-     x-init="$nextTick(() => setTimeout(() => init(), 50))">
+     x-init="$nextTick(() => setTimeout(() => init(), 50)); return () => destroy();">
     <textarea id="{{ $uid }}" style="opacity:0; position:absolute; left:-9999px; pointer-events:none;"></textarea>
 </div>
