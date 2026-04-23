@@ -275,15 +275,15 @@
                 </div>
                 <div>
                     <label class="{{ $lbl }}">Anlass</label>
+                    <input wire:model.blur="event.event_type" type="text" class="{{ $in }}"
+                           list="event-type-options"
+                           placeholder="{{ !empty($settings['event_types']) ? 'Freitext oder Auswahl…' : '' }}">
                     @if(!empty($settings['event_types']))
-                        <select wire:model.blur="event.event_type" class="{{ $in }}">
-                            <option value="">—</option>
+                        <datalist id="event-type-options">
                             @foreach($settings['event_types'] as $t)
-                                <option value="{{ $t }}">{{ $t }}</option>
+                                <option value="{{ $t }}">
                             @endforeach
-                        </select>
-                    @else
-                        <input wire:model.blur="event.event_type" type="text" class="{{ $in }}">
+                        </datalist>
                     @endif
                 </div>
             </div>
