@@ -14,6 +14,7 @@ use Platform\Events\Models\QuotePosition;
 use Platform\Events\Services\ActivityLogger;
 use Platform\Events\Services\ArticlePackageApplicator;
 use Platform\Events\Services\ArticleSearchService;
+use Platform\Events\Services\MultiSelectHelper;
 use Platform\Events\Services\PositionCalculator;
 use Platform\Events\Services\QuoteOrderConverter;
 use Platform\Events\Services\SettingsService;
@@ -40,6 +41,9 @@ class Quotes extends Component
         'basis_ek' => 0, 'ek' => 0, 'preis' => 0, 'mwst' => '7%',
         'gesamt' => 0, 'bemerkung' => '',
     ];
+
+    // Mehrfachauswahl fuer Bulk-Delete von Positionen
+    public array $selectedPositionUuids = [];
 
     public bool $showItemModal = false;
     public ?int $itemEventDayId = null;
@@ -626,9 +630,53 @@ class Quotes extends Component
         if (!$this->activeItemId) return;
         $pos = QuotePosition::where('quote_item_id', $this->activeItemId)->find($positionId);
         if ($pos) {
+            $uuid = (string) $pos->uuid;
             $pos->delete();
+            $this->selectedPositionUuids = MultiSelectHelper::remove($this->selectedPositionUuids, [$uuid]);
             $item = QuoteItem::find($this->activeItemId);
             if ($item) $this->recalculateItem($item);
+        }
+    }
+
+    // ---------- Mehrfach-Auswahl ----------
+
+    public function toggleAllPositions(): void
+    {
+        if (!$this->activeItemId) return;
+        $all = QuotePosition::where('quote_item_id', $this->activeItemId)->pluck('uuid')
+            ->map(fn ($u) => (string) $u)->all();
+        $this->selectedPositionUuids = MultiSelectHelper::toggleAll($this->selectedPositionUuids, $all);
+    }
+
+    public function togglePositionSelection(string $uuid): void
+    {
+        $this->selectedPositionUuids = MultiSelectHelper::toggleSingle($this->selectedPositionUuids, $uuid);
+    }
+
+    public function togglePositionRange(int $from, int $to, bool $select): void
+    {
+        if (!$this->activeItemId) return;
+        $uuids = QuotePosition::where('quote_item_id', $this->activeItemId)
+            ->orderBy('sort_order')->pluck('uuid')->map(fn ($u) => (string) $u)->toArray();
+        $this->selectedPositionUuids = MultiSelectHelper::toggleRange($this->selectedPositionUuids, $uuids, $from, $to, $select);
+    }
+
+    public function clearPositionSelection(): void
+    {
+        $this->selectedPositionUuids = [];
+    }
+
+    public function deleteSelectedPositions(): void
+    {
+        if (!$this->activeItemId || empty($this->selectedPositionUuids)) return;
+        $count = count($this->selectedPositionUuids);
+        QuotePosition::where('quote_item_id', $this->activeItemId)
+            ->whereIn('uuid', $this->selectedPositionUuids)->delete();
+        $this->selectedPositionUuids = [];
+        $item = QuoteItem::find($this->activeItemId);
+        if ($item) {
+            $this->recalculateItem($item);
+            ActivityLogger::log($this->event(), 'quote', "{$count} Position(en) geloescht");
         }
     }
 

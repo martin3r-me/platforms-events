@@ -51,10 +51,18 @@
         </div>
     @endif
 
+    <x-events::bulk-actionbar
+        :count="count($selectedPositionUuids ?? [])"
+        deleteAction="deleteSelectedPositions"
+        clearAction="clearPositionSelection"
+        label="Position"
+        labelPlural="Positionen" />
+
     <div class="overflow-x-auto">
-        <table class="w-full border-collapse text-[0.65rem]">
+        <table class="w-full border-collapse text-[0.65rem]" x-data="{ lastIdx: null }">
             <thead>
                 <tr class="bg-slate-50 border-b border-slate-200">
+                    <th class="px-0 py-1.5 w-[8px]"></th>
                     <th class="text-left py-1.5 px-2.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Gruppe</th>
                     <th class="text-left py-1.5 px-2 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Name</th>
                     <th class="text-right py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Anz.</th>
@@ -75,8 +83,16 @@
                     @php
                         $rs = $rowInlineStyle((string) $p->gruppe);
                         $text = $isBaustein((string) $p->gruppe);
+                        $isSelected = in_array($p->uuid, $selectedPositionUuids ?? [], true);
                     @endphp
-                    <tr class="border-b border-slate-100 hover:bg-slate-50/40" style="{{ $rs['style'] }}">
+                    <tr class="border-b border-slate-100 hover:bg-slate-50/40 group {{ $isSelected ? 'bg-blue-50/50' : '' }}" style="{{ $rs['style'] }}">
+                        <x-events::select-handle
+                            :uuid="$p->uuid"
+                            :index="$loop->index"
+                            :isSelected="$isSelected"
+                            toggle="togglePositionSelection"
+                            range="togglePositionRange"
+                            toggleAll="toggleAllPositions" />
                         <td class="py-1.5 px-2.5 text-slate-600">{{ $p->gruppe }}</td>
                         <td class="py-1.5 px-2" style="{{ $rs['nameStyle'] ?: '' }}">{{ $p->name }}</td>
                         <td class="py-1.5 px-1.5 text-right font-mono">{{ $text ? '' : $p->anz }}</td>
@@ -98,7 +114,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="13" class="py-6 text-center text-[0.7rem] text-[var(--ui-muted)]">
+                        <td colspan="14" class="py-6 text-center text-[0.7rem] text-[var(--ui-muted)]">
                             Noch keine Positionen. Fülle die Eingabefelder unten aus.
                         </td>
                     </tr>
@@ -107,7 +123,7 @@
             @if($positions->isNotEmpty())
                 <tfoot>
                     <tr class="bg-slate-50 border-t-2 border-slate-200">
-                        <td colspan="10" class="py-2 px-2.5 text-right text-[0.58rem] font-bold uppercase tracking-wider text-slate-500">
+                        <td colspan="11" class="py-2 px-2.5 text-right text-[0.58rem] font-bold uppercase tracking-wider text-slate-500">
                             Positionen <span class="text-[var(--ui-secondary)] font-mono ml-1">{{ $totalArticles }}</span> · Einkauf
                         </td>
                         <td class="py-2 px-1.5 text-right font-mono font-bold text-red-600 text-[0.72rem]">{{ $fmt($totalGesamt) }} €</td>
@@ -117,7 +133,7 @@
             @endif
             <tbody class="bg-slate-50 border-t-2 border-slate-300">
                 <tr>
-                    <td colspan="13" class="px-2.5 pt-2 pb-1">
+                    <td colspan="14" class="px-2.5 pt-2 pb-1">
                         <div class="flex items-center gap-2 flex-wrap">
                             <div class="w-[3px] h-3 bg-orange-600 rounded-sm"></div>
                             <span class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Neue Position</span>
@@ -180,6 +196,7 @@
                     </td>
                 </tr>
                 <tr>
+                    <td class="w-[8px]"></td>
                     <td class="px-1.5 py-1.5 align-top">
                         <input wire:model="newPosition.gruppe" type="text" placeholder="Gruppe / Typ"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] bg-white">
@@ -272,7 +289,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <td colspan="13" class="px-2.5 pt-0.5 pb-2">
+                    <td colspan="14" class="px-2.5 pt-0.5 pb-2">
                         <p class="text-[0.52rem] text-slate-400 m-0">
                             Enter im Bezeichnungs-Feld oder „+" zum Hinzufügen · Gesamt leer → Anz × EK wird berechnet.
                         </p>

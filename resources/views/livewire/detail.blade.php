@@ -871,10 +871,18 @@
                         </div>
                     </div>
 
+                    <x-events::bulk-actionbar
+                        :count="count($selectedScheduleUuids)"
+                        deleteAction="deleteSelectedSchedule"
+                        clearAction="clearScheduleSelection"
+                        label="Ablauf-Eintrag"
+                        labelPlural="Ablauf-Eintraege" />
+
                     <div class="overflow-x-auto">
-                        <table class="w-full border-collapse text-xs">
+                        <table class="w-full border-collapse text-xs" x-data="{ lastIdx: null }">
                             <thead>
                                 <tr class="border-b border-[var(--ui-border)] bg-[var(--ui-muted-5)]">
+                                    <th class="px-0 py-2 w-[8px]"></th>
                                     <th class="px-3 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] w-[115px]">Datum</th>
                                     <th class="px-2 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] w-[70px]">Von</th>
                                     <th class="px-2 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] w-[70px]">Bis</th>
@@ -887,13 +895,21 @@
                             <tbody>
                                 @if($schedule->isEmpty())
                                     <tr>
-                                        <td colspan="7" class="px-3 py-8 text-center text-[var(--ui-muted)] text-xs">
+                                        <td colspan="8" class="px-3 py-8 text-center text-[var(--ui-muted)] text-xs">
                                             Noch kein Ablaufplan – unten hinzufügen.
                                         </td>
                                     </tr>
                                 @endif
                                 @foreach($schedule as $item)
-                                    <tr class="border-b border-[var(--ui-border)]/40 hover:bg-[var(--ui-muted-5)]/40 group">
+                                    @php $isSelected = in_array($item->uuid, $selectedScheduleUuids, true); @endphp
+                                    <tr class="border-b border-[var(--ui-border)]/40 hover:bg-[var(--ui-muted-5)]/40 group {{ $isSelected ? 'bg-blue-50/50' : '' }}">
+                                        <x-events::select-handle
+                                            :uuid="$item->uuid"
+                                            :index="$loop->index"
+                                            :isSelected="$isSelected"
+                                            toggle="toggleScheduleSelection"
+                                            range="toggleScheduleRange"
+                                            toggleAll="toggleAllSchedule" />
                                         <td class="px-3 py-1.5">
                                             @php
                                                 $currentScheduleDate = $inlineSchedule[$item->uuid]['datum'] ?? null;

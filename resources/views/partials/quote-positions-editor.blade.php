@@ -87,11 +87,19 @@
         </div>
     @endif
 
+    <x-events::bulk-actionbar
+        :count="count($selectedPositionUuids ?? [])"
+        deleteAction="deleteSelectedPositions"
+        clearAction="clearPositionSelection"
+        label="Position"
+        labelPlural="Positionen" />
+
     {{-- Positions-Tabelle --}}
     <div class="overflow-x-auto">
-        <table class="w-full border-collapse text-[0.65rem]">
+        <table class="w-full border-collapse text-[0.65rem]" x-data="{ lastIdx: null }">
             <thead>
                 <tr class="bg-slate-50 border-b border-slate-200">
+                    <th class="px-0 py-1.5 w-[8px]"></th>
                     <th class="text-left py-1.5 px-2.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Gruppe</th>
                     <th class="text-left py-1.5 px-2 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Name</th>
                     <th class="text-right py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Anz.</th>
@@ -113,8 +121,16 @@
                         $rs = $rowInlineStyle((string) $p->gruppe);
                         $text = $isBaustein((string) $p->gruppe);
                         $inp = 'w-full border border-transparent hover:border-slate-200 focus:border-[var(--ui-primary)]/60 rounded px-1 py-0.5 text-[0.65rem] bg-transparent focus:bg-white';
+                        $isSelected = in_array($p->uuid, $selectedPositionUuids ?? [], true);
                     @endphp
-                    <tr wire:key="pos-{{ $p->id }}" class="border-b border-slate-100 hover:bg-slate-50/40 group" style="{{ $rs['style'] }}">
+                    <tr wire:key="pos-{{ $p->id }}" class="border-b border-slate-100 hover:bg-slate-50/40 group {{ $isSelected ? 'bg-blue-50/50' : '' }}" style="{{ $rs['style'] }}">
+                        <x-events::select-handle
+                            :uuid="$p->uuid"
+                            :index="$loop->index"
+                            :isSelected="$isSelected"
+                            toggle="togglePositionSelection"
+                            range="togglePositionRange"
+                            toggleAll="toggleAllPositions" />
                         <td class="py-1 px-2">
                             <input type="text" value="{{ $p->gruppe }}"
                                    x-data @blur="if ($el.value !== @js($p->gruppe)) $wire.updatePositionField({{ $p->id }}, 'gruppe', $el.value)"
@@ -206,7 +222,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="13" class="py-6 text-center text-[0.7rem] text-[var(--ui-muted)]">
+                        <td colspan="14" class="py-6 text-center text-[0.7rem] text-[var(--ui-muted)]">
                             Noch keine Positionen. Fülle die Eingabefelder unten aus oder nutze „Headline" / „Speisentexte" / „Trenntext" als Gruppe für Text-Zeilen.
                         </td>
                     </tr>
@@ -215,7 +231,7 @@
             @if($positions->isNotEmpty())
                 <tfoot>
                     <tr class="bg-slate-50 border-t-2 border-slate-200">
-                        <td colspan="10" class="py-2 px-2.5 text-right text-[0.58rem] font-bold uppercase tracking-wider text-slate-500">
+                        <td colspan="11" class="py-2 px-2.5 text-right text-[0.58rem] font-bold uppercase tracking-wider text-slate-500">
                             Positionen <span class="text-[var(--ui-secondary)] font-mono ml-1">{{ $totalArticles }}</span> · Netto
                         </td>
                         <td class="py-2 px-1.5 text-right font-mono font-semibold text-slate-600 text-[0.7rem]">{{ $fmt($totalGesamt) }} €</td>
@@ -223,7 +239,7 @@
                     </tr>
                     @foreach($mwstBreakdown as $row)
                         <tr class="bg-slate-50">
-                            <td colspan="10" class="py-1 px-2.5 text-right text-[0.56rem] text-slate-500">
+                            <td colspan="11" class="py-1 px-2.5 text-right text-[0.56rem] text-slate-500">
                                 MwSt {{ $row['rate'] }} <span class="text-[var(--ui-muted)]">(von Netto {{ $fmt($row['net']) }} €)</span>
                             </td>
                             <td class="py-1 px-1.5 text-right font-mono text-slate-600 text-[0.65rem]">{{ $fmt($row['tax']) }} €</td>
@@ -231,7 +247,7 @@
                         </tr>
                     @endforeach
                     <tr class="bg-slate-100 border-t border-slate-200">
-                        <td colspan="10" class="py-2 px-2.5 text-right text-[0.6rem] font-bold uppercase tracking-wider text-slate-600">
+                        <td colspan="11" class="py-2 px-2.5 text-right text-[0.6rem] font-bold uppercase tracking-wider text-slate-600">
                             Gesamt (brutto)
                         </td>
                         <td class="py-2 px-1.5 text-right font-mono font-bold text-green-700 text-[0.75rem]">{{ $fmt($totalGross) }} €</td>
@@ -242,7 +258,7 @@
             {{-- Add-Row: Spalten richten sich automatisch nach der Tabelle aus --}}
             <tbody class="bg-slate-50 border-t-2 border-slate-300">
                 <tr>
-                    <td colspan="13" class="px-2.5 pt-2 pb-1">
+                    <td colspan="14" class="px-2.5 pt-2 pb-1">
                         <div class="flex items-center gap-2 flex-wrap">
                             <div class="w-[3px] h-3 bg-blue-600 rounded-sm"></div>
                             <span class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Neue Position</span>
@@ -312,6 +328,7 @@
                     </td>
                 </tr>
                 <tr>
+                    <td class="w-[8px]"></td>
                     <td class="px-1.5 py-1.5 align-top">
                         <input wire:model="newPosition.gruppe" type="text" placeholder="Gruppe / Typ"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] bg-white">
@@ -404,7 +421,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <td colspan="13" class="px-2.5 pt-0.5 pb-2">
+                    <td colspan="14" class="px-2.5 pt-0.5 pb-2">
                         <p class="text-[0.52rem] text-slate-400 m-0">
                             Enter im Bezeichnungs-Feld oder „+" zum Hinzufügen · Gesamt leer → Anz × Preis wird berechnet.
                         </p>

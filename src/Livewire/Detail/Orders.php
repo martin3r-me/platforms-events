@@ -11,6 +11,7 @@ use Platform\Events\Models\OrderPosition;
 use Platform\Events\Models\QuoteItem;
 use Platform\Events\Services\ActivityLogger;
 use Platform\Events\Services\ArticleSearchService;
+use Platform\Events\Services\MultiSelectHelper;
 use Platform\Events\Services\PositionCalculator;
 use Platform\Events\Services\SettingsService;
 
@@ -33,6 +34,9 @@ class Orders extends Component
         'basis_ek' => 0, 'ek' => 0, 'preis' => 0, 'mwst' => '7%',
         'gesamt' => 0, 'bemerkung' => '',
     ];
+
+    // Mehrfachauswahl fuer Bulk-Delete von Positionen
+    public array $selectedPositionUuids = [];
 
     public function mount(int $eventId, ?int $initialItemId = null, ?int $initialDayId = null, ?string $initialView = null): void
     {
@@ -283,9 +287,53 @@ class Orders extends Component
         if (!$this->activeItemId) return;
         $pos = OrderPosition::where('order_item_id', $this->activeItemId)->find($positionId);
         if ($pos) {
+            $uuid = (string) $pos->uuid;
             $pos->delete();
+            $this->selectedPositionUuids = MultiSelectHelper::remove($this->selectedPositionUuids, [$uuid]);
             $item = OrderItem::find($this->activeItemId);
             if ($item) $this->recalculateItem($item);
+        }
+    }
+
+    // ---------- Mehrfach-Auswahl ----------
+
+    public function toggleAllPositions(): void
+    {
+        if (!$this->activeItemId) return;
+        $all = OrderPosition::where('order_item_id', $this->activeItemId)->pluck('uuid')
+            ->map(fn ($u) => (string) $u)->all();
+        $this->selectedPositionUuids = MultiSelectHelper::toggleAll($this->selectedPositionUuids, $all);
+    }
+
+    public function togglePositionSelection(string $uuid): void
+    {
+        $this->selectedPositionUuids = MultiSelectHelper::toggleSingle($this->selectedPositionUuids, $uuid);
+    }
+
+    public function togglePositionRange(int $from, int $to, bool $select): void
+    {
+        if (!$this->activeItemId) return;
+        $uuids = OrderPosition::where('order_item_id', $this->activeItemId)
+            ->orderBy('sort_order')->pluck('uuid')->map(fn ($u) => (string) $u)->toArray();
+        $this->selectedPositionUuids = MultiSelectHelper::toggleRange($this->selectedPositionUuids, $uuids, $from, $to, $select);
+    }
+
+    public function clearPositionSelection(): void
+    {
+        $this->selectedPositionUuids = [];
+    }
+
+    public function deleteSelectedPositions(): void
+    {
+        if (!$this->activeItemId || empty($this->selectedPositionUuids)) return;
+        $count = count($this->selectedPositionUuids);
+        OrderPosition::where('order_item_id', $this->activeItemId)
+            ->whereIn('uuid', $this->selectedPositionUuids)->delete();
+        $this->selectedPositionUuids = [];
+        $item = OrderItem::find($this->activeItemId);
+        if ($item) {
+            $this->recalculateItem($item);
+            ActivityLogger::log($this->event(), 'order', "{$count} Position(en) geloescht");
         }
     }
 

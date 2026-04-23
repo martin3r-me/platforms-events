@@ -81,6 +81,9 @@ class Detail extends Component
 
     // Inline-Edit: Ablaufplan – Map UUID → Felder
     public array $inlineSchedule = [];
+
+    // Mehrfachauswahl fuer Bulk-Delete in der Ablauf-Tabelle
+    public array $selectedScheduleUuids = [];
     public array $newScheduleInline = [
         'datum'        => '', 'von' => '', 'bis' => '',
         'beschreibung' => '', 'raum' => '', 'bemerkung' => '',
@@ -941,6 +944,39 @@ class Detail extends Component
             $item->delete();
             ActivityLogger::log($this->event, 'schedule', "Ablauf-Eintrag geloescht: {$label}");
         }
+        $this->selectedScheduleUuids = MultiSelectHelper::remove($this->selectedScheduleUuids, [$uuid]);
+    }
+
+    public function toggleAllSchedule(): void
+    {
+        $all = $this->event->scheduleItems()->pluck('uuid')->map(fn ($u) => (string) $u)->all();
+        $this->selectedScheduleUuids = MultiSelectHelper::toggleAll($this->selectedScheduleUuids, $all);
+    }
+
+    public function toggleScheduleSelection(string $uuid): void
+    {
+        $this->selectedScheduleUuids = MultiSelectHelper::toggleSingle($this->selectedScheduleUuids, $uuid);
+    }
+
+    public function toggleScheduleRange(int $from, int $to, bool $select): void
+    {
+        $uuids = $this->event->scheduleItems()->orderBy('sort_order')->pluck('uuid')
+            ->map(fn ($u) => (string) $u)->toArray();
+        $this->selectedScheduleUuids = MultiSelectHelper::toggleRange($this->selectedScheduleUuids, $uuids, $from, $to, $select);
+    }
+
+    public function clearScheduleSelection(): void
+    {
+        $this->selectedScheduleUuids = [];
+    }
+
+    public function deleteSelectedSchedule(): void
+    {
+        if (empty($this->selectedScheduleUuids)) return;
+        $count = count($this->selectedScheduleUuids);
+        $this->event->scheduleItems()->whereIn('uuid', $this->selectedScheduleUuids)->delete();
+        ActivityLogger::log($this->event, 'schedule', "{$count} Ablauf-Eintrag/Eintraege geloescht");
+        $this->selectedScheduleUuids = [];
     }
 
     // ---------- Inline-Edit: Schedule ----------
