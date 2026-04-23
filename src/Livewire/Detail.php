@@ -21,6 +21,7 @@ use Platform\Events\Models\OrderItem;
 use Platform\Events\Models\PickList;
 use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\ScheduleItem;
+use Platform\Events\Services\ActivityLogger;
 use Platform\Events\Services\SettingsService;
 use Platform\Locations\Models\Location;
 
@@ -587,22 +588,58 @@ class Detail extends Component
 
         if ($this->editingBookingUuid) {
             $this->event->bookings()->where('uuid', $this->editingBookingUuid)->update($payload);
+            $label = self::bookingLabel($payload);
+            ActivityLogger::log($this->event, 'booking', "Raumbuchung aktualisiert: {$label}");
         } else {
             $maxSort = (int) $this->event->bookings()->max('sort_order');
-            Booking::create(array_merge($payload, [
+            $booking = Booking::create(array_merge($payload, [
                 'event_id'   => $this->event->id,
                 'team_id'    => $this->event->team_id,
                 'user_id'    => Auth::id(),
                 'sort_order' => $maxSort + 1,
             ]));
+            $label = self::bookingLabel($payload);
+            ActivityLogger::log($this->event, 'booking', "Raum gebucht: {$label}");
         }
 
         $this->showBookingModal = false;
     }
 
+    /**
+     * Kurzbeschreibung einer Buchung fuer den Activity-Log.
+     */
+    protected static function bookingLabel(array $data): string
+    {
+        $parts = [];
+        if (!empty($data['datum'])) {
+            try {
+                $parts[] = Carbon::parse($data['datum'])->format('d.m.Y');
+            } catch (\Throwable $e) {
+                $parts[] = (string) $data['datum'];
+            }
+        }
+        $raum = trim((string) ($data['raum'] ?? ''));
+        if ($raum === '' && !empty($data['location_id'])) {
+            $loc = \Platform\Locations\Models\Location::find($data['location_id']);
+            $raum = (string) ($loc?->kuerzel ?? $loc?->name ?? '');
+        }
+        if ($raum !== '') $parts[] = $raum;
+
+        return $parts ? implode(' · ', $parts) : 'Eintrag';
+    }
+
     public function deleteBooking(string $uuid): void
     {
-        $this->event->bookings()->where('uuid', $uuid)->delete();
+        $booking = $this->event->bookings()->where('uuid', $uuid)->first();
+        if ($booking) {
+            $label = self::bookingLabel([
+                'datum'       => $booking->datum,
+                'raum'        => $booking->raum,
+                'location_id' => $booking->location_id,
+            ]);
+            $booking->delete();
+            ActivityLogger::log($this->event, 'booking', "Raumbuchung geloescht: {$label}");
+        }
         $this->selectedBookingUuids = array_values(array_diff($this->selectedBookingUuids, [$uuid]));
     }
 
@@ -652,7 +689,9 @@ class Detail extends Component
         if (empty($this->selectedBookingUuids)) {
             return;
         }
+        $count = count($this->selectedBookingUuids);
         $this->event->bookings()->whereIn('uuid', $this->selectedBookingUuids)->delete();
+        ActivityLogger::log($this->event, 'booking', "{$count} Raumbuchung(en) geloescht");
         $this->selectedBookingUuids = [];
     }
 
@@ -757,6 +796,12 @@ class Detail extends Component
             ]);
         }
 
+        $count = count($targetDates);
+        $label = self::bookingLabel(['location_id' => $data['location_id'] ?? null, 'raum' => $data['raum'] ?? '']);
+        ActivityLogger::log($this->event, 'booking', $count > 1
+            ? "{$count} Raumbuchungen angelegt ({$label})"
+            : "Raum gebucht: {$label}");
+
         $this->newBookingInline = [
             'datum'       => '', 'beginn' => '', 'ende' => '',
             'pers'        => '', 'location_id' => null, 'raum' => '',
@@ -828,6 +873,9 @@ class Detail extends Component
                 'sort_order'  => $maxSort,
             ]);
         }
+
+        $label = self::bookingLabel(['location_id' => $data['location_id'] ?? null, 'raum' => $data['raum'] ?? '']);
+        ActivityLogger::log($this->event, 'booking', $days->count() . ' Raumbuchungen aus Terminen uebernommen (' . $label . ')');
 
         $this->showBulkBookingModal = false;
     }
