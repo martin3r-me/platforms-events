@@ -945,7 +945,7 @@
                                             @include('events::partials.time-input', ['model' => 'inlineSchedule.'.$item->uuid.'.bis', 'placeholder' => '—', 'class' => 'w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-mono bg-transparent focus:bg-white'])
                                         </td>
                                         <td class="px-2 py-1.5">
-                                            <input wire:model.blur="inlineSchedule.{{ $item->uuid }}.beschreibung" type="text" placeholder="Beschreibung…"
+                                            <input wire:model.blur="inlineSchedule.{{ $item->uuid }}.beschreibung" type="text" placeholder="Beschreibung…" list="schedule-desc-options"
                                                    class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs font-semibold text-[var(--ui-secondary)] bg-transparent focus:bg-white">
                                         </td>
                                         <td class="px-2 py-1.5">
@@ -1006,8 +1006,16 @@
                             </div>
                             <div class="col-span-4">
                                 <input wire:model.defer="newScheduleInline.beschreibung" type="text" placeholder="Beschreibung…"
+                                       list="schedule-desc-options"
                                        wire:keydown.enter="addInlineSchedule"
                                        class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                @if(!empty($settings['schedule_descriptions']))
+                                    <datalist id="schedule-desc-options">
+                                        @foreach($settings['schedule_descriptions'] as $sd)
+                                            <option value="{{ $sd }}">
+                                        @endforeach
+                                    </datalist>
+                                @endif
                             </div>
                             <div class="col-span-2">
                                 @include('events::partials.room-picker', [
@@ -1251,7 +1259,7 @@
             <form wire:submit.prevent="saveSchedule" class="space-y-4">
                 <div>
                     <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Beschreibung *</label>
-                    <input wire:model="scheduleForm.beschreibung" type="text" placeholder="Begrüßung / Empfang / ..."
+                    <input wire:model="scheduleForm.beschreibung" type="text" placeholder="Begrüßung / Empfang / ..." list="schedule-desc-options"
                            class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                     @error('scheduleForm.beschreibung') <p class="mt-1 text-[0.62rem] text-red-600">{{ $message }}</p> @enderror
                 </div>

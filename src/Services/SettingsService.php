@@ -19,6 +19,7 @@ class SettingsService
     protected const KEY_EVENT_TYPES     = 'event_types';
     protected const KEY_BESTUHLUNG      = 'bestuhlung_options';
     protected const KEY_POSITION_BAUSTEINE = 'position_bausteine';
+    protected const KEY_SCHEDULE_DESCRIPTIONS = 'schedule_descriptions';
 
     public static function defaults(): array
     {
@@ -29,6 +30,7 @@ class SettingsService
             self::KEY_ORDER_STATUSES  => ['Offen', 'In Arbeit', 'Fertig', 'Ausgeliefert', 'Abgerechnet'],
             self::KEY_EVENT_TYPES     => ['Tagung', 'Gala', 'Hochzeit', 'Empfang', 'Teamevent', 'Messe', 'Sonstiges'],
             self::KEY_BESTUHLUNG      => ['Reihen', 'Bankett', 'U-Form', 'Block', 'Stehtische', 'Parlamentarisch', 'Classroom'],
+            self::KEY_SCHEDULE_DESCRIPTIONS => ['Aufbau', 'Anlieferung', 'Empfang', 'Begrüßung', 'Vortrag', 'Pause', 'Dinner', 'Abbau'],
             self::KEY_POSITION_BAUSTEINE => [
                 ['name' => 'Headline',     'bg' => '#d1fae5', 'text' => '#065f46'],
                 ['name' => 'Trenntext',    'bg' => '#f8fafc', 'text' => '#64748b'],
@@ -59,6 +61,7 @@ class SettingsService
     public static function orderStatuses(?int $teamId): array    { return self::getArray($teamId, self::KEY_ORDER_STATUSES,  self::defaults()[self::KEY_ORDER_STATUSES]); }
     public static function eventTypes(?int $teamId): array       { return self::getArray($teamId, self::KEY_EVENT_TYPES,     self::defaults()[self::KEY_EVENT_TYPES]); }
     public static function bestuhlungOptions(?int $teamId): array{ return self::getArray($teamId, self::KEY_BESTUHLUNG,      self::defaults()[self::KEY_BESTUHLUNG]); }
+    public static function scheduleDescriptions(?int $teamId): array { return self::getArray($teamId, self::KEY_SCHEDULE_DESCRIPTIONS, self::defaults()[self::KEY_SCHEDULE_DESCRIPTIONS]); }
     public static function bausteine(?int $teamId): array        { return self::getArray($teamId, self::KEY_POSITION_BAUSTEINE, self::defaults()[self::KEY_POSITION_BAUSTEINE]); }
 
     public static function setCostCenters(?int $teamId, array $items): void       { self::setArray($teamId, self::KEY_COST_CENTERS, array_values(array_filter(array_map('trim', $items)))); }
@@ -67,5 +70,6 @@ class SettingsService
     public static function setOrderStatuses(?int $teamId, array $items): void     { self::setArray($teamId, self::KEY_ORDER_STATUSES, array_values(array_filter(array_map('trim', $items)))); }
     public static function setEventTypes(?int $teamId, array $items): void        { self::setArray($teamId, self::KEY_EVENT_TYPES, array_values(array_filter(array_map('trim', $items)))); }
     public static function setBestuhlungOptions(?int $teamId, array $items): void { self::setArray($teamId, self::KEY_BESTUHLUNG, array_values(array_filter(array_map('trim', $items)))); }
+    public static function setScheduleDescriptions(?int $teamId, array $items): void { self::setArray($teamId, self::KEY_SCHEDULE_DESCRIPTIONS, array_values(array_filter(array_map('trim', $items)))); }
     public static function setBausteine(?int $teamId, array $items): void         { self::setArray($teamId, self::KEY_POSITION_BAUSTEINE, $items); }
 }

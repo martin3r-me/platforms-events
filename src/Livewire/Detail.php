@@ -1153,10 +1153,11 @@ class Detail extends Component
         // Settings-Dropdowns (team-scoped mit Defaults)
         $teamId = $team?->id;
         $settings = [
-            'cost_centers'  => SettingsService::costCenters($teamId),
-            'cost_carriers' => SettingsService::costCarriers($teamId),
-            'event_types'   => SettingsService::eventTypes($teamId),
-            'bestuhlung'    => SettingsService::bestuhlungOptions($teamId),
+            'cost_centers'          => SettingsService::costCenters($teamId),
+            'cost_carriers'         => SettingsService::costCarriers($teamId),
+            'event_types'           => SettingsService::eventTypes($teamId),
+            'bestuhlung'            => SettingsService::bestuhlungOptions($teamId),
+            'schedule_descriptions' => SettingsService::scheduleDescriptions($teamId),
         ];
 
         // Signaturen pro role

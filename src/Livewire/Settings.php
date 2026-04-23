@@ -31,6 +31,7 @@ class Settings extends Component
     public array $orderStatuses   = [];
     public array $eventTypes      = [];
     public array $bestuhlungOptions = [];
+    public array $scheduleDescriptions = [];
     public array $bausteine       = [];
 
     public string $newCostCenter  = '';
@@ -39,6 +40,7 @@ class Settings extends Component
     public string $newOrderStatus = '';
     public string $newEventType   = '';
     public string $newBestuhlung  = '';
+    public string $newScheduleDescription = '';
     public array $newBaustein     = ['name' => '', 'bg' => '#f8fafc', 'text' => '#64748b'];
 
     // ========== Management-Report-Felder ==========
@@ -82,8 +84,9 @@ class Settings extends Component
         $this->quoteStatuses     = SettingsService::quoteStatuses($teamId);
         $this->orderStatuses     = SettingsService::orderStatuses($teamId);
         $this->eventTypes        = SettingsService::eventTypes($teamId);
-        $this->bestuhlungOptions = SettingsService::bestuhlungOptions($teamId);
-        $this->bausteine         = SettingsService::bausteine($teamId);
+        $this->bestuhlungOptions     = SettingsService::bestuhlungOptions($teamId);
+        $this->scheduleDescriptions  = SettingsService::scheduleDescriptions($teamId);
+        $this->bausteine             = SettingsService::bausteine($teamId);
     }
 
     public function addCostCenter(): void      { $this->pushSimple('costCenters', 'newCostCenter'); SettingsService::setCostCenters($this->teamId(), $this->costCenters); }
@@ -98,6 +101,8 @@ class Settings extends Component
     public function removeEventType(int $i): void { $this->removeAt('eventTypes', $i); SettingsService::setEventTypes($this->teamId(), $this->eventTypes); }
     public function addBestuhlung(): void      { $this->pushSimple('bestuhlungOptions', 'newBestuhlung'); SettingsService::setBestuhlungOptions($this->teamId(), $this->bestuhlungOptions); }
     public function removeBestuhlung(int $i): void { $this->removeAt('bestuhlungOptions', $i); SettingsService::setBestuhlungOptions($this->teamId(), $this->bestuhlungOptions); }
+    public function addScheduleDescription(): void { $this->pushSimple('scheduleDescriptions', 'newScheduleDescription'); SettingsService::setScheduleDescriptions($this->teamId(), $this->scheduleDescriptions); }
+    public function removeScheduleDescription(int $i): void { $this->removeAt('scheduleDescriptions', $i); SettingsService::setScheduleDescriptions($this->teamId(), $this->scheduleDescriptions); }
 
     public function addBaustein(): void
     {
