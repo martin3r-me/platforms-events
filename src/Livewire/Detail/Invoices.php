@@ -56,7 +56,8 @@ class Invoices extends Component
         $user = Auth::user();
 
         $prefix = 'RE-' . now()->year . '-';
-        $last = Invoice::where('team_id', $event->team_id)
+        $last = Invoice::withTrashed()
+            ->where('team_id', $event->team_id)
             ->where('invoice_number', 'like', $prefix . '%')
             ->orderByRaw('LENGTH(invoice_number) DESC, invoice_number DESC')
             ->value('invoice_number');
@@ -129,8 +130,11 @@ class Invoices extends Component
         $event = $this->event();
 
         $prefix = 'GS-' . now()->year . '-';
-        $last = Invoice::where('team_id', $event->team_id)
-            ->where('invoice_number', 'like', $prefix . '%')->value('invoice_number');
+        $last = Invoice::withTrashed()
+            ->where('team_id', $event->team_id)
+            ->where('invoice_number', 'like', $prefix . '%')
+            ->orderByRaw('LENGTH(invoice_number) DESC, invoice_number DESC')
+            ->value('invoice_number');
         $next = $last ? ((int) substr($last, strlen($prefix))) + 1 : 1;
         $number = $prefix . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
 
