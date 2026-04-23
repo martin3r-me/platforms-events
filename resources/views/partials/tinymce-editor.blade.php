@@ -14,6 +14,19 @@
 @once
 <script src="https://cdn.jsdelivr.net/npm/tinymce@7/tinymce.min.js" referrerpolicy="origin"></script>
 <script>
+/**
+ * TinyMCE-Editor fuer Livewire-Modals.
+ *
+ * Zustandsmodell:
+ *   _editor   = tinymce-Instanz, wenn 'init' gefeuert hat (null sonst)
+ *   _booting  = true, solange tinymce.init() laeuft, sonst false
+ *
+ * Sichtbarkeitserkennung per IntersectionObserver (kein Polling).
+ * Ein einziger Boot-Pfad (_boot), der Stale-Instanzen entfernt und via
+ * _booting-Guard nicht doppelt feuern kann. Bei Re-Open des Modals prueft
+ * die View-Transition den DOM-Zustand des Containers – ist er weg, wird
+ * sauber neu gebootet.
+ */
 window.tinymceEditor = function (opts) {
     return {
         uid: opts.uid,
@@ -21,17 +34,17 @@ window.tinymceEditor = function (opts) {
         initial: opts.initial || '',
         height: opts.height || 600,
         _editor: null,
+        _booting: false,
         _wireId: null,
 
         init() {
+            const self = this;
             const rootEl = this.$root;
             const wireEl = rootEl.closest('[wire\\:id]');
             this._wireId = wireEl ? wireEl.getAttribute('wire:id') : null;
-            this._waitForTinyAndObserve(rootEl);
 
-            // Livewire-Dispatch "tinymce-set-content" -> Content aktualisieren
-            // (z.B. wenn Modal mit anderem Datensatz wieder geoeffnet wird)
-            const self = this;
+            // Content-Replace aus Livewire (z.B. Modal wird mit anderem
+            // Datensatz wiederbefuellt).
             window.addEventListener('tinymce-set-content', function (e) {
                 if (!e.detail || e.detail.uid !== self.uid) return;
                 const content = e.detail.content || '';
@@ -42,154 +55,151 @@ window.tinymceEditor = function (opts) {
                 }
             });
 
-            // Cleanup erfolgt via x-init Return-Function (siehe Template),
-            // damit bei Livewire-Morph kein verwaister TinyMCE-Geist bleibt.
+            // Warten bis TinyMCE-Script geladen ist, dann Sichtbarkeit beobachten.
+            this._whenTinyReady(function () {
+                self._observe(rootEl);
+            });
         },
 
-        destroy() {
-            this._removeStaleEditor();
-            this._editor = null;
-        },
-
-        _removeStaleEditor() {
-            if (!window.tinymce) return;
-            try {
-                const existing = window.tinymce.get(this.uid);
-                if (existing) existing.remove();
-            } catch (e) {}
-        },
-
-        _waitForTinyAndObserve(rootEl) {
-            const self = this;
-            const ensureTiny = (attempts = 80) => {
-                if (typeof window.tinymce !== 'undefined') return self._observe(rootEl);
+        _whenTinyReady(done) {
+            const tryLoad = function (attempts) {
+                if (typeof window.tinymce !== 'undefined') return done();
                 if (attempts <= 0) return;
-                setTimeout(() => ensureTiny(attempts - 1), 100);
+                setTimeout(function () { tryLoad(attempts - 1); }, 50);
             };
-            ensureTiny();
+            tryLoad(200); // max. 10s warten
         },
 
+        /**
+         * Beobachtet Sichtbarkeit. Jede Sichtbarkeitsaenderung triggert einen
+         * Boot-Versuch; _boot() selbst entscheidet, ob neu gebootet werden muss.
+         */
         _observe(rootEl) {
             const self = this;
-            // "Alive": wir haben entweder einen laufenden Boot oder einen
-            // lebenden Editor dessen Container noch im DOM haengt. Waehrend
-            // des Bootens (Setup bis init-Event) muessen wir aktiv bleiben,
-            // sonst wuerde der Poll-Loop doppelt booten und ein Flash-Loop
-            // entstehen.
-            const editorIsAlive = () => {
-                if (self._booting) return true;
-                if (!self._editor) return false;
-                const container = self._editor.getContainer?.();
-                if (!container || !document.body.contains(container)) return false;
-                return true;
-            };
 
-            if (rootEl.offsetParent !== null && !editorIsAlive()) return self._boot();
+            // Initial: falls schon sichtbar, sofort booten.
+            if (rootEl.offsetParent !== null) self._boot();
 
-            if (typeof window.IntersectionObserver !== 'undefined') {
-                const observer = new IntersectionObserver(function (entries) {
-                    if (entries[0].isIntersecting && !editorIsAlive()) {
-                        self._boot();
-                    }
+            if (typeof IntersectionObserver !== 'undefined') {
+                const obs = new IntersectionObserver(function (entries) {
+                    if (entries[0].isIntersecting) self._boot();
                 });
-                observer.observe(rootEl);
-                // Observer bleibt persistent: falls Modal-DOM zerschossen wird
-                // (z.B. durch Livewire-Re-Render), koennen wir neu booten.
+                obs.observe(rootEl);
             }
+        },
 
-            // Zusaetzliches Polling als Sicherheitsnetz
-            const poll = () => {
-                if (rootEl.offsetParent !== null && !editorIsAlive()) {
-                    self._boot();
-                }
-                setTimeout(poll, 500);
-            };
-            setTimeout(poll, 500);
+        _isAlive() {
+            if (!this._editor) return false;
+            const container = this._editor.getContainer && this._editor.getContainer();
+            return !!container && document.body.contains(container);
         },
 
         _boot() {
             const self = this;
+
+            // Schon laufend oder gesund: nichts tun.
             if (self._booting) return;
-            const target = document.getElementById(this.uid);
+            if (self._isAlive()) return;
+
+            const target = document.getElementById(self.uid);
             if (!target) return;
 
             self._booting = true;
-
-            // Vorherige tinymce-Instanz fuer diese UID sauber entfernen, sonst
-            // scheitert tinymce.init() still oder initialisiert gegen ein
-            // losgeloestes DOM.
-            self._removeStaleEditor();
             self._editor = null;
 
-            // Frische Initial-Daten aus Livewire holen (wire:ignore friert den
-            // Blade-interpolierten Wert auf der ersten Seitenrenderung ein).
+            // Evtl. Alt-Instanz in der globalen Registry entfernen (z.B. nach
+            // Livewire-Morph, der unser DOM geschreddert hat).
             try {
-                if (this._wireId && window.Livewire) {
-                    const wire = window.Livewire.find(this._wireId);
-                    const parts = this.wireProperty.split('.');
-                    let val = wire?.get(parts[0]);
-                    for (let i = 1; i < parts.length && val; i++) val = val[parts[i]];
-                    if (typeof val === 'string' && val.length > 0) this.initial = val;
-                }
+                const stale = window.tinymce.get(self.uid);
+                if (stale) stale.remove();
             } catch (e) {}
 
-            window.tinymce.init({
-                target: target,
-                license_key: 'gpl',
-                height: self.height,
-                min_height: self.height,
-                autoresize_bottom_margin: 16,
-                menubar: 'file edit view insert format table',
-                plugins: 'lists table pagebreak wordcount image link autolink code',
-                toolbar: 'undo redo | styles | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | link image table | pagebreak | removeformat | code',
-                image_title: true,
-                image_dimensions: true,
-                automatic_uploads: true,
-                images_upload_handler: function (blobInfo, progress) {
-                    return new Promise(function (resolve, reject) {
-                        const fd = new FormData();
-                        fd.append('file', blobInfo.blob(), blobInfo.filename());
-                        const token = document.querySelector('meta[name=csrf-token]')?.content || '';
-                        fetch('/events/contract-assets/upload', {
-                            method: 'POST',
-                            credentials: 'same-origin',
-                            headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
-                            body: fd,
-                        })
-                        .then(function (r) {
-                            if (!r.ok) throw new Error('Upload fehlgeschlagen (HTTP ' + r.status + ')');
-                            return r.json();
-                        })
-                        .then(function (data) {
-                            if (!data?.location) throw new Error('Keine URL zurueckerhalten');
-                            resolve(data.location);
-                        })
-                        .catch(function (err) {
-                            reject(err.message || 'Upload fehlgeschlagen');
+            // Frische Initial-Daten aus Livewire lesen (Blade-Wert kann veraltet sein).
+            self._refreshInitial();
+
+            // Safety-Net: falls 'init' nie feuert, Flag nach 10s zuruecksetzen,
+            // damit ein weiterer Sichtbarkeitswechsel neu booten kann.
+            const bootingId = setTimeout(function () {
+                self._booting = false;
+            }, 10000);
+
+            try {
+                window.tinymce.init({
+                    target: target,
+                    license_key: 'gpl',
+                    height: self.height,
+                    min_height: self.height,
+                    autoresize_bottom_margin: 16,
+                    menubar: 'file edit view insert format table',
+                    plugins: 'lists table pagebreak wordcount image link autolink code',
+                    toolbar: 'undo redo | styles | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | link image table | pagebreak | removeformat | code',
+                    image_title: true,
+                    image_dimensions: true,
+                    automatic_uploads: true,
+                    images_upload_handler: function (blobInfo) {
+                        return new Promise(function (resolve, reject) {
+                            const fd = new FormData();
+                            fd.append('file', blobInfo.blob(), blobInfo.filename());
+                            const token = document.querySelector('meta[name=csrf-token]')?.content || '';
+                            fetch('/events/contract-assets/upload', {
+                                method: 'POST',
+                                credentials: 'same-origin',
+                                headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
+                                body: fd,
+                            })
+                            .then(function (r) {
+                                if (!r.ok) throw new Error('Upload fehlgeschlagen (HTTP ' + r.status + ')');
+                                return r.json();
+                            })
+                            .then(function (data) {
+                                if (!data?.location) throw new Error('Keine URL zurueckerhalten');
+                                resolve(data.location);
+                            })
+                            .catch(function (err) {
+                                reject(err.message || 'Upload fehlgeschlagen');
+                            });
                         });
-                    });
-                },
-                table_use_colgroups: false,
-                promotion: false,
-                branding: false,
-                convert_urls: false,
-                relative_urls: false,
-                remove_script_host: false,
-                content_style: 'body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.6; color: #1a1a1a; margin: 16px; }',
-                setup: function (editor) {
-                    self._editor = editor;
-                    editor.on('init', function () {
-                        self._booting = false;
-                        editor.setContent(self.initial || '');
-                    });
-                    editor.on('remove', function () {
-                        self._booting = false;
-                    });
-                    editor.on('change keyup undo redo blur', function () {
-                        self._syncToLivewire(editor.getContent());
-                    });
-                },
-            });
+                    },
+                    table_use_colgroups: false,
+                    promotion: false,
+                    branding: false,
+                    convert_urls: false,
+                    relative_urls: false,
+                    remove_script_host: false,
+                    content_style: 'body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.6; color: #1a1a1a; margin: 16px; }',
+                    setup: function (editor) {
+                        editor.on('init', function () {
+                            clearTimeout(bootingId);
+                            self._editor = editor;
+                            self._booting = false;
+                            editor.setContent(self.initial || '');
+                        });
+                        editor.on('remove', function () {
+                            if (self._editor === editor) self._editor = null;
+                        });
+                        editor.on('change keyup undo redo blur', function () {
+                            self._syncToLivewire(editor.getContent());
+                        });
+                    },
+                });
+            } catch (err) {
+                clearTimeout(bootingId);
+                self._booting = false;
+                console.error('[tinymce-editor] init failed', err);
+            }
+        },
+
+        _refreshInitial() {
+            try {
+                if (!this._wireId || !window.Livewire) return;
+                const wire = window.Livewire.find(this._wireId);
+                const parts = this.wireProperty.split('.');
+                let val = wire?.get(parts[0]);
+                for (let i = 1; i < parts.length && val !== undefined && val !== null; i++) {
+                    val = val[parts[i]];
+                }
+                if (typeof val === 'string') this.initial = val;
+            } catch (e) {}
         },
 
         _syncToLivewire(html) {
