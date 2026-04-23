@@ -57,7 +57,7 @@
     }"
     x-init="$watch(() => $wire.get('{{ $field }}'), v => selected = v || '')"
     @keydown.escape.window="open = false"
-    @resize.window="recalc()"
+    @resize.window="open = false"
     @scroll.window.passive="open = false"
     class="w-full"
 >

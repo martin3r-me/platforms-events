@@ -49,7 +49,7 @@
      }"
      x-init="$watch(() => $wire.get('{{ $model }}'), v => val = v || '')"
      @keydown.escape.window="open = false"
-     @resize.window="recalc()"
+     @resize.window="open = false"
      @scroll.window.passive="open = false"
      data-disabled="{{ $disabled ? 'true' : 'false' }}"
      class="w-full relative">

@@ -64,7 +64,7 @@
      }"
      x-init="$watch(() => $wire.get('{{ $model }}'), v => val = v == null ? '' : String(v))"
      @keydown.escape.window="open = false"
-     @resize.window="recalc()"
+     @resize.window="open = false"
      @scroll.window.passive="open = false"
      class="w-full relative">
     @if($compact)

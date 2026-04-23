@@ -62,7 +62,7 @@
             }
          }"
          @keydown.escape.window="open = false"
-         @resize.window="recalc()"
+         @resize.window="open = false"
          @scroll.window.passive="open = false"
          class="w-full">
         <div class="w-full flex items-center gap-1 border border-[var(--ui-border)] rounded-md bg-white px-2 py-1 hover:border-[var(--ui-primary)]/40 transition"
