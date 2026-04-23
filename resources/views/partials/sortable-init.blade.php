@@ -26,22 +26,31 @@ window.sortableList = function (actionName) {
                     return setTimeout(function () { attach(attempts - 1); }, 50);
                 }
                 if (self._instance) return;
+                console.log('[sortableList] attach', { action: actionName, el: el, rows: el.querySelectorAll('[data-sortable-uuid]').length });
                 self._instance = window.Sortable.create(el, {
                     animation: 150,
                     handle: '.js-drag-handle',
-                    filter: 'input,textarea,select,button,a',   // solche Felder nicht versehentlich greifen
+                    filter: 'input,textarea,select,button,a',
                     preventOnFilter: false,
                     ghostClass: 'opacity-50',
                     chosenClass: 'ring-2',
+                    onStart: function (evt) {
+                        console.log('[sortableList] onStart', { action: actionName, oldIndex: evt.oldIndex });
+                    },
                     onEnd: function (evt) {
+                        console.log('[sortableList] onEnd', { action: actionName, oldIndex: evt.oldIndex, newIndex: evt.newIndex });
                         if (evt.oldIndex === evt.newIndex) return;
                         const uuids = Array.from(el.querySelectorAll('[data-sortable-uuid]'))
                             .map(function (e) { return e.dataset.sortableUuid; });
+                        console.log('[sortableList] calling', actionName, uuids);
                         if (self.$wire && typeof self.$wire.call === 'function') {
                             self.$wire.call(actionName, uuids);
+                        } else {
+                            console.warn('[sortableList] $wire.call nicht verfuegbar');
                         }
                     },
                 });
+                console.log('[sortableList] Sortable-Instanz erstellt');
             };
             attach();
 
