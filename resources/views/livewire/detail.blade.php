@@ -663,24 +663,13 @@
                             </x-ui-button>
                         @endif
                     </div>
-                    {{-- Floating Actionbar: erscheint nur bei Selektion --}}
-                    @if(count($selectedBookingUuids) > 0)
-                        <div class="flex items-center gap-3 px-4 py-2 bg-blue-50 border-b border-blue-200 text-[0.72rem]">
-                            <span class="font-semibold text-blue-900">{{ count($selectedBookingUuids) }} ausgewählt</span>
-                            <span class="text-blue-700/70 text-[0.65rem] hidden sm:inline">· Shift-Klick markiert Bereiche</span>
-                            <div class="ml-auto flex items-center gap-2">
-                                <x-ui-button variant="danger" size="sm"
-                                             wire:click="deleteSelectedBookings"
-                                             wire:confirm="{{ count($selectedBookingUuids) }} Buchung(en) wirklich loeschen?">
-                                    @svg('heroicon-o-trash', 'w-3.5 h-3.5 inline') Löschen
-                                </x-ui-button>
-                                <button type="button" wire:click="clearBookingSelection"
-                                        class="text-[0.7rem] text-blue-800 hover:text-blue-900 underline underline-offset-2 cursor-pointer">
-                                    Abbrechen
-                                </button>
-                            </div>
-                        </div>
-                    @endif
+                    <x-events::bulk-actionbar
+                        :count="count($selectedBookingUuids)"
+                        deleteAction="deleteSelectedBookings"
+                        clearAction="clearBookingSelection"
+                        label="Buchung"
+                        labelPlural="Buchungen" />
+
 
                     <div class="overflow-x-auto">
                         <table class="w-full border-collapse text-xs" x-data="{ lastIdx: null }">
@@ -707,28 +696,15 @@
                                     </tr>
                                 @endif
                                 @foreach($bookings as $b)
-                                    @php
-                                        $idx = $loop->index;
-                                        $isSelected = in_array($b->uuid, $selectedBookingUuids, true);
-                                    @endphp
+                                    @php $isSelected = in_array($b->uuid, $selectedBookingUuids, true); @endphp
                                     <tr class="border-b border-[var(--ui-border)]/40 hover:bg-[var(--ui-muted-5)]/40 group {{ $isSelected ? 'bg-blue-50/50' : '' }}">
-                                        <td class="p-0 w-[8px] relative cursor-pointer select-none"
-                                            title="Klicken zum Auswählen · Shift für Bereich · Doppelklick für Alle"
-                                            x-on:click.stop="
-                                                if ($event.detail === 2) {
-                                                    $wire.toggleAllBookings();
-                                                    return;
-                                                }
-                                                if ($event.shiftKey && lastIdx !== null && lastIdx !== {{ $idx }}) {
-                                                    const target = !{{ $isSelected ? 'true' : 'false' }};
-                                                    $wire.toggleBookingRange(lastIdx, {{ $idx }}, target);
-                                                } else {
-                                                    $wire.toggleBookingSelection(@js($b->uuid));
-                                                }
-                                                lastIdx = {{ $idx }};
-                                            ">
-                                            <span class="absolute inset-y-0 left-0 w-[3px] transition-colors {{ $isSelected ? 'bg-[var(--ui-primary)]' : 'bg-transparent group-hover:bg-slate-300' }}"></span>
-                                        </td>
+                                        <x-events::select-handle
+                                            :uuid="$b->uuid"
+                                            :index="$loop->index"
+                                            :isSelected="$isSelected"
+                                            toggle="toggleBookingSelection"
+                                            range="toggleBookingRange"
+                                            toggleAll="toggleAllBookings" />
                                         <td class="px-3 py-1.5">
                                             @php
                                                 $currentBookingDate = $inlineBookings[$b->uuid]['datum'] ?? null;

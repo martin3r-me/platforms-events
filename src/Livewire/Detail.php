@@ -22,6 +22,7 @@ use Platform\Events\Models\PickList;
 use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\ScheduleItem;
 use Platform\Events\Services\ActivityLogger;
+use Platform\Events\Services\MultiSelectHelper;
 use Platform\Events\Services\SettingsService;
 use Platform\Locations\Models\Location;
 
@@ -640,43 +641,25 @@ class Detail extends Component
             $booking->delete();
             ActivityLogger::log($this->event, 'booking', "Raumbuchung geloescht: {$label}");
         }
-        $this->selectedBookingUuids = array_values(array_diff($this->selectedBookingUuids, [$uuid]));
+        $this->selectedBookingUuids = MultiSelectHelper::remove($this->selectedBookingUuids, [$uuid]);
     }
 
     public function toggleAllBookings(): void
     {
         $all = $this->event->bookings()->pluck('uuid')->map(fn ($u) => (string) $u)->all();
-        $this->selectedBookingUuids = count($this->selectedBookingUuids) === count($all) ? [] : $all;
+        $this->selectedBookingUuids = MultiSelectHelper::toggleAll($this->selectedBookingUuids, $all);
     }
 
     public function toggleBookingSelection(string $uuid): void
     {
-        if (in_array($uuid, $this->selectedBookingUuids, true)) {
-            $this->selectedBookingUuids = array_values(array_diff($this->selectedBookingUuids, [$uuid]));
-        } else {
-            $this->selectedBookingUuids[] = $uuid;
-        }
+        $this->selectedBookingUuids = MultiSelectHelper::toggleSingle($this->selectedBookingUuids, $uuid);
     }
 
-    /**
-     * Shift-Click Range-Select: Indizes beziehen sich auf die geladene
-     * Buchungs-Liste (sort_order). Wenn $select = true werden alle
-     * Buchungen im Bereich ausgewaehlt, sonst abgewaehlt.
-     */
     public function toggleBookingRange(int $from, int $to, bool $select): void
     {
         $uuids = $this->event->bookings()->orderBy('sort_order')->pluck('uuid')
             ->map(fn ($u) => (string) $u)->toArray();
-
-        $start = max(0, min($from, $to));
-        $end   = min(count($uuids) - 1, max($from, $to));
-        $range = array_slice($uuids, $start, $end - $start + 1);
-
-        if ($select) {
-            $this->selectedBookingUuids = array_values(array_unique(array_merge($this->selectedBookingUuids, $range)));
-        } else {
-            $this->selectedBookingUuids = array_values(array_diff($this->selectedBookingUuids, $range));
-        }
+        $this->selectedBookingUuids = MultiSelectHelper::toggleRange($this->selectedBookingUuids, $uuids, $from, $to, $select);
     }
 
     public function clearBookingSelection(): void
