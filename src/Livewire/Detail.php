@@ -592,6 +592,36 @@ class Detail extends Component
         ]);
     }
 
+    /**
+     * Wenn bei der neuen Raumbuchung ein Tag gewaehlt wird, Uhrzeit und
+     * Personenzahl aus dem EventDay vorschlagen – aber nur, wenn die Felder
+     * noch leer sind (User-Eingabe nie ueberschreiben).
+     */
+    public function updatedNewBookingInline($value, $key): void
+    {
+        if ($key !== 'datum' || empty($value)) {
+            return;
+        }
+
+        $day = $this->event->days()->whereDate('datum', $value)->first();
+        if (!$day) {
+            return;
+        }
+
+        if (empty($this->newBookingInline['beginn']) && !empty($day->von)) {
+            $this->newBookingInline['beginn'] = (string) $day->von;
+        }
+        if (empty($this->newBookingInline['ende']) && !empty($day->bis)) {
+            $this->newBookingInline['ende'] = (string) $day->bis;
+        }
+        if (empty($this->newBookingInline['pers'])) {
+            $pers = $day->pers_bis ?: $day->pers_von;
+            if (!empty($pers)) {
+                $this->newBookingInline['pers'] = (string) $pers;
+            }
+        }
+    }
+
     public function addInlineBooking(): void
     {
         $data = $this->newBookingInline;

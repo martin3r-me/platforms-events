@@ -764,7 +764,7 @@
                     <div class="p-3 bg-[var(--ui-muted-5)]/50 border-t border-[var(--ui-border)]">
                         <div class="grid grid-cols-12 gap-2 items-start">
                             <div class="col-span-2">
-                                <select wire:model.defer="newBookingInline.datum"
+                                <select wire:model.live="newBookingInline.datum"
                                         :disabled="@js($newBookingInline['taeglich'] ?? false) || {{ $days->isEmpty() ? 'true' : 'false' }}"
                                         class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30 disabled:opacity-50">
                                     <option value="">{{ $days->isEmpty() ? '— erst Termine anlegen —' : '— Tag wählen —' }}</option>
