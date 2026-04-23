@@ -48,6 +48,7 @@ class Event extends Model
         'follow_up_date', 'follow_up_note',
         // Lieferung
         'delivery_supplier', 'delivery_crm_company_id', 'delivery_contact', 'delivery_crm_contact_id',
+        'delivery_address', 'delivery_address_crm_company_id',
         // Eingang
         'inquiry_date', 'inquiry_time', 'inquiry_note', 'potential',
         // Weiterleitung

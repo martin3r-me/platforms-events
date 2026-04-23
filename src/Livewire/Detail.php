@@ -163,9 +163,10 @@ class Detail extends Component
     ];
 
     protected const CRM_SLOTS = [
-        'organizer' => ['id' => 'crm_company_id',         'label' => 'customer'],
-        'invoice'   => ['id' => 'invoice_crm_company_id', 'label' => 'invoice_to'],
-        'delivery'  => ['id' => 'delivery_crm_company_id','label' => 'delivery_supplier'],
+        'organizer'        => ['id' => 'crm_company_id',                   'label' => 'customer'],
+        'invoice'          => ['id' => 'invoice_crm_company_id',           'label' => 'invoice_to'],
+        'delivery'         => ['id' => 'delivery_crm_company_id',          'label' => 'delivery_supplier'],
+        'delivery_address' => ['id' => 'delivery_address_crm_company_id',  'label' => 'delivery_address'],
     ];
 
     /**

@@ -316,6 +316,20 @@
                         ])
                     </div>
                 </div>
+                <div>
+                    <label class="{{ $lbl }}">Lieferadresse</label>
+                    @php $sa = ($crmSlots ?? [])['delivery_address'] ?? []; @endphp
+                    @include('events::partials.crm-company-picker', [
+                        'slot'          => 'delivery_address',
+                        'available'     => $crmCompanyAvailable ?? false,
+                        'options'       => $sa['options']   ?? [],
+                        'label'         => ($sa['label']     ?? null) ?: $event->delivery_address,
+                        'url'           => $sa['url']       ?? null,
+                        'currentId'     => $sa['currentId'] ?? null,
+                        'fallbackField' => 'delivery_address',
+                        'placeholder'   => '— CRM-Firma wählen —',
+                    ])
+                </div>
             </div>
         </x-ui-panel>
 
