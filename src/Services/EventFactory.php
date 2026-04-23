@@ -54,6 +54,10 @@ class EventFactory
             $payload['sign_left']   = $payload['sign_left']   ?? $userName;
         }
 
+        // Eingang (inquiry) automatisch auf Erstellzeitpunkt, bleibt editierbar.
+        $payload['inquiry_date'] = $payload['inquiry_date'] ?? now()->toDateString();
+        $payload['inquiry_time'] = $payload['inquiry_time'] ?? now()->format('H:i');
+
         $event = Event::create($payload);
 
         if ($createDays && !empty($payload['start_date'])) {
