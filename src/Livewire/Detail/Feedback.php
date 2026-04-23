@@ -8,6 +8,7 @@ use Livewire\Component;
 use Platform\Events\Models\Event;
 use Platform\Events\Models\FeedbackEntry;
 use Platform\Events\Models\FeedbackLink;
+use Platform\Events\Services\ActivityLogger;
 
 class Feedback extends Component
 {
@@ -43,7 +44,7 @@ class Feedback extends Component
     {
         if (trim($this->newLabel) === '') return;
         $event = $this->event();
-        FeedbackLink::create([
+        $link = FeedbackLink::create([
             'team_id'   => $event->team_id,
             'user_id'   => Auth::id(),
             'event_id'  => $event->id,
@@ -52,6 +53,7 @@ class Feedback extends Component
             'token'     => Str::random(48),
             'is_active' => true,
         ]);
+        ActivityLogger::log($event, 'feedback', "Feedback-Link '{$link->label}' ({$link->audience}) angelegt");
         $this->newLabel = '';
         $this->newAudience = 'participant';
         $this->showNewLink = false;
@@ -62,12 +64,19 @@ class Feedback extends Component
         $link = FeedbackLink::where('event_id', $this->eventId)->find($linkId);
         if ($link) {
             $link->update(['is_active' => !$link->is_active]);
+            $state = $link->is_active ? 'aktiviert' : 'deaktiviert';
+            ActivityLogger::log($this->event(), 'feedback', "Feedback-Link '{$link->label}' {$state}");
         }
     }
 
     public function deleteLink(int $linkId): void
     {
-        FeedbackLink::where('event_id', $this->eventId)->where('id', $linkId)->delete();
+        $link = FeedbackLink::where('event_id', $this->eventId)->where('id', $linkId)->first();
+        if ($link) {
+            $label = $link->label;
+            $link->delete();
+            ActivityLogger::log($this->event(), 'feedback', "Feedback-Link '{$label}' geloescht");
+        }
     }
 
     public function render()

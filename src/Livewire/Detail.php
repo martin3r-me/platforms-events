@@ -931,8 +931,11 @@ class Detail extends Component
 
         $payload = $this->scheduleForm;
 
+        $label = trim((string) ($payload['beschreibung'] ?? '')) ?: 'Eintrag';
+
         if ($this->editingScheduleUuid) {
             $this->event->scheduleItems()->where('uuid', $this->editingScheduleUuid)->update($payload);
+            ActivityLogger::log($this->event, 'schedule', "Ablauf-Eintrag aktualisiert: {$label}");
         } else {
             $maxSort = (int) $this->event->scheduleItems()->max('sort_order');
             ScheduleItem::create(array_merge($payload, [
@@ -941,6 +944,7 @@ class Detail extends Component
                 'user_id'    => Auth::id(),
                 'sort_order' => $maxSort + 1,
             ]));
+            ActivityLogger::log($this->event, 'schedule', "Ablauf-Eintrag angelegt: {$label}");
         }
 
         $this->showScheduleModal = false;
@@ -948,7 +952,12 @@ class Detail extends Component
 
     public function deleteSchedule(string $uuid): void
     {
-        $this->event->scheduleItems()->where('uuid', $uuid)->delete();
+        $item = $this->event->scheduleItems()->where('uuid', $uuid)->first();
+        if ($item) {
+            $label = trim((string) $item->beschreibung) ?: 'Eintrag';
+            $item->delete();
+            ActivityLogger::log($this->event, 'schedule', "Ablauf-Eintrag geloescht: {$label}");
+        }
     }
 
     // ---------- Inline-Edit: Schedule ----------
@@ -995,6 +1004,8 @@ class Detail extends Component
             'bemerkung'    => $data['bemerkung'] ?: null,
             'sort_order'   => $maxSort + 1,
         ]);
+
+        ActivityLogger::log($this->event, 'schedule', "Ablauf-Eintrag angelegt: {$data['beschreibung']}");
 
         $this->newScheduleInline = [
             'datum' => '', 'von' => '', 'bis' => '',

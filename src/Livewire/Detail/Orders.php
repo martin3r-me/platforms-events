@@ -9,6 +9,7 @@ use Platform\Events\Models\Event;
 use Platform\Events\Models\OrderItem;
 use Platform\Events\Models\OrderPosition;
 use Platform\Events\Models\QuoteItem;
+use Platform\Events\Services\ActivityLogger;
 use Platform\Events\Services\ArticleSearchService;
 use Platform\Events\Services\PositionCalculator;
 use Platform\Events\Services\SettingsService;
@@ -98,7 +99,7 @@ class Orders extends Component
         if (!$this->itemEventDayId) return;
         $event = $this->event();
         $maxSort = (int) OrderItem::where('event_day_id', $this->itemEventDayId)->max('sort_order');
-        OrderItem::create([
+        $item = OrderItem::create([
             'team_id'      => $event->team_id,
             'user_id'      => Auth::id(),
             'event_day_id' => $this->itemEventDayId,
@@ -107,6 +108,7 @@ class Orders extends Component
             'lieferant'    => $this->itemLieferant,
             'sort_order'   => $maxSort + 1,
         ]);
+        ActivityLogger::log($event, 'order', "Bestellung \"{$item->typ}\" angelegt");
         $this->showItemModal = false;
     }
 
@@ -114,7 +116,11 @@ class Orders extends Component
     {
         $event = $this->event();
         $item = OrderItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($itemId);
-        if ($item) $item->delete();
+        if ($item) {
+            $typ = $item->typ;
+            $item->delete();
+            ActivityLogger::log($event, 'order', "Bestellung \"{$typ}\" geloescht");
+        }
     }
 
     public function updateItemStatus(string $status): void
@@ -122,7 +128,13 @@ class Orders extends Component
         if (!$this->activeItemId) return;
         $event = $this->event();
         $item = OrderItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($this->activeItemId);
-        if ($item) $item->update(['status' => $status]);
+        if ($item) {
+            $old = (string) $item->status;
+            $item->update(['status' => $status]);
+            if ($old !== $status) {
+                ActivityLogger::log($event, 'order', "Bestellung '{$item->typ}' Status: '{$old}' → '{$status}'");
+            }
+        }
     }
 
     public function updateItemLieferant(string $lieferant): void
