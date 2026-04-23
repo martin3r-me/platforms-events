@@ -62,6 +62,9 @@ class Detail extends Component
 
     // Inline-Edit: Bookings (Raeume) – Map UUID → Felder
     public array $inlineBookings = [];
+
+    // Mehrfachauswahl fuer Bulk-Delete in der Raeume-Tabelle
+    public array $selectedBookingUuids = [];
     public array $newBookingInline = [
         'datum'       => '', 'beginn' => '', 'ende' => '',
         'pers'        => '', 'location_id' => null, 'raum' => '',
@@ -584,6 +587,22 @@ class Detail extends Component
     public function deleteBooking(string $uuid): void
     {
         $this->event->bookings()->where('uuid', $uuid)->delete();
+        $this->selectedBookingUuids = array_values(array_diff($this->selectedBookingUuids, [$uuid]));
+    }
+
+    public function toggleAllBookings(): void
+    {
+        $all = $this->event->bookings()->pluck('uuid')->map(fn ($u) => (string) $u)->all();
+        $this->selectedBookingUuids = count($this->selectedBookingUuids) === count($all) ? [] : $all;
+    }
+
+    public function deleteSelectedBookings(): void
+    {
+        if (empty($this->selectedBookingUuids)) {
+            return;
+        }
+        $this->event->bookings()->whereIn('uuid', $this->selectedBookingUuids)->delete();
+        $this->selectedBookingUuids = [];
     }
 
     // ---------- Inline-Edit: Bookings ----------

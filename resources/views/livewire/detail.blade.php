@@ -657,6 +657,13 @@
                             <h3 class="text-[0.82rem] font-bold text-[var(--ui-secondary)] m-0 leading-tight">Räume</h3>
                             <div class="text-[0.65rem] text-[var(--ui-muted)] mt-0.5">{{ $bookings->count() }} Buchung(en)</div>
                         </div>
+                        @if(count($selectedBookingUuids) > 0)
+                            <x-ui-button variant="danger" size="sm"
+                                         wire:click="deleteSelectedBookings"
+                                         wire:confirm="{{ count($selectedBookingUuids) }} Buchung(en) wirklich loeschen?">
+                                @svg('heroicon-o-trash', 'w-3.5 h-3.5 inline') {{ count($selectedBookingUuids) }} löschen
+                            </x-ui-button>
+                        @endif
                         @if($days->isNotEmpty())
                             <x-ui-button variant="secondary" size="sm" wire:click="openBulkBooking">
                                 @svg('heroicon-o-calendar-days', 'w-3.5 h-3.5 inline') Alle Termine übernehmen
@@ -667,6 +674,15 @@
                         <table class="w-full border-collapse text-xs">
                             <thead>
                                 <tr class="border-b border-[var(--ui-border)] bg-[var(--ui-muted-5)]">
+                                    <th class="px-2 py-2 text-center w-[32px]">
+                                        @if($bookings->isNotEmpty())
+                                            <input type="checkbox"
+                                                   wire:click="toggleAllBookings"
+                                                   @checked(count($selectedBookingUuids) === $bookings->count() && $bookings->count() > 0)
+                                                   class="w-3.5 h-3.5 accent-[var(--ui-primary)] cursor-pointer"
+                                                   title="Alle auswählen">
+                                        @endif
+                                    </th>
                                     <th class="px-3 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] w-[115px]">Datum</th>
                                     <th class="px-2 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] w-[70px]">Beginn</th>
                                     <th class="px-2 py-2 text-left text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] w-[70px]">Ende</th>
@@ -681,13 +697,19 @@
                             <tbody>
                                 @if($bookings->isEmpty())
                                     <tr>
-                                        <td colspan="9" class="px-3 py-8 text-center text-[var(--ui-muted)] text-xs">
+                                        <td colspan="10" class="px-3 py-8 text-center text-[var(--ui-muted)] text-xs">
                                             Noch keine Räume – unten hinzufügen.
                                         </td>
                                     </tr>
                                 @endif
                                 @foreach($bookings as $b)
-                                    <tr class="border-b border-[var(--ui-border)]/40 hover:bg-[var(--ui-muted-5)]/40 group">
+                                    <tr class="border-b border-[var(--ui-border)]/40 hover:bg-[var(--ui-muted-5)]/40 group {{ in_array($b->uuid, $selectedBookingUuids, true) ? 'bg-blue-50/40' : '' }}">
+                                        <td class="px-2 py-1.5 text-center">
+                                            <input type="checkbox"
+                                                   value="{{ $b->uuid }}"
+                                                   wire:model.live="selectedBookingUuids"
+                                                   class="w-3.5 h-3.5 accent-[var(--ui-primary)] cursor-pointer">
+                                        </td>
                                         <td class="px-3 py-1.5">
                                             @php
                                                 $currentBookingDate = $inlineBookings[$b->uuid]['datum'] ?? null;
