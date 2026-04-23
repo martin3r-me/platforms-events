@@ -27,6 +27,18 @@ window.sortableList = function (actionName) {
                 }
                 if (self._instance) return;
                 console.log('[sortableList] attach', { action: actionName, el: el, rows: el.querySelectorAll('[data-sortable-uuid]').length });
+
+                // Debug: pruefen ob mousedown ueberhaupt durchkommt
+                el.addEventListener('mousedown', function (e) {
+                    const handle = e.target.closest('.js-drag-handle');
+                    console.log('[sortableList] native mousedown', {
+                        targetTag: e.target.tagName,
+                        targetClass: e.target.className,
+                        handleFound: !!handle,
+                        handleClass: handle?.className,
+                    });
+                }, true);
+
                 self._instance = window.Sortable.create(el, {
                     animation: 150,
                     handle: '.js-drag-handle',
