@@ -115,7 +115,7 @@
                     <th class="w-8"></th>
                 </tr>
             </thead>
-            <tbody x-data="sortableList('reorderQuotePositions')">
+            <tbody data-sortable-action="reorderQuotePositions">
                 @forelse($positions as $p)
                     @php
                         $rs = $rowInlineStyle((string) $p->gruppe);

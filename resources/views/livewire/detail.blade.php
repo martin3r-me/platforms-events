@@ -688,7 +688,7 @@
                                     <th class="w-8"></th>
                                 </tr>
                             </thead>
-                            <tbody x-data="sortableList('reorderBookings')">
+                            <tbody data-sortable-action="reorderBookings">
                                 @if($bookings->isEmpty())
                                     <tr>
                                         <td colspan="10" class="px-3 py-8 text-center text-[var(--ui-muted)] text-xs">
@@ -894,7 +894,7 @@
                                     <th class="w-8"></th>
                                 </tr>
                             </thead>
-                            <tbody x-data="sortableList('reorderSchedule')">
+                            <tbody data-sortable-action="reorderSchedule">
                                 @if($schedule->isEmpty())
                                     <tr>
                                         <td colspan="8" class="px-3 py-8 text-center text-[var(--ui-muted)] text-xs">

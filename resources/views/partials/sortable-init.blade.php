@@ -2,117 +2,80 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
 /**
- * Alpine-Factory fuer sortierbare Livewire-Listen.
- * Einbinden auf dem Container (z.B. tbody):
- *   x-data="sortableList('reorderBookings')"
- * Die Kinder tragen [data-sortable-uuid] und eine Zelle mit .js-drag-handle.
- * Beim Drop wird $wire[actionName](uuids[]) gerufen.
+ * Sortable-Init ohne Alpine: alle Container mit [data-sortable-action]
+ * werden gescannt und initialisiert. Re-Init bei Livewire-Morph via
+ * Livewire-Hook.
+ *
+ * Benutzung:
+ *   <tbody data-sortable-action="reorderBookings">
+ *       <tr data-sortable-uuid="...">...</tr>
+ *   </tbody>
  */
-window.sortableList = function (actionName) {
-    return {
-        _instance: null,
+(function () {
+    if (window._eventsSortableBooted) return;
+    window._eventsSortableBooted = true;
 
-        init() {
-            const self = this;
-            const el = this.$el;
+    const KEY = '__eventsSortableInstance';
 
-            const attach = function (attempts) {
-                attempts = attempts == null ? 200 : attempts;
-                if (!window.Sortable) {
-                    if (attempts <= 0) {
-                        console.warn('[sortableList] SortableJS nicht geladen – Drag-&-Drop deaktiviert');
-                        return;
-                    }
-                    return setTimeout(function () { attach(attempts - 1); }, 50);
+    function initOne(el) {
+        if (!window.Sortable) return false;
+        if (el[KEY]) return true;
+
+        const action = el.getAttribute('data-sortable-action');
+        if (!action) return false;
+
+        el[KEY] = window.Sortable.create(el, {
+            animation: 150,
+            handle: '.js-drag-handle',
+            filter: 'input,textarea,select,button,a',
+            preventOnFilter: false,
+            forceFallback: true,
+            fallbackTolerance: 3,
+            ghostClass: 'opacity-50',
+            chosenClass: 'ring-2',
+            onEnd: function (evt) {
+                if (evt.oldIndex === evt.newIndex) return;
+                const uuids = Array.from(el.querySelectorAll('[data-sortable-uuid]'))
+                    .map(function (n) { return n.dataset.sortableUuid; });
+
+                // Naechsten Livewire-Component nach oben finden und Action rufen.
+                const wireEl = el.closest('[wire\\:id]');
+                if (!wireEl || !window.Livewire) return;
+                const component = window.Livewire.find(wireEl.getAttribute('wire:id'));
+                if (component && typeof component.call === 'function') {
+                    component.call(action, uuids);
                 }
-                if (self._instance) return;
-                console.log('[sortableList] attach', { action: actionName, el: el, rows: el.querySelectorAll('[data-sortable-uuid]').length });
+            },
+        });
+        console.log('[eventsSortable] init', { action: action, el: el, rows: el.querySelectorAll('[data-sortable-uuid]').length });
+        return true;
+    }
 
-                // Debug: pruefen ob mousedown ueberhaupt durchkommt
-                el.addEventListener('mousedown', function (e) {
-                    const handle = e.target.closest('.js-drag-handle');
-                    console.log('[sortableList] mousedown@tbody', {
-                        targetTag: e.target.tagName,
-                        handleFound: !!handle,
-                    });
-                }, true);
+    function initAll(root) {
+        const scope = root || document;
+        const nodes = scope.querySelectorAll('[data-sortable-action]');
+        nodes.forEach(initOne);
+    }
 
-                // Zusaetzlich auf document – wenn das feuert aber tbody nicht,
-                // stoppt etwas dazwischen die Propagation.
-                if (!window._sortableDebugDoc) {
-                    window._sortableDebugDoc = true;
-                    document.addEventListener('mousedown', function (e) {
-                        if (e.target.closest('.js-drag-handle')) {
-                            console.log('[sortableList] mousedown@document', {
-                                targetTag: e.target.tagName,
-                                path: (e.composedPath ? e.composedPath() : []).slice(0, 8).map(function (n) { return n.tagName || n.nodeName; }),
-                            });
-                        }
-                    }, true);
-                }
+    // SortableJS kann asynchron laden. Retry, bis verfuegbar.
+    (function waitForSortable(attempts) {
+        if (window.Sortable) return initAll();
+        if (attempts <= 0) return console.warn('[eventsSortable] SortableJS nicht geladen');
+        setTimeout(function () { waitForSortable(attempts - 1); }, 50);
+    })(200);
 
-                // Debug: mousemove beobachten (wird erst interessant, wenn User zieht)
-                if (!window._sortableDebugMove) {
-                    window._sortableDebugMove = true;
-                    let moveCount = 0;
-                    document.addEventListener('mousemove', function () {
-                        moveCount++;
-                        if (moveCount % 20 === 0) {
-                            console.log('[sortableList] mousemove @doc (nur jede 20.)', moveCount);
-                        }
-                    }, true);
-                }
-
-                self._instance = window.Sortable.create(el, {
-                    animation: 150,
-                    handle: '.js-drag-handle',
-                    filter: 'input,textarea,select,button,a',
-                    preventOnFilter: false,
-                    // forceFallback: SortableJS nutzt eigenen Drag-Mechanismus
-                    // statt der nativen HTML5-Drag-API. Für Tabellenzeilen
-                    // deutlich stabiler (native Drag auf <tr> ist browserabhaengig).
-                    forceFallback: true,
-                    fallbackTolerance: 3,
-                    ghostClass: 'opacity-50',
-                    chosenClass: 'ring-2',
-                    onChoose: function (evt) {
-                        console.log('[sortableList] onChoose', { action: actionName, item: evt.item, target: evt.originalEvent?.target });
-                    },
-                    onStart: function (evt) {
-                        console.log('[sortableList] onStart', { action: actionName, oldIndex: evt.oldIndex });
-                    },
-                    onEnd: function (evt) {
-                        console.log('[sortableList] onEnd', { action: actionName, oldIndex: evt.oldIndex, newIndex: evt.newIndex });
-                        if (evt.oldIndex === evt.newIndex) return;
-                        const uuids = Array.from(el.querySelectorAll('[data-sortable-uuid]'))
-                            .map(function (e) { return e.dataset.sortableUuid; });
-                        console.log('[sortableList] calling', actionName, uuids);
-                        if (self.$wire && typeof self.$wire.call === 'function') {
-                            self.$wire.call(actionName, uuids);
-                        } else {
-                            console.warn('[sortableList] $wire.call nicht verfuegbar');
-                        }
-                    },
-                });
-                console.log('[sortableList] Sortable-Instanz erstellt', {
-                    handle: self._instance.option('handle'),
-                    filter: self._instance.option('filter'),
-                    draggable: self._instance.option('draggable'),
-                    forceFallback: self._instance.option('forceFallback'),
-                    disabled: self._instance.option('disabled'),
-                });
-            };
-            attach();
-
-            // Teardown bei Alpine-Destroy
-            return function () {
-                if (self._instance) {
-                    try { self._instance.destroy(); } catch (e) {}
-                    self._instance = null;
-                }
-            };
-        },
-    };
-};
+    // Initial + bei Livewire-Updates
+    document.addEventListener('DOMContentLoaded', function () { initAll(); });
+    document.addEventListener('livewire:navigated', function () { initAll(); });
+    document.addEventListener('livewire:initialized', function () {
+        initAll();
+        if (window.Livewire && typeof window.Livewire.hook === 'function') {
+            window.Livewire.hook('morph.updated', function () {
+                // Nach Morph koennen neue sortable-Container aufgetaucht sein.
+                initAll();
+            });
+        }
+    });
+})();
 </script>
 @endonce
