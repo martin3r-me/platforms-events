@@ -313,8 +313,17 @@
 
                 <div>
                     <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Kunde</label>
-                    <input wire:model="customer" type="text" placeholder="z.B. Max Mustermann GmbH"
-                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                    @php $sc = $crmSlots['customer'] ?? []; @endphp
+                    @include('events::partials.crm-company-picker', [
+                        'slot'          => 'customer',
+                        'available'     => $crmCompanyAvailable,
+                        'options'       => $sc['options']   ?? [],
+                        'label'         => $sc['label']     ?? null,
+                        'url'           => $sc['url']       ?? null,
+                        'currentId'     => $sc['currentId'] ?? null,
+                        'fallbackField' => 'customer',
+                        'placeholder'   => '— CRM-Firma wählen —',
+                    ])
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">

@@ -38,6 +38,11 @@ class Manage extends Component
     #[Validate('nullable|string|max:255')]
     public ?string $customer = null;
 
+    #[Validate('nullable|integer')]
+    public ?int $crm_company_id = null;
+
+    public array $crmSearch = ['customer' => ''];
+
     #[Validate('required|date')]
     public string $start_date = '';
 
@@ -68,9 +73,29 @@ class Manage extends Component
 
     protected function resetCreateForm(): void
     {
-        $this->reset(['name', 'customer', 'start_date', 'end_date']);
+        $this->reset(['name', 'customer', 'start_date', 'end_date', 'crm_company_id']);
+        $this->crmSearch = ['customer' => ''];
         $this->status = 'Option';
         $this->resetErrorBag();
+    }
+
+    public function pickCrmCompany(string $slot, ?int $companyId, ?string $label = null): void
+    {
+        if ($slot !== 'customer') return;
+
+        $this->crm_company_id = $companyId ?: null;
+        if ($companyId && $label !== null && trim($label) !== '') {
+            $this->customer = trim($label);
+        }
+        $this->crmSearch[$slot] = '';
+    }
+
+    public function clearCrmCompany(string $slot): void
+    {
+        if ($slot !== 'customer') return;
+
+        $this->crm_company_id = null;
+        $this->customer = null;
     }
 
     public function create(): void
@@ -81,11 +106,12 @@ class Manage extends Component
         $team = $user->currentTeam;
 
         $event = EventFactory::create($user, $team->id, [
-            'name'       => $data['name'],
-            'customer'   => $data['customer'] ?? null,
-            'start_date' => $data['start_date'],
-            'end_date'   => $data['end_date'] ?? null,
-            'status'     => $data['status'] ?? 'Option',
+            'name'           => $data['name'],
+            'customer'       => $data['customer'] ?? null,
+            'crm_company_id' => $this->crm_company_id,
+            'start_date'     => $data['start_date'],
+            'end_date'       => $data['end_date'] ?? null,
+            'status'         => $data['status'] ?? 'Option',
         ]);
 
         $this->showCreateModal = false;
@@ -179,13 +205,32 @@ class Manage extends Component
             ->orderBy('sort_order')
             ->get();
 
+        // CRM-Company-Picker fuer das Create-Modal (optionale Kopplung an CRM).
+        $crmCompanyAvailable = app()->bound(\Platform\Core\Contracts\CrmCompanyOptionsProviderInterface::class);
+        $crmProvider = $crmCompanyAvailable ? app(\Platform\Core\Contracts\CrmCompanyOptionsProviderInterface::class) : null;
+        $crmResolver = app()->bound(\Platform\Core\Contracts\CrmCompanyResolverInterface::class)
+            ? app(\Platform\Core\Contracts\CrmCompanyResolverInterface::class)
+            : null;
+
+        $query = trim($this->crmSearch['customer'] ?? '');
+        $crmSlots = [
+            'customer' => [
+                'options'   => $crmProvider ? $crmProvider->options($query !== '' ? $query : null, 30) : [],
+                'label'     => $this->crm_company_id && $crmResolver ? $crmResolver->displayName($this->crm_company_id) : ($this->customer ?: null),
+                'url'       => $this->crm_company_id && $crmResolver ? $crmResolver->url($this->crm_company_id) : null,
+                'currentId' => $this->crm_company_id,
+            ],
+        ];
+
         return view('events::livewire.manage', [
-            'events'         => $events,
-            'stats'          => $stats,
-            'periodStart'    => $periodStart,
-            'periodEnd'      => $periodEnd,
-            'statusOptions'  => self::STATUS_OPTIONS,
-            'mrFields'       => $mrFields,
+            'events'              => $events,
+            'stats'               => $stats,
+            'periodStart'         => $periodStart,
+            'periodEnd'           => $periodEnd,
+            'statusOptions'       => self::STATUS_OPTIONS,
+            'mrFields'            => $mrFields,
+            'crmCompanyAvailable' => $crmCompanyAvailable,
+            'crmSlots'            => $crmSlots,
         ])->layout('platform::layouts.app');
     }
 }

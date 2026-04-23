@@ -6,6 +6,7 @@
     'url'         => null,
     'currentId'   => null,
     'fallbackField' => null,
+    'fallbackPrefix' => 'event.',
     'placeholder' => '— CRM-Firma wählen —',
 ])
 
@@ -16,7 +17,7 @@
 @if(!$available)
     <div class="flex items-center gap-1.5">
         @if($fallbackField)
-            <input wire:model.blur="event.{{ $fallbackField }}" type="text"
+            <input wire:model.blur="{{ $fallbackPrefix }}{{ $fallbackField }}" type="text"
                    placeholder="{{ $placeholder }}"
                    class="flex-1 border border-[var(--ui-border)] rounded-md px-2 py-1 text-[0.7rem] focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
         @endif
@@ -127,6 +128,15 @@
                         </div>
                     @endforelse
                 </div>
+
+                @if(\Illuminate\Support\Facades\Route::has('crm.companies.index'))
+                    <a href="{{ route('crm.companies.index') }}" target="_blank" rel="noopener"
+                       class="flex items-center justify-center gap-1.5 px-3 py-2 border-t border-slate-100 bg-slate-50 hover:bg-blue-50 text-[0.7rem] text-blue-700 hover:text-blue-900 transition">
+                        @svg('heroicon-o-plus-circle', 'w-3.5 h-3.5')
+                        <span>Nicht dabei? Im CRM anlegen</span>
+                        @svg('heroicon-o-arrow-top-right-on-square', 'w-3 h-3 opacity-60')
+                    </a>
+                @endif
             </div>
         </template>
     </div>
