@@ -16,21 +16,29 @@ window.sortableList = function (actionName) {
             const self = this;
             const el = this.$el;
 
-            const attach = function () {
-                if (!window.Sortable) return setTimeout(attach, 50);
+            const attach = function (attempts) {
+                attempts = attempts == null ? 200 : attempts;
+                if (!window.Sortable) {
+                    if (attempts <= 0) {
+                        console.warn('[sortableList] SortableJS nicht geladen – Drag-&-Drop deaktiviert');
+                        return;
+                    }
+                    return setTimeout(function () { attach(attempts - 1); }, 50);
+                }
                 if (self._instance) return;
                 self._instance = window.Sortable.create(el, {
                     animation: 150,
                     handle: '.js-drag-handle',
-                    draggable: '[data-sortable-uuid]',
+                    filter: 'input,textarea,select,button,a',   // solche Felder nicht versehentlich greifen
+                    preventOnFilter: false,
                     ghostClass: 'opacity-50',
                     chosenClass: 'ring-2',
-                    forceFallback: false,
-                    onEnd: function () {
+                    onEnd: function (evt) {
+                        if (evt.oldIndex === evt.newIndex) return;
                         const uuids = Array.from(el.querySelectorAll('[data-sortable-uuid]'))
                             .map(function (e) { return e.dataset.sortableUuid; });
-                        if (self.$wire && typeof self.$wire[actionName] === 'function') {
-                            self.$wire[actionName](uuids);
+                        if (self.$wire && typeof self.$wire.call === 'function') {
+                            self.$wire.call(actionName, uuids);
                         }
                     },
                 });
