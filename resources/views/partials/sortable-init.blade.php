@@ -62,7 +62,6 @@
                 }
             },
         });
-        console.log('[eventsSortable] init', { action: action, el: el, rows: el.querySelectorAll('[data-sortable-uuid]').length });
         return true;
     }
 
