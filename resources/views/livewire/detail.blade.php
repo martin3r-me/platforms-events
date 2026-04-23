@@ -653,10 +653,15 @@
                 <x-ui-panel>
                     <div class="flex items-center gap-2 px-4 py-3 border-b border-[var(--ui-border)]">
                         <span class="w-1 h-4 rounded-full bg-blue-500 flex-shrink-0"></span>
-                        <div class="min-w-0">
+                        <div class="min-w-0 flex-1">
                             <h3 class="text-[0.82rem] font-bold text-[var(--ui-secondary)] m-0 leading-tight">Räume</h3>
                             <div class="text-[0.65rem] text-[var(--ui-muted)] mt-0.5">{{ $bookings->count() }} Buchung(en)</div>
                         </div>
+                        @if($days->isNotEmpty())
+                            <x-ui-button variant="secondary" size="sm" wire:click="openBulkBooking">
+                                @svg('heroicon-o-calendar-days', 'w-3.5 h-3.5 inline') Alle Termine übernehmen
+                            </x-ui-button>
+                        @endif
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full border-collapse text-xs">
@@ -1132,6 +1137,68 @@
                 <div class="flex justify-end gap-2 pt-4 border-t border-[var(--ui-border)]">
                     <x-ui-button type="button" variant="secondary-outline" size="sm" wire:click="closeBookingModal">Abbrechen</x-ui-button>
                     <x-ui-button type="submit" variant="primary" size="sm">Speichern</x-ui-button>
+                </div>
+            </form>
+        </x-ui-modal>
+
+        {{-- ================= Modal: Bulk-Booking (alle Termine uebernehmen) ================= --}}
+        <x-ui-modal wire:model="showBulkBookingModal" size="md" :hideFooter="true">
+            <x-slot name="header">Alle Termine übernehmen</x-slot>
+
+            <form wire:submit.prevent="submitBulkBooking" class="space-y-4">
+                <p class="text-[0.7rem] text-[var(--ui-muted)] -mt-1">
+                    Es wird pro Termin eine Buchung angelegt. Beginn, Ende und Personenzahl stammen aus den jeweiligen Tagen.
+                </p>
+
+                <div>
+                    <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Raum</label>
+                    @include('events::partials.location-picker', [
+                        'model'       => 'bulkBookingForm.location_id',
+                        'locations'   => $locations,
+                        'current'     => $bulkBookingForm['location_id'] ?? '',
+                        'placeholder' => 'Raum wählen …',
+                    ])
+                    <input wire:model="bulkBookingForm.raum" type="text" placeholder="…oder Raum-Kürzel als Freitext"
+                           class="mt-2 w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                    @error('bulkBookingForm.raum') <p class="mt-1 text-[0.62rem] text-red-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Bestuhlung</label>
+                        @if(!empty($settings['bestuhlung']))
+                            <select wire:model="bulkBookingForm.bestuhlung"
+                                    class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                <option value="">—</option>
+                                @foreach($settings['bestuhlung'] as $b)
+                                    <option value="{{ $b }}">{{ $b }}</option>
+                                @endforeach
+                            </select>
+                        @else
+                            <input wire:model="bulkBookingForm.bestuhlung" type="text" placeholder="Reihen / Bankett / …"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        @endif
+                    </div>
+                    <div>
+                        <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Optionsrang</label>
+                        <select wire:model="bulkBookingForm.optionsrang"
+                                class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            @foreach($bookingRangs as $r)
+                                <option value="{{ $r }}">{{ $r }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Absprache</label>
+                    <input wire:model="bulkBookingForm.absprache" type="text"
+                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-4 border-t border-[var(--ui-border)]">
+                    <x-ui-button type="button" variant="secondary-outline" size="sm" wire:click="closeBulkBooking">Abbrechen</x-ui-button>
+                    <x-ui-button type="submit" variant="primary" size="sm">Übernehmen</x-ui-button>
                 </div>
             </form>
         </x-ui-modal>

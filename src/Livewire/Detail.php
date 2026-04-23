@@ -50,6 +50,16 @@ class Detail extends Component
     public ?string $editingBookingUuid = null;
     public array $bookingForm = [];
 
+    // Bulk-Booking: fuer jeden Termin eine Buchung anlegen mit Daten des Tages
+    public bool $showBulkBookingModal = false;
+    public array $bulkBookingForm = [
+        'location_id' => null,
+        'raum'        => '',
+        'bestuhlung'  => '',
+        'optionsrang' => '1. Option',
+        'absprache'   => '',
+    ];
+
     // Inline-Edit: Bookings (Raeume) – Map UUID → Felder
     public array $inlineBookings = [];
     public array $newBookingInline = [
@@ -676,6 +686,73 @@ class Detail extends Component
             'bestuhlung'  => '', 'optionsrang' => '1. Option', 'absprache' => '',
             'taeglich'    => false,
         ];
+    }
+
+    public function openBulkBooking(): void
+    {
+        $this->bulkBookingForm = [
+            'location_id' => null,
+            'raum'        => '',
+            'bestuhlung'  => '',
+            'optionsrang' => '1. Option',
+            'absprache'   => '',
+        ];
+        $this->resetErrorBag('bulkBookingForm.raum');
+        $this->showBulkBookingModal = true;
+    }
+
+    public function closeBulkBooking(): void
+    {
+        $this->showBulkBookingModal = false;
+    }
+
+    /**
+     * Legt pro EventDay eine Buchung an und uebernimmt dabei die Uhrzeiten
+     * und Personenzahlen des jeweiligen Tages. Raum/Bestuhlung/Optionsrang/
+     * Absprache kommen aus dem Bulk-Formular.
+     */
+    public function submitBulkBooking(): void
+    {
+        $data = $this->bulkBookingForm;
+
+        if (empty($data['location_id']) && empty($data['raum'])) {
+            $this->addError('bulkBookingForm.raum', 'Bitte einen Raum waehlen.');
+            return;
+        }
+
+        $days = $this->event->days()->orderBy('sort_order')->get();
+        if ($days->isEmpty()) {
+            $this->showBulkBookingModal = false;
+            return;
+        }
+
+        $maxSort = (int) Booking::where('event_id', $this->event->id)->max('sort_order');
+
+        foreach ($days as $day) {
+            $datum = $day->datum?->format('Y-m-d');
+            if (!$datum) continue;
+
+            $pers = $day->pers_bis ?: $day->pers_von;
+            $maxSort++;
+
+            Booking::create([
+                'event_id'    => $this->event->id,
+                'team_id'     => $this->event->team_id,
+                'user_id'     => Auth::id(),
+                'location_id' => !empty($data['location_id']) ? (int) $data['location_id'] : null,
+                'raum'        => $data['raum'] ?: null,
+                'datum'       => $datum,
+                'beginn'      => $day->von ?: null,
+                'ende'        => $day->bis ?: null,
+                'pers'        => $pers ? (string) $pers : null,
+                'bestuhlung'  => $data['bestuhlung'] ?: null,
+                'optionsrang' => $data['optionsrang'] ?: '1. Option',
+                'absprache'   => $data['absprache'] ?: null,
+                'sort_order'  => $maxSort,
+            ]);
+        }
+
+        $this->showBulkBookingModal = false;
     }
 
     // ========== Ablaufplan ==========
