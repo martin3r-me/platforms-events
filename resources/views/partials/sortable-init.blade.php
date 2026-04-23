@@ -29,11 +29,14 @@ window.sortableList = function (actionName) {
                 console.log('[sortableList] attach', { action: actionName, el: el, rows: el.querySelectorAll('[data-sortable-uuid]').length });
                 self._instance = window.Sortable.create(el, {
                     animation: 150,
-                    // handle vorerst deaktiviert zum Debuggen – wenn ohne handle
-                    // drag funktioniert, liegt's am Handle-Selector.
-                    // handle: '.js-drag-handle',
+                    handle: '.js-drag-handle',
                     filter: 'input,textarea,select,button,a',
                     preventOnFilter: false,
+                    // forceFallback: SortableJS nutzt eigenen Drag-Mechanismus
+                    // statt der nativen HTML5-Drag-API. Für Tabellenzeilen
+                    // deutlich stabiler (native Drag auf <tr> ist browserabhaengig).
+                    forceFallback: true,
+                    fallbackTolerance: 3,
                     ghostClass: 'opacity-50',
                     chosenClass: 'ring-2',
                     onChoose: function (evt) {
