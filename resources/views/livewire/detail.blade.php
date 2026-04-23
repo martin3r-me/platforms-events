@@ -785,13 +785,13 @@
                                     <span class="text-[0.6rem] text-[var(--ui-muted)]">täglich</span>
                                 </label>
                             </div>
-                            <div class="col-span-1">
+                            <div class="col-span-1" wire:key="bk-beginn-{{ $newBookingInline['datum'] ?: 'none' }}">
                                 @include('events::partials.time-input', ['model' => 'newBookingInline.beginn', 'modifier' => 'defer', 'placeholder' => 'Beginn', 'class' => 'w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30'])
                             </div>
-                            <div class="col-span-1">
+                            <div class="col-span-1" wire:key="bk-ende-{{ $newBookingInline['datum'] ?: 'none' }}">
                                 @include('events::partials.time-input', ['model' => 'newBookingInline.ende', 'modifier' => 'defer', 'placeholder' => 'Ende', 'class' => 'w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30'])
                             </div>
-                            <div class="col-span-1">
+                            <div class="col-span-1" wire:key="bk-pers-{{ $newBookingInline['datum'] ?: 'none' }}">
                                 <input wire:model.defer="newBookingInline.pers" type="text" placeholder="Pers."
                                        class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30 text-center">
                             </div>
