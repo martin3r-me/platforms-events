@@ -72,13 +72,13 @@ class Activities extends Component
             'feedback'   => ['label' => 'Feedback',     'icon' => 'heroicon-o-star',                    'bg' => 'bg-pink-50',   'text' => 'text-pink-700',   'badge' => 'bg-pink-50 text-pink-700 border-pink-200'],
         ];
 
-        // Activities nach Bereich gruppieren
+        // Jeweils nur die neueste Activity pro Bereich – die Kachel zeigt
+        // Count + letzte Aenderung, keine Timeline.
         $sectionActivities = [];
         foreach ($sections as $key => $_) {
-            $sectionActivities[$key] = $activities
-                ->filter(fn ($a) => ($typeToSection[$a->type] ?? 'basis') === $key)
-                ->take(3)
-                ->values();
+            $latest = $activities
+                ->first(fn ($a) => ($typeToSection[$a->type] ?? 'basis') === $key);
+            $sectionActivities[$key] = $latest ? collect([$latest]) : collect();
         }
 
         // Counts

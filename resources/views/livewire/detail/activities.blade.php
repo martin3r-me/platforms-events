@@ -63,19 +63,17 @@
                     </div>
                     <span class="text-[0.58rem] font-semibold px-1.5 py-0.5 rounded-full border {{ $badgeClasses }}">{{ $badgeLabel }}</span>
                 </div>
-                <div class="flex flex-col gap-1.5">
-                    <div class="flex justify-between items-center">
-                        <span class="text-[0.65rem] text-slate-700">{{ $count }} Einträge</span>
-                        <span class="text-[0.6rem] text-[var(--ui-muted)] font-mono"></span>
-                    </div>
-                    @forelse($items as $a)
+                @php $latest = $items->first(); @endphp
+                <div class="flex flex-col gap-1">
+                    <span class="text-[0.65rem] text-slate-700">{{ $count }} Einträge</span>
+                    @if($latest)
                         <div class="flex justify-between items-center gap-2">
-                            <span class="text-[0.65rem] text-slate-700 truncate">{{ $a->description }}</span>
-                            <span class="text-[0.6rem] text-[var(--ui-muted)] font-mono flex-shrink-0">{{ $a->created_at->diffForHumans(null, true) }}</span>
+                            <span class="text-[0.62rem] text-[var(--ui-muted)] truncate">{{ $latest->description }}</span>
+                            <span class="text-[0.6rem] text-[var(--ui-muted)] font-mono flex-shrink-0">{{ $latest->created_at->diffForHumans(null, true) }}</span>
                         </div>
-                    @empty
-                        <div class="text-[0.62rem] text-[var(--ui-muted)] italic">Noch keine Aktivitäten</div>
-                    @endforelse
+                    @else
+                        <span class="text-[0.62rem] text-[var(--ui-muted)] italic">Noch keine Aktivitäten</span>
+                    @endif
                 </div>
             </div>
         @endforeach
