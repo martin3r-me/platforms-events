@@ -684,14 +684,14 @@
 
                     <div class="overflow-x-auto">
                         <table class="w-full border-collapse text-xs" x-data="{ lastIdx: null }">
-                            <thead>
+                            <thead class="group/head">
                                 <tr class="border-b border-[var(--ui-border)] bg-[var(--ui-muted-5)]">
                                     <th class="px-2 py-2 text-center w-[32px]">
                                         @if($bookings->isNotEmpty())
                                             <input type="checkbox"
                                                    wire:click="toggleAllBookings"
                                                    @checked(count($selectedBookingUuids) === $bookings->count() && $bookings->count() > 0)
-                                                   class="w-3.5 h-3.5 accent-[var(--ui-primary)] cursor-pointer"
+                                                   class="w-3.5 h-3.5 accent-[var(--ui-primary)] cursor-pointer transition-opacity {{ count($selectedBookingUuids) > 0 ? 'opacity-100' : 'opacity-0 group-hover/head:opacity-100 focus:opacity-100' }}"
                                                    title="Alle auswählen">
                                         @endif
                                     </th>
@@ -715,11 +715,15 @@
                                     </tr>
                                 @endif
                                 @foreach($bookings as $b)
-                                    @php $idx = $loop->index; @endphp
-                                    <tr class="border-b border-[var(--ui-border)]/40 hover:bg-[var(--ui-muted-5)]/40 group {{ in_array($b->uuid, $selectedBookingUuids, true) ? 'bg-blue-50/40' : '' }}">
+                                    @php
+                                        $idx = $loop->index;
+                                        $isSelected = in_array($b->uuid, $selectedBookingUuids, true);
+                                        $anySelected = count($selectedBookingUuids) > 0;
+                                    @endphp
+                                    <tr class="border-b border-[var(--ui-border)]/40 hover:bg-[var(--ui-muted-5)]/40 group {{ $isSelected ? 'bg-blue-50/40' : '' }}">
                                         <td class="px-2 py-1.5 text-center">
                                             <input type="checkbox"
-                                                   @checked(in_array($b->uuid, $selectedBookingUuids, true))
+                                                   @checked($isSelected)
                                                    x-on:click.stop="
                                                        if ($event.shiftKey && lastIdx !== null && lastIdx !== {{ $idx }}) {
                                                            $wire.toggleBookingRange(lastIdx, {{ $idx }}, $event.target.checked);
@@ -728,7 +732,7 @@
                                                        }
                                                        lastIdx = {{ $idx }};
                                                    "
-                                                   class="w-3.5 h-3.5 accent-[var(--ui-primary)] cursor-pointer">
+                                                   class="w-3.5 h-3.5 accent-[var(--ui-primary)] cursor-pointer transition-opacity {{ $isSelected || $anySelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus:opacity-100' }}">
                                         </td>
                                         <td class="px-3 py-1.5">
                                             @php
