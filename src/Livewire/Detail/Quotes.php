@@ -666,6 +666,19 @@ class Quotes extends Component
         $this->selectedPositionUuids = [];
     }
 
+    /**
+     * Neue Sortierung der Positionen aus Drag-&-Drop uebernehmen.
+     */
+    public function reorderQuotePositions(array $uuids): void
+    {
+        if (!$this->activeItemId) return;
+        foreach ($uuids as $index => $uuid) {
+            QuotePosition::where('quote_item_id', $this->activeItemId)
+                ->where('uuid', $uuid)
+                ->update(['sort_order' => $index]);
+        }
+    }
+
     public function deleteSelectedPositions(): void
     {
         if (!$this->activeItemId || empty($this->selectedPositionUuids)) return;

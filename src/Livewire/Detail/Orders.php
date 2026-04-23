@@ -323,6 +323,16 @@ class Orders extends Component
         $this->selectedPositionUuids = [];
     }
 
+    public function reorderOrderPositions(array $uuids): void
+    {
+        if (!$this->activeItemId) return;
+        foreach ($uuids as $index => $uuid) {
+            OrderPosition::where('order_item_id', $this->activeItemId)
+                ->where('uuid', $uuid)
+                ->update(['sort_order' => $index]);
+        }
+    }
+
     public function deleteSelectedPositions(): void
     {
         if (!$this->activeItemId || empty($this->selectedPositionUuids)) return;

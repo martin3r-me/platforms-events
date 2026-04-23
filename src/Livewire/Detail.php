@@ -670,6 +670,17 @@ class Detail extends Component
         $this->selectedBookingUuids = [];
     }
 
+    /**
+     * Neue Sortierung aus Drag-&-Drop uebernehmen (Array von UUIDs in
+     * gewuenschter Reihenfolge).
+     */
+    public function reorderBookings(array $uuids): void
+    {
+        foreach ($uuids as $index => $uuid) {
+            $this->event->bookings()->where('uuid', $uuid)->update(['sort_order' => $index]);
+        }
+    }
+
     public function deleteSelectedBookings(): void
     {
         if (empty($this->selectedBookingUuids)) {
@@ -968,6 +979,13 @@ class Detail extends Component
     public function clearScheduleSelection(): void
     {
         $this->selectedScheduleUuids = [];
+    }
+
+    public function reorderSchedule(array $uuids): void
+    {
+        foreach ($uuids as $index => $uuid) {
+            $this->event->scheduleItems()->where('uuid', $uuid)->update(['sort_order' => $index]);
+        }
     }
 
     public function deleteSelectedSchedule(): void

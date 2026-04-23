@@ -1,4 +1,5 @@
 <x-ui-page>
+    @include('events::partials.sortable-init')
     <x-slot name="navbar">
         <x-ui-page-navbar title="{{ $event->name }}" icon="heroicon-o-calendar-days" />
     </x-slot>
@@ -687,7 +688,7 @@
                                     <th class="w-8"></th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody x-data="sortableList('reorderBookings')">
                                 @if($bookings->isEmpty())
                                     <tr>
                                         <td colspan="10" class="px-3 py-8 text-center text-[var(--ui-muted)] text-xs">
@@ -697,7 +698,8 @@
                                 @endif
                                 @foreach($bookings as $b)
                                     @php $isSelected = in_array($b->uuid, $selectedBookingUuids, true); @endphp
-                                    <tr class="border-b border-[var(--ui-border)]/40 hover:bg-[var(--ui-muted-5)]/40 group {{ $isSelected ? 'bg-blue-50/50' : '' }}">
+                                    <tr data-sortable-uuid="{{ $b->uuid }}"
+                                        class="border-b border-[var(--ui-border)]/40 hover:bg-[var(--ui-muted-5)]/40 group {{ $isSelected ? 'bg-blue-50/50' : '' }}">
                                         <x-events::select-handle
                                             :uuid="$b->uuid"
                                             :index="$loop->index"
@@ -892,7 +894,7 @@
                                     <th class="w-8"></th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody x-data="sortableList('reorderSchedule')">
                                 @if($schedule->isEmpty())
                                     <tr>
                                         <td colspan="8" class="px-3 py-8 text-center text-[var(--ui-muted)] text-xs">
@@ -902,7 +904,8 @@
                                 @endif
                                 @foreach($schedule as $item)
                                     @php $isSelected = in_array($item->uuid, $selectedScheduleUuids, true); @endphp
-                                    <tr class="border-b border-[var(--ui-border)]/40 hover:bg-[var(--ui-muted-5)]/40 group {{ $isSelected ? 'bg-blue-50/50' : '' }}">
+                                    <tr data-sortable-uuid="{{ $item->uuid }}"
+                                        class="border-b border-[var(--ui-border)]/40 hover:bg-[var(--ui-muted-5)]/40 group {{ $isSelected ? 'bg-blue-50/50' : '' }}">
                                         <x-events::select-handle
                                             :uuid="$item->uuid"
                                             :index="$loop->index"

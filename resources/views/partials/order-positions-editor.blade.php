@@ -78,14 +78,14 @@
                     <th class="w-8"></th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody x-data="sortableList('reorderOrderPositions')">
                 @forelse($positions as $p)
                     @php
                         $rs = $rowInlineStyle((string) $p->gruppe);
                         $text = $isBaustein((string) $p->gruppe);
                         $isSelected = in_array($p->uuid, $selectedPositionUuids ?? [], true);
                     @endphp
-                    <tr class="border-b border-slate-100 hover:bg-slate-50/40 group {{ $isSelected ? 'bg-blue-50/50' : '' }}" style="{{ $rs['style'] }}">
+                    <tr data-sortable-uuid="{{ $p->uuid }}" class="border-b border-slate-100 hover:bg-slate-50/40 group {{ $isSelected ? 'bg-blue-50/50' : '' }}" style="{{ $rs['style'] }}">
                         <x-events::select-handle
                             :uuid="$p->uuid"
                             :index="$loop->index"

@@ -115,7 +115,7 @@
                     <th class="w-8"></th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody x-data="sortableList('reorderQuotePositions')">
                 @forelse($positions as $p)
                     @php
                         $rs = $rowInlineStyle((string) $p->gruppe);
@@ -123,7 +123,7 @@
                         $inp = 'w-full border border-transparent hover:border-slate-200 focus:border-[var(--ui-primary)]/60 rounded px-1 py-0.5 text-[0.65rem] bg-transparent focus:bg-white';
                         $isSelected = in_array($p->uuid, $selectedPositionUuids ?? [], true);
                     @endphp
-                    <tr wire:key="pos-{{ $p->id }}" class="border-b border-slate-100 hover:bg-slate-50/40 group {{ $isSelected ? 'bg-blue-50/50' : '' }}" style="{{ $rs['style'] }}">
+                    <tr wire:key="pos-{{ $p->id }}" data-sortable-uuid="{{ $p->uuid }}" class="border-b border-slate-100 hover:bg-slate-50/40 group {{ $isSelected ? 'bg-blue-50/50' : '' }}" style="{{ $rs['style'] }}">
                         <x-events::select-handle
                             :uuid="$p->uuid"
                             :index="$loop->index"
@@ -202,22 +202,10 @@
                                    class="{{ $inp }} text-slate-500 italic">
                         </td>
                         <td class="py-1 px-1 whitespace-nowrap">
-                            <div class="flex items-center gap-0.5">
-                                <button wire:click="movePosition({{ $p->id }}, 'up')"
-                                        class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-700 p-0.5"
-                                        title="Nach oben">
-                                    @svg('heroicon-o-chevron-up', 'w-3 h-3')
-                                </button>
-                                <button wire:click="movePosition({{ $p->id }}, 'down')"
-                                        class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-700 p-0.5"
-                                        title="Nach unten">
-                                    @svg('heroicon-o-chevron-down', 'w-3 h-3')
-                                </button>
-                                <button wire:click="deletePosition({{ $p->id }})" wire:confirm="Position löschen?"
-                                        class="text-red-500 hover:text-red-700 p-0.5">
-                                    @svg('heroicon-o-trash', 'w-3 h-3')
-                                </button>
-                            </div>
+                            <button wire:click="deletePosition({{ $p->id }})" wire:confirm="Position löschen?"
+                                    class="text-red-500 hover:text-red-700 p-0.5 opacity-0 group-hover:opacity-100">
+                                @svg('heroicon-o-trash', 'w-3 h-3')
+                            </button>
                         </td>
                     </tr>
                 @empty
