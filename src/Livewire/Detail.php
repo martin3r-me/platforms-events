@@ -604,9 +604,9 @@ class Detail extends Component
 
     /**
      * Wenn bei der neuen Raumbuchung ein Tag gewaehlt wird, Uhrzeit und
-     * Personenzahl aus dem EventDay uebernehmen. Bei jedem Tages-Wechsel
-     * werden die Vorschlaege aktualisiert; der User kann sie danach noch
-     * ueberschreiben (die naechste Tageswahl setzt sie dann wieder zurueck).
+     * Personenzahl aus dem EventDay uebernehmen. Unabhaengig voneinander:
+     * wenn nur Zeitraum gesetzt ist, wird der vorgeschlagen; wenn nur Pers
+     * gesetzt ist, wird nur Pers vorgeschlagen.
      */
     public function updatedNewBookingInline($value, $key): void
     {
@@ -621,16 +621,31 @@ class Detail extends Component
             return;
         }
 
-        $day = $this->event->days()->whereDate('datum', $value)->first();
+        // Frische Query – Relation koennte gecached sein und aktuelle Aenderungen
+        // am Tag (von/bis/pers) nicht enthalten.
+        $target = trim((string) $value);
+        $day = $this->event->days()->whereDate('datum', $target)->first();
+
         if (!$day) {
+            session()->flash('bookingPrefillInfo', 'Tag '.$target.' nicht gefunden.');
             return;
         }
 
-        $pers = $day->pers_bis ?: $day->pers_von;
+        $von  = trim((string) ($day->von  ?? ''));
+        $bis  = trim((string) ($day->bis  ?? ''));
+        $pers = trim((string) ($day->pers_bis ?: $day->pers_von ?: ''));
 
-        $this->newBookingInline['beginn'] = (string) ($day->von ?? '');
-        $this->newBookingInline['ende']   = (string) ($day->bis ?? '');
-        $this->newBookingInline['pers']   = $pers ? (string) $pers : '';
+        $this->newBookingInline['beginn'] = $von;
+        $this->newBookingInline['ende']   = $bis;
+        $this->newBookingInline['pers']   = $pers;
+
+        // Debug: sichtbare Rueckmeldung ob etwas gefunden wurde
+        $parts = [];
+        if ($von !== '' || $bis !== '') $parts[] = "{$von}-{$bis}";
+        if ($pers !== '') $parts[] = "{$pers} Pers.";
+        session()->flash('bookingPrefillInfo', empty($parts)
+            ? 'Tag hat keine Zeit/Personen – nichts zu uebernehmen.'
+            : 'Uebernommen: '.implode(', ', $parts));
     }
 
     public function addInlineBooking(): void

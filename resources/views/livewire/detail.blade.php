@@ -837,6 +837,9 @@
                             </div>
                         </div>
                         <p class="text-[0.6rem] text-[var(--ui-muted)] mt-2">Enter im Absprache-Feld oder Button zum Hinzufügen. „täglich" belegt automatisch alle Event-Tage.</p>
+                        @if(session()->has('bookingPrefillInfo'))
+                            <p class="text-[0.6rem] text-blue-600 mt-1">Debug: {{ session('bookingPrefillInfo') }}</p>
+                        @endif
                     </div>
                 </x-ui-panel>
             </div>
