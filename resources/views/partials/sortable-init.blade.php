@@ -29,11 +29,16 @@ window.sortableList = function (actionName) {
                 console.log('[sortableList] attach', { action: actionName, el: el, rows: el.querySelectorAll('[data-sortable-uuid]').length });
                 self._instance = window.Sortable.create(el, {
                     animation: 150,
-                    handle: '.js-drag-handle',
+                    // handle vorerst deaktiviert zum Debuggen – wenn ohne handle
+                    // drag funktioniert, liegt's am Handle-Selector.
+                    // handle: '.js-drag-handle',
                     filter: 'input,textarea,select,button,a',
                     preventOnFilter: false,
                     ghostClass: 'opacity-50',
                     chosenClass: 'ring-2',
+                    onChoose: function (evt) {
+                        console.log('[sortableList] onChoose', { action: actionName, item: evt.item, target: evt.originalEvent?.target });
+                    },
                     onStart: function (evt) {
                         console.log('[sortableList] onStart', { action: actionName, oldIndex: evt.oldIndex });
                     },
