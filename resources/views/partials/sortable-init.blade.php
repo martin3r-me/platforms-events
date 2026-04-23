@@ -1,5 +1,18 @@
 @once
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<style>
+.events-sortable-ghost {
+    opacity: 0.35 !important;
+    background: #f3f4f6 !important;
+}
+.events-sortable-fallback {
+    opacity: 0.95 !important;
+    background: #ffffff !important;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+    outline: 1px solid rgba(0, 0, 0, 0.08);
+    pointer-events: none;
+}
+</style>
 <script>
 /**
  * Sortable-Init ohne Alpine: alle Container mit [data-sortable-action]
@@ -30,9 +43,11 @@
             filter: 'input,textarea,select,button,a',
             preventOnFilter: false,
             forceFallback: true,
+            fallbackOnBody: true,
             fallbackTolerance: 3,
-            ghostClass: 'opacity-50',
+            ghostClass: 'events-sortable-ghost',
             chosenClass: 'ring-2',
+            fallbackClass: 'events-sortable-fallback',
             onEnd: function (evt) {
                 if (evt.oldIndex === evt.newIndex) return;
                 const uuids = Array.from(el.querySelectorAll('[data-sortable-uuid]'))
