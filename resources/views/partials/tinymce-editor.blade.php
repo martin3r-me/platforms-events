@@ -71,16 +71,16 @@ window.tinymceEditor = function (opts) {
 
         _observe(rootEl) {
             const self = this;
-            // "Alive" meint: wir haben lokal einen Editor UND sein Container
-            // haengt noch im aktuellen Dokument UND die globale tinymce-Registry
-            // fuer unsere UID zeigt auf genau diese Instanz. Das filtert Faelle,
-            // in denen der Morph die DOM-Elemente ersetzt und eine Alt-Instanz
-            // nur noch als Geist zurueckbleibt.
+            // "Alive": wir haben entweder einen laufenden Boot oder einen
+            // lebenden Editor dessen Container noch im DOM haengt. Waehrend
+            // des Bootens (Setup bis init-Event) muessen wir aktiv bleiben,
+            // sonst wuerde der Poll-Loop doppelt booten und ein Flash-Loop
+            // entstehen.
             const editorIsAlive = () => {
+                if (self._booting) return true;
                 if (!self._editor) return false;
                 const container = self._editor.getContainer?.();
                 if (!container || !document.body.contains(container)) return false;
-                if (window.tinymce && window.tinymce.get(self.uid) !== self._editor) return false;
                 return true;
             };
 
@@ -109,8 +109,11 @@ window.tinymceEditor = function (opts) {
 
         _boot() {
             const self = this;
+            if (self._booting) return;
             const target = document.getElementById(this.uid);
             if (!target) return;
+
+            self._booting = true;
 
             // Vorherige tinymce-Instanz fuer diese UID sauber entfernen, sonst
             // scheitert tinymce.init() still oder initialisiert gegen ein
@@ -176,7 +179,11 @@ window.tinymceEditor = function (opts) {
                 setup: function (editor) {
                     self._editor = editor;
                     editor.on('init', function () {
+                        self._booting = false;
                         editor.setContent(self.initial || '');
+                    });
+                    editor.on('remove', function () {
+                        self._booting = false;
                     });
                     editor.on('change keyup undo redo blur', function () {
                         self._syncToLivewire(editor.getContent());
@@ -211,6 +218,6 @@ window.tinymceEditor = function (opts) {
 </style>
 <div wire:ignore
      x-data="tinymceEditor({ uid: @js($uid), wireProperty: @js($wireProperty), initial: @js((string) $initial), height: {{ (int) $height }} })"
-     x-init="$nextTick(() => setTimeout(() => init(), 50)); return () => destroy();">
+     x-init="$nextTick(() => setTimeout(() => init(), 50))">
     <textarea id="{{ $uid }}" style="opacity:0; position:absolute; left:-9999px; pointer-events:none;"></textarea>
 </div>
