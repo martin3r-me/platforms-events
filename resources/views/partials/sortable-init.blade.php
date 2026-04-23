@@ -51,6 +51,18 @@ window.sortableList = function (actionName) {
                     }, true);
                 }
 
+                // Debug: mousemove beobachten (wird erst interessant, wenn User zieht)
+                if (!window._sortableDebugMove) {
+                    window._sortableDebugMove = true;
+                    let moveCount = 0;
+                    document.addEventListener('mousemove', function () {
+                        moveCount++;
+                        if (moveCount % 20 === 0) {
+                            console.log('[sortableList] mousemove @doc (nur jede 20.)', moveCount);
+                        }
+                    }, true);
+                }
+
                 self._instance = window.Sortable.create(el, {
                     animation: 150,
                     handle: '.js-drag-handle',
@@ -82,7 +94,13 @@ window.sortableList = function (actionName) {
                         }
                     },
                 });
-                console.log('[sortableList] Sortable-Instanz erstellt');
+                console.log('[sortableList] Sortable-Instanz erstellt', {
+                    handle: self._instance.option('handle'),
+                    filter: self._instance.option('filter'),
+                    draggable: self._instance.option('draggable'),
+                    forceFallback: self._instance.option('forceFallback'),
+                    disabled: self._instance.option('disabled'),
+                });
             };
             attach();
 
