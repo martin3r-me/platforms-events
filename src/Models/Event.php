@@ -32,6 +32,7 @@ class Event extends Model
         'organizer_for_whom',
         // Besteller
         'orderer_company', 'orderer_contact', 'orderer_via',
+        'orderer_crm_company_id', 'orderer_crm_contact_id',
         // Rechnung
         'invoice_to', 'invoice_crm_company_id', 'invoice_contact', 'invoice_crm_contact_id', 'invoice_date_type',
         // Zuständigkeit

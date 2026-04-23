@@ -59,8 +59,18 @@
         </x-ui-panel>
     </div>
 
-    {{-- ========== Col 2: Veranstalter / Besteller / Rechnung / Zuständigkeit ========== --}}
+    {{-- ========== Col 2: Name / Veranstalter / Besteller / Rechnung / Zuständigkeit ========== --}}
     <div class="space-y-3">
+
+        <x-ui-panel>
+            <div class="flex items-center gap-2 p-2 border-b border-[var(--ui-border)]">
+                <span class="w-0.5 h-3.5 rounded-full bg-slate-500"></span>
+                <span class="text-[0.72rem] font-bold text-[var(--ui-secondary)]">Name</span>
+            </div>
+            <div class="p-2">
+                <input wire:model.blur="event.name" type="text" placeholder="Name der Veranstaltung" class="{{ $in }} font-semibold">
+            </div>
+        </x-ui-panel>
 
         <x-ui-panel>
             <div class="flex items-center gap-2 p-2 border-b border-[var(--ui-border)]">
@@ -118,10 +128,6 @@
                         </div>
                     </div>
                 </div>
-                <div>
-                    <label class="{{ $lbl }}">Name</label>
-                    <input wire:model.blur="event.name" type="text" class="{{ $in }} font-semibold">
-                </div>
             </div>
         </x-ui-panel>
 
@@ -133,11 +139,34 @@
             <div class="p-2 space-y-1.5">
                 <div>
                     <label class="{{ $lbl }}">Unternehmen</label>
-                    <input wire:model.blur="event.orderer_company" type="text" class="{{ $in }}">
+                    @php $s = ($crmSlots ?? [])['orderer'] ?? []; @endphp
+                    @include('events::partials.crm-company-picker', [
+                        'slot'          => 'orderer',
+                        'available'     => $crmCompanyAvailable ?? false,
+                        'options'       => $s['options']   ?? [],
+                        'label'         => ($s['label']     ?? null) ?: $event->orderer_company,
+                        'url'           => $s['url']       ?? null,
+                        'currentId'     => $s['currentId'] ?? null,
+                        'fallbackField' => 'orderer_company',
+                        'placeholder'   => '— CRM-Firma wählen —',
+                    ])
                 </div>
                 <div>
                     <label class="{{ $lbl }}">Ansprechpartner</label>
-                    <input wire:model.blur="event.orderer_contact" type="text" class="{{ $in }}">
+                    @php $c = ($crmContactSlots ?? [])['orderer'] ?? []; @endphp
+                    <div wire:key="crm-contact-orderer-{{ md5(json_encode($c['contacts'] ?? [])) }}">
+                        @include('events::partials.crm-contact-picker', [
+                            'slot'          => 'orderer',
+                            'available'     => $crmContactAvailable ?? false,
+                            'contacts'      => $c['contacts']     ?? [],
+                            'currentId'     => $c['currentId']    ?? null,
+                            'currentLabel'  => $c['currentLabel'] ?? $event->orderer_contact,
+                            'currentUrl'    => $c['currentUrl']   ?? null,
+                            'hasCompany'    => $c['hasCompany']   ?? false,
+                            'fallbackField' => 'orderer_contact',
+                            'placeholder'   => '— Kontakt wählen —',
+                        ])
+                    </div>
                 </div>
             </div>
         </x-ui-panel>

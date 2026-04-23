@@ -171,12 +171,14 @@ class Detail extends Component
      */
     public array $crmSearch = [
         'organizer' => '',
+        'orderer'   => '',
         'invoice'   => '',
         'delivery'  => '',
     ];
 
     protected const CRM_SLOTS = [
         'organizer'        => ['id' => 'crm_company_id',                   'label' => 'customer'],
+        'orderer'          => ['id' => 'orderer_crm_company_id',           'label' => 'orderer_company'],
         'invoice'          => ['id' => 'invoice_crm_company_id',           'label' => 'invoice_to'],
         'delivery'         => ['id' => 'delivery_crm_company_id',          'label' => 'delivery_supplier'],
         'delivery_address' => ['id' => 'delivery_address_crm_company_id',  'label' => 'delivery_address'],
@@ -189,6 +191,7 @@ class Detail extends Component
     protected const CRM_CONTACT_SLOTS = [
         'organizer'        => ['company_slot' => 'organizer', 'id' => 'organizer_crm_contact_id',        'label' => 'organizer_contact'],
         'organizer_onsite' => ['company_slot' => 'organizer', 'id' => 'organizer_onsite_crm_contact_id', 'label' => 'organizer_contact_onsite'],
+        'orderer'          => ['company_slot' => 'orderer',   'id' => 'orderer_crm_contact_id',          'label' => 'orderer_contact'],
         'invoice'          => ['company_slot' => 'invoice',   'id' => 'invoice_crm_contact_id',          'label' => 'invoice_contact'],
         'delivery'         => ['company_slot' => 'delivery',  'id' => 'delivery_crm_contact_id',         'label' => 'delivery_contact'],
     ];
@@ -269,7 +272,9 @@ class Detail extends Component
             'event.organizer_contact_onsite' => 'nullable|string|max:255',
             'event.organizer_for_whom'       => 'nullable|string|max:255',
             'event.orderer_company'          => 'nullable|string|max:255',
+            'event.orderer_crm_company_id'   => 'nullable|integer',
             'event.orderer_contact'          => 'nullable|string|max:255',
+            'event.orderer_crm_contact_id'   => 'nullable|integer',
             'event.orderer_via'              => 'nullable|string|max:32',
             'event.invoice_to'               => 'nullable|string|max:255',
             'event.invoice_contact'          => 'nullable|string|max:255',
