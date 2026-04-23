@@ -20,6 +20,7 @@ AI-Tools, API-Controllern und Kommandos.
 | `ContactPickerResolver`    | Liefert die CRM-Contact-Slot-Daten fuer den Contact-Picker (inkl. Veranstalter-Fallback). |
 | `ProcurementTypeResolver`  | Aufloesung stock/supplier/kitchen: Position-Override vor Artikel-Stamm.                   |
 | `PickListGenerator`        | Packliste aus Bestellungen mit Baustein-Filter + Typ-Klassifizierung; analyze/generate.   |
+| `EventFactory`             | Event-Erstellung: Nummer-Vergabe, EventDays, Defaults (Verantwortlich/Unterschrift=User). |
 
 ## Ideen fuer weitere Extraktionen
 

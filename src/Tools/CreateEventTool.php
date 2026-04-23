@@ -2,13 +2,11 @@
 
 namespace Platform\Events\Tools;
 
-use Carbon\Carbon;
 use Platform\Core\Contracts\ToolContract;
 use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
-use Platform\Events\Models\Event;
-use Platform\Events\Models\EventDay;
+use Platform\Events\Services\EventFactory;
 
 /**
  * Erstellt ein neues Event. Pflicht: name. Empfohlen: start_date + end_date.
@@ -116,26 +114,13 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('ACCESS_DENIED', "Du hast keinen Zugriff auf Team-ID {$teamId}.");
             }
 
-            $prefix = 'VA#' . now()->year . '-' . now()->format('m');
-            $last = Event::where('team_id', $teamId)
-                ->where('event_number', 'like', $prefix . '%')
-                ->orderByRaw('LENGTH(event_number) DESC, event_number DESC')
-                ->value('event_number');
-            $next = $last ? ((int) substr($last, strlen($prefix))) + 1 : 1;
-
-            $payload = [
-                'team_id'            => $teamId,
-                'user_id'            => $context->user->id,
-                'event_number'       => $prefix . $next,
-                'name'               => $arguments['name'],
-                'organizer_for_whom' => $arguments['organizer_for_whom'] ?? $arguments['name'],
-                'status'             => $arguments['status'] ?? 'Option',
-                'status_changed_at'  => now(),
+            $data = [
+                'name' => $arguments['name'],
             ];
 
             foreach ([
-                'customer', 'group', 'location', 'start_date', 'end_date', 'event_type',
-                'organizer_contact', 'organizer_contact_onsite',
+                'customer', 'group', 'location', 'start_date', 'end_date', 'event_type', 'status',
+                'organizer_contact', 'organizer_contact_onsite', 'organizer_for_whom',
                 'orderer_company', 'orderer_contact', 'orderer_via',
                 'invoice_to', 'invoice_contact', 'invoice_date_type',
                 'responsible', 'cost_center', 'cost_carrier',
@@ -146,45 +131,22 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 'forwarding_date', 'forwarding_time',
             ] as $f) {
                 if (array_key_exists($f, $arguments)) {
-                    $payload[$f] = $arguments[$f];
+                    $data[$f] = $arguments[$f];
                 }
             }
             if (array_key_exists('forwarded', $arguments)) {
-                $payload['forwarded'] = (bool) $arguments['forwarded'];
+                $data['forwarded'] = (bool) $arguments['forwarded'];
             }
             if (array_key_exists('mr_data', $arguments) && is_array($arguments['mr_data'])) {
-                $payload['mr_data'] = $arguments['mr_data'];
+                $data['mr_data'] = $arguments['mr_data'];
             }
 
-            $event = Event::create($payload);
-
-            // EventDays automatisch anlegen
-            $autoDays = $arguments['auto_create_days'] ?? true;
-            if ($autoDays && !empty($payload['start_date'])) {
-                try {
-                    $start = Carbon::parse($payload['start_date']);
-                    $end = !empty($payload['end_date']) ? Carbon::parse($payload['end_date']) : $start->copy();
-                    $weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-                    $sort = 0;
-                    $maxDays = min((int) $start->diffInDays($end) + 1, 365);
-
-                    for ($dt = $start->copy(); $dt->lte($end) && $sort < $maxDays; $dt->addDay()) {
-                        EventDay::create([
-                            'team_id'     => $teamId,
-                            'user_id'     => $context->user->id,
-                            'event_id'    => $event->id,
-                            'label'       => $dt->format('d.m.Y'),
-                            'datum'       => $dt->format('Y-m-d'),
-                            'day_of_week' => $weekdays[$dt->dayOfWeek],
-                            'day_status'  => $payload['status'],
-                            'color'       => '#6366f1',
-                            'sort_order'  => $sort++,
-                        ]);
-                    }
-                } catch (\Throwable $e) {
-                    // Datum ungültig – Event bleibt ohne Tage
-                }
-            }
+            $event = EventFactory::create(
+                $context->user,
+                $teamId,
+                $data,
+                $arguments['auto_create_days'] ?? true,
+            );
 
             $event->refresh()->load('days');
 

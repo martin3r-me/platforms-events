@@ -8,7 +8,7 @@ use Livewire\Attributes\Url;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Platform\Events\Models\Event;
-use Platform\Events\Models\EventDay;
+use Platform\Events\Services\EventFactory;
 
 class Manage extends Component
 {
@@ -80,51 +80,13 @@ class Manage extends Component
         $user = Auth::user();
         $team = $user->currentTeam;
 
-        // event_number per Team generieren: VA#YYYY-MMx
-        $prefix = 'VA#' . now()->year . '-' . now()->format('m');
-        $last = Event::where('team_id', $team->id)
-            ->where('event_number', 'like', $prefix . '%')
-            ->orderByRaw('LENGTH(event_number) DESC, event_number DESC')
-            ->value('event_number');
-        $next = $last ? ((int) substr($last, strlen($prefix))) + 1 : 1;
-
-        $event = Event::create([
-            'team_id'            => $team->id,
-            'user_id'            => $user->id,
-            'event_number'       => $prefix . $next,
-            'name'               => $data['name'],
-            'organizer_for_whom' => $data['name'],
-            'customer'           => $data['customer'] ?? null,
-            'start_date'         => $data['start_date'],
-            'end_date'           => $data['end_date'] ?? null,
-            'status'             => $data['status'] ?? 'Option',
-            'status_changed_at'  => now(),
+        $event = EventFactory::create($user, $team->id, [
+            'name'       => $data['name'],
+            'customer'   => $data['customer'] ?? null,
+            'start_date' => $data['start_date'],
+            'end_date'   => $data['end_date'] ?? null,
+            'status'     => $data['status'] ?? 'Option',
         ]);
-
-        // EventDays für Datumsbereich anlegen (max. 365 Tage)
-        $weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-        try {
-            $start = Carbon::parse($data['start_date']);
-            $end = !empty($data['end_date']) ? Carbon::parse($data['end_date']) : $start->copy();
-            $sort = 0;
-            $maxDays = min((int) $start->diffInDays($end) + 1, 365);
-
-            for ($dt = $start->copy(); $dt->lte($end) && $sort < $maxDays; $dt->addDay()) {
-                EventDay::create([
-                    'team_id'     => $team->id,
-                    'user_id'     => $user->id,
-                    'event_id'    => $event->id,
-                    'label'       => $dt->format('d.m.Y'),
-                    'datum'       => $dt->format('Y-m-d'),
-                    'day_of_week' => $weekdays[$dt->dayOfWeek],
-                    'day_status'  => $data['status'] ?? 'Option',
-                    'color'       => '#6366f1',
-                    'sort_order'  => $sort++,
-                ]);
-            }
-        } catch (\Throwable $e) {
-            // Startdatum ungültig – Event bleibt ohne Tage
-        }
 
         $this->showCreateModal = false;
         $this->resetCreateForm();
