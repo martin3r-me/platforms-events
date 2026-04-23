@@ -132,25 +132,6 @@
             </div>
             <div class="p-2 space-y-1.5">
                 <div>
-                    <label class="{{ $lbl }}">Bestellt über</label>
-                    <div class="flex gap-0.5 bg-[var(--ui-muted-5)] rounded-md p-0.5 w-fit">
-                        @foreach([
-                            'mail' => ['icon' => 'heroicon-o-envelope',         'label' => 'E-Mail'],
-                            'phone' => ['icon' => 'heroicon-o-phone',           'label' => 'Telefon'],
-                            'web' => ['icon' => 'heroicon-o-computer-desktop',  'label' => 'Web'],
-                        ] as $via => $meta)
-                            <button type="button" wire:click="$set('event.orderer_via', '{{ $via }}')"
-                                    title="{{ $meta['label'] }}"
-                                    class="p-1 rounded transition
-                                           {{ ($event->orderer_via ?? 'mail') === $via
-                                              ? 'bg-white shadow-sm text-pink-600'
-                                              : 'text-[var(--ui-muted)] hover:text-[var(--ui-secondary)]' }}">
-                                @svg($meta['icon'], 'w-3 h-3')
-                            </button>
-                        @endforeach
-                    </div>
-                </div>
-                <div>
                     <label class="{{ $lbl }}">Unternehmen</label>
                     <input wire:model.blur="event.orderer_company" type="text" class="{{ $in }}">
                 </div>
@@ -380,6 +361,25 @@
                     <div>
                         <label class="{{ $lbl }}">Uhrzeit</label>
                         @include('events::partials.time-input', ['model' => 'event.inquiry_time', 'placeholder' => '10:00', 'class' => $inMn.' text-center'])
+                    </div>
+                </div>
+                <div>
+                    <label class="{{ $lbl }}">Bestellt über</label>
+                    <div class="flex gap-0.5 bg-[var(--ui-muted-5)] rounded-md p-0.5 w-fit">
+                        @foreach([
+                            'mail' => ['icon' => 'heroicon-o-envelope',         'label' => 'E-Mail'],
+                            'phone' => ['icon' => 'heroicon-o-phone',           'label' => 'Telefon'],
+                            'web' => ['icon' => 'heroicon-o-computer-desktop',  'label' => 'Web'],
+                        ] as $via => $meta)
+                            <button type="button" wire:click="$set('event.orderer_via', '{{ $via }}')"
+                                    title="{{ $meta['label'] }}"
+                                    class="p-1 rounded transition
+                                           {{ ($event->orderer_via ?? 'mail') === $via
+                                              ? 'bg-white shadow-sm text-sky-600'
+                                              : 'text-[var(--ui-muted)] hover:text-[var(--ui-secondary)]' }}">
+                                @svg($meta['icon'], 'w-3 h-3')
+                            </button>
+                        @endforeach
                     </div>
                 </div>
                 <div>
