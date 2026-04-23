@@ -31,13 +31,25 @@ window.sortableList = function (actionName) {
                 // Debug: pruefen ob mousedown ueberhaupt durchkommt
                 el.addEventListener('mousedown', function (e) {
                     const handle = e.target.closest('.js-drag-handle');
-                    console.log('[sortableList] native mousedown', {
+                    console.log('[sortableList] mousedown@tbody', {
                         targetTag: e.target.tagName,
-                        targetClass: e.target.className,
                         handleFound: !!handle,
-                        handleClass: handle?.className,
                     });
                 }, true);
+
+                // Zusaetzlich auf document – wenn das feuert aber tbody nicht,
+                // stoppt etwas dazwischen die Propagation.
+                if (!window._sortableDebugDoc) {
+                    window._sortableDebugDoc = true;
+                    document.addEventListener('mousedown', function (e) {
+                        if (e.target.closest('.js-drag-handle')) {
+                            console.log('[sortableList] mousedown@document', {
+                                targetTag: e.target.tagName,
+                                path: (e.composedPath ? e.composedPath() : []).slice(0, 8).map(function (n) { return n.tagName || n.nodeName; }),
+                            });
+                        }
+                    }, true);
+                }
 
                 self._instance = window.Sortable.create(el, {
                     animation: 150,
