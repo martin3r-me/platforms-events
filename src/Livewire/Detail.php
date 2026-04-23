@@ -596,6 +596,41 @@ class Detail extends Component
         $this->selectedBookingUuids = count($this->selectedBookingUuids) === count($all) ? [] : $all;
     }
 
+    public function toggleBookingSelection(string $uuid): void
+    {
+        if (in_array($uuid, $this->selectedBookingUuids, true)) {
+            $this->selectedBookingUuids = array_values(array_diff($this->selectedBookingUuids, [$uuid]));
+        } else {
+            $this->selectedBookingUuids[] = $uuid;
+        }
+    }
+
+    /**
+     * Shift-Click Range-Select: Indizes beziehen sich auf die geladene
+     * Buchungs-Liste (sort_order). Wenn $select = true werden alle
+     * Buchungen im Bereich ausgewaehlt, sonst abgewaehlt.
+     */
+    public function toggleBookingRange(int $from, int $to, bool $select): void
+    {
+        $uuids = $this->event->bookings()->orderBy('sort_order')->pluck('uuid')
+            ->map(fn ($u) => (string) $u)->toArray();
+
+        $start = max(0, min($from, $to));
+        $end   = min(count($uuids) - 1, max($from, $to));
+        $range = array_slice($uuids, $start, $end - $start + 1);
+
+        if ($select) {
+            $this->selectedBookingUuids = array_values(array_unique(array_merge($this->selectedBookingUuids, $range)));
+        } else {
+            $this->selectedBookingUuids = array_values(array_diff($this->selectedBookingUuids, $range));
+        }
+    }
+
+    public function clearBookingSelection(): void
+    {
+        $this->selectedBookingUuids = [];
+    }
+
     public function deleteSelectedBookings(): void
     {
         if (empty($this->selectedBookingUuids)) {

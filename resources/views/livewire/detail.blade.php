@@ -657,21 +657,33 @@
                             <h3 class="text-[0.82rem] font-bold text-[var(--ui-secondary)] m-0 leading-tight">Räume</h3>
                             <div class="text-[0.65rem] text-[var(--ui-muted)] mt-0.5">{{ $bookings->count() }} Buchung(en)</div>
                         </div>
-                        @if(count($selectedBookingUuids) > 0)
-                            <x-ui-button variant="danger" size="sm"
-                                         wire:click="deleteSelectedBookings"
-                                         wire:confirm="{{ count($selectedBookingUuids) }} Buchung(en) wirklich loeschen?">
-                                @svg('heroicon-o-trash', 'w-3.5 h-3.5 inline') {{ count($selectedBookingUuids) }} löschen
-                            </x-ui-button>
-                        @endif
                         @if($days->isNotEmpty())
                             <x-ui-button variant="secondary" size="sm" wire:click="openBulkBooking">
                                 @svg('heroicon-o-calendar-days', 'w-3.5 h-3.5 inline') Alle Termine übernehmen
                             </x-ui-button>
                         @endif
                     </div>
+                    {{-- Floating Actionbar: erscheint nur bei Selektion --}}
+                    @if(count($selectedBookingUuids) > 0)
+                        <div class="flex items-center gap-3 px-4 py-2 bg-blue-50 border-b border-blue-200 text-[0.72rem]">
+                            <span class="font-semibold text-blue-900">{{ count($selectedBookingUuids) }} ausgewählt</span>
+                            <span class="text-blue-700/70 text-[0.65rem] hidden sm:inline">· Shift-Klick markiert Bereiche</span>
+                            <div class="ml-auto flex items-center gap-2">
+                                <x-ui-button variant="danger" size="sm"
+                                             wire:click="deleteSelectedBookings"
+                                             wire:confirm="{{ count($selectedBookingUuids) }} Buchung(en) wirklich loeschen?">
+                                    @svg('heroicon-o-trash', 'w-3.5 h-3.5 inline') Löschen
+                                </x-ui-button>
+                                <button type="button" wire:click="clearBookingSelection"
+                                        class="text-[0.7rem] text-blue-800 hover:text-blue-900 underline underline-offset-2 cursor-pointer">
+                                    Abbrechen
+                                </button>
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="overflow-x-auto">
-                        <table class="w-full border-collapse text-xs">
+                        <table class="w-full border-collapse text-xs" x-data="{ lastIdx: null }">
                             <thead>
                                 <tr class="border-b border-[var(--ui-border)] bg-[var(--ui-muted-5)]">
                                     <th class="px-2 py-2 text-center w-[32px]">
@@ -703,11 +715,19 @@
                                     </tr>
                                 @endif
                                 @foreach($bookings as $b)
+                                    @php $idx = $loop->index; @endphp
                                     <tr class="border-b border-[var(--ui-border)]/40 hover:bg-[var(--ui-muted-5)]/40 group {{ in_array($b->uuid, $selectedBookingUuids, true) ? 'bg-blue-50/40' : '' }}">
                                         <td class="px-2 py-1.5 text-center">
                                             <input type="checkbox"
-                                                   value="{{ $b->uuid }}"
-                                                   wire:model.live="selectedBookingUuids"
+                                                   @checked(in_array($b->uuid, $selectedBookingUuids, true))
+                                                   x-on:click.stop="
+                                                       if ($event.shiftKey && lastIdx !== null && lastIdx !== {{ $idx }}) {
+                                                           $wire.toggleBookingRange(lastIdx, {{ $idx }}, $event.target.checked);
+                                                       } else {
+                                                           $wire.toggleBookingSelection(@js($b->uuid));
+                                                       }
+                                                       lastIdx = {{ $idx }};
+                                                   "
                                                    class="w-3.5 h-3.5 accent-[var(--ui-primary)] cursor-pointer">
                                         </td>
                                         <td class="px-3 py-1.5">
