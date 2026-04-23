@@ -91,13 +91,24 @@ class EventFactory
             $maxDays = min((int) $start->diffInDays($end) + 1, self::MAX_DAYS);
             $sort = 0;
 
+            // Bereits belegte Daten pro Event einmal einsammeln, um Duplikate zu vermeiden.
+            $existing = EventDay::where('event_id', $event->id)->pluck('datum')
+                ->map(fn ($d) => $d instanceof \Carbon\Carbon ? $d->format('Y-m-d') : (string) $d)
+                ->all();
+
             for ($dt = $start->copy(); $dt->lte($end) && $sort < $maxDays; $dt->addDay()) {
+                $datum = $dt->format('Y-m-d');
+                if (in_array($datum, $existing, true)) {
+                    continue;
+                }
+                $existing[] = $datum;
+
                 EventDay::create([
                     'team_id'     => $teamId,
                     'user_id'     => $userId,
                     'event_id'    => $event->id,
                     'label'       => $dt->format('d.m.Y'),
-                    'datum'       => $dt->format('Y-m-d'),
+                    'datum'       => $datum,
                     'day_of_week' => $weekdays[$dt->dayOfWeek],
                     'day_status'  => $status,
                     'color'       => '#6366f1',

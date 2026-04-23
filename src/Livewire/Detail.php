@@ -478,6 +478,17 @@ class Detail extends Component
         ]);
 
         $payload = $this->dayForm;
+
+        // Doppelte Datumseintraege pro Event vermeiden.
+        $dupeQuery = $this->event->days()->whereDate('datum', $payload['datum']);
+        if ($this->editingDayUuid) {
+            $dupeQuery->where('uuid', '!=', $this->editingDayUuid);
+        }
+        if ($dupeQuery->exists()) {
+            $this->addError('dayForm.datum', 'Fuer dieses Datum existiert bereits ein Termin.');
+            return;
+        }
+
         // Wochentag automatisch setzen
         try {
             $weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
