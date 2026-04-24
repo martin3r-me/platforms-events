@@ -22,66 +22,116 @@
             @if($days->isEmpty())
                 <div class="p-3 text-[0.62rem] text-[var(--ui-muted)] text-center italic">Keine Termine</div>
             @else
+                @php
+                    $typeBadge = fn ($dt) => match($dt) {
+                        'Veranstaltungstag' => ['bg-blue-50 text-blue-700', 'VA'],
+                        'Aufbautag'         => ['bg-amber-50 text-amber-700', 'AUF'],
+                        'Abbautag'          => ['bg-slate-100 text-slate-600', 'AB'],
+                        'Rüsttag'           => ['bg-violet-50 text-violet-700', 'RÜST'],
+                        default             => ['bg-slate-50 text-slate-500', $dt],
+                    };
+                    $statusBadge = fn ($st) => match($st) {
+                        'Vertrag'   => 'bg-green-100 text-green-700',
+                        'Definitiv' => 'bg-green-50 text-green-600',
+                        'Option'    => 'bg-yellow-50 text-yellow-700',
+                        'Storno'    => 'bg-red-50 text-red-700',
+                        default     => 'bg-slate-100 text-slate-600',
+                    };
+                @endphp
+
+                <div class="px-2 pt-2 text-[0.48rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Variante A · kompakt gestapelt</div>
                 <div class="divide-y divide-[var(--ui-border)]/30">
                     @foreach($days as $day)
+                        @php
+                            [$typeCls, $typeTxt] = $typeBadge($day->day_type ?: 'Veranstaltungstag');
+                            $splitA = (int) ($day->split_a ?? 50);
+                        @endphp
                         <div wire:click="openDayEdit('{{ $day->uuid }}')"
-                             class="p-1.5 hover:bg-[var(--ui-muted-5)]/50 cursor-pointer group">
-                            <div class="flex items-center gap-1.5 mb-0.5">
+                             class="px-2 py-1.5 hover:bg-[var(--ui-muted-5)]/50 cursor-pointer group">
+                            <div class="flex items-center gap-1.5">
                                 <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: {{ $day->color }}"></span>
-                                <span class="text-[0.55rem] font-bold text-[var(--ui-muted)] w-4 text-center">{{ $day->day_of_week ?: '' }}</span>
-                                <span class="text-[0.65rem] font-mono text-[var(--ui-secondary)]">{{ $day->datum?->format('d.m.Y') ?: '—' }}</span>
-                                @php $dt = $day->day_type ?: 'Veranstaltungstag'; @endphp
-                                <span class="text-[0.5rem] font-semibold uppercase tracking-wide px-1 py-0 rounded
-                                    {{ match($dt) {
-                                        'Veranstaltungstag' => 'bg-blue-50 text-blue-700',
-                                        'Aufbautag'         => 'bg-amber-50 text-amber-700',
-                                        'Abbautag'          => 'bg-slate-100 text-slate-600',
-                                        'Rüsttag'           => 'bg-violet-50 text-violet-700',
-                                        default             => 'bg-slate-50 text-slate-500',
-                                    } }}"
-                                    title="{{ $dt }}">
-                                    {{ match($dt) {
-                                        'Veranstaltungstag' => 'VA',
-                                        'Aufbautag'         => 'AUF',
-                                        'Abbautag'          => 'AB',
-                                        'Rüsttag'           => 'RÜST',
-                                        default             => $dt,
-                                    } }}
-                                </span>
-                                <span class="ml-auto text-[0.6rem] font-mono text-[var(--ui-muted)]">{{ $day->von ?: '00:00' }}–{{ $day->bis ?: '00:00' }}</span>
+                                <span class="text-[0.55rem] font-bold text-[var(--ui-muted)]">{{ $day->day_of_week ?: '' }}</span>
+                                <span class="text-[0.72rem] font-mono font-semibold text-[var(--ui-secondary)]">{{ $day->datum?->format('d.m.Y') ?: '—' }}</span>
+                                <span class="ml-auto text-[0.5rem] font-semibold uppercase tracking-wide px-1 py-0 rounded {{ $typeCls }}" title="{{ $day->day_type ?: 'Veranstaltungstag' }}">{{ $typeTxt }}</span>
+                                <button wire:click.stop="deleteDay('{{ $day->uuid }}')" wire:confirm="Tag löschen?"
+                                        class="opacity-0 group-hover:opacity-100 text-red-500 p-0.5">
+                                    @svg('heroicon-o-trash', 'w-2.5 h-2.5')
+                                </button>
                             </div>
-                            <div class="flex items-center gap-1 pl-5">
+                            @if($day->von || $day->bis)
+                                <div class="pl-3.5 mt-0.5 flex items-center gap-1 text-[0.58rem] font-mono text-[var(--ui-muted)]">
+                                    @svg('heroicon-o-clock', 'w-2.5 h-2.5')
+                                    {{ $day->von ?: '00:00' }}–{{ $day->bis ?: '00:00' }}
+                                </div>
+                            @endif
+                            <div class="pl-3.5 mt-0.5 flex items-center gap-1 flex-wrap">
                                 @if($day->pers_von || $day->pers_bis)
                                     <span class="text-[0.55rem] text-[var(--ui-muted)] flex items-center gap-0.5">
                                         @svg('heroicon-o-users', 'w-2.5 h-2.5')
                                         {{ $day->pers_von ?: '?' }}–{{ $day->pers_bis ?: '?' }}
                                     </span>
                                 @endif
-                                @php $splitA = (int) ($day->split_a ?? 50); @endphp
                                 @if($splitA !== 50)
-                                    <span class="text-[0.5rem] font-mono font-semibold text-[var(--ui-muted)] px-1 py-0 rounded bg-slate-100"
-                                          title="Verteilung A/B">
+                                    <span class="text-[0.5rem] font-mono font-semibold px-1 py-0 rounded bg-slate-100" title="Verteilung A/B">
                                         <span class="text-blue-600">{{ $splitA }}</span>/<span class="text-pink-600">{{ 100 - $splitA }}</span>
                                     </span>
                                 @endif
                                 @if($day->children_count)
-                                    <span class="text-[0.5rem] font-semibold text-amber-700 bg-amber-50 px-1 py-0 rounded flex items-center gap-0.5"
-                                          title="Kinderanzahl">
-                                        K {{ $day->children_count }}
-                                    </span>
+                                    <span class="text-[0.5rem] font-semibold text-amber-700 bg-amber-50 px-1 py-0 rounded" title="Kinderanzahl">K {{ $day->children_count }}</span>
                                 @endif
-                                <span class="text-[0.55rem] font-bold px-1.5 py-0 rounded
-                                    {{ match($day->day_status) {
-                                        'Vertrag' => 'bg-green-100 text-green-700',
-                                        'Definitiv' => 'bg-green-50 text-green-600',
-                                        'Option' => 'bg-yellow-50 text-yellow-700',
-                                        'Storno' => 'bg-red-50 text-red-700',
-                                        default => 'bg-slate-100 text-slate-600',
-                                    } }}">{{ $day->day_status }}</span>
-                                <button wire:click.stop="deleteDay('{{ $day->uuid }}')" wire:confirm="Tag löschen?"
-                                        class="ml-auto opacity-0 group-hover:opacity-100 text-red-500 p-0.5">
-                                    @svg('heroicon-o-trash', 'w-2.5 h-2.5')
-                                </button>
+                                <span class="ml-auto text-[0.55rem] font-bold px-1.5 py-0 rounded {{ $statusBadge($day->day_status) }}">{{ $day->day_status }}</span>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <div class="px-2 pt-3 border-t border-[var(--ui-border)]/50 text-[0.48rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Variante B · Datum-Block + Meta-Spalte</div>
+                <div class="divide-y divide-[var(--ui-border)]/30">
+                    @foreach($days as $day)
+                        @php
+                            [$typeCls, $typeTxt] = $typeBadge($day->day_type ?: 'Veranstaltungstag');
+                            $splitA = (int) ($day->split_a ?? 50);
+                        @endphp
+                        <div wire:click="openDayEdit('{{ $day->uuid }}')"
+                             class="px-2 py-2 hover:bg-[var(--ui-muted-5)]/50 cursor-pointer group flex gap-2.5 items-start">
+                            <div class="flex flex-col items-center justify-center bg-[var(--ui-muted-5)] rounded-md px-2 py-1 min-w-[42px] border-l-2" style="border-color: {{ $day->color }}">
+                                <span class="text-[0.5rem] font-bold uppercase text-[var(--ui-muted)] leading-none">{{ $day->day_of_week ?: '—' }}</span>
+                                <span class="text-[1rem] font-bold text-[var(--ui-secondary)] leading-tight tracking-tight">{{ $day->datum?->format('d.m') ?: '—' }}</span>
+                                <span class="text-[0.48rem] font-mono text-[var(--ui-muted)] leading-none">{{ $day->datum?->format('Y') }}</span>
+                            </div>
+                            <div class="flex-1 min-w-0 space-y-1">
+                                <div class="flex items-center gap-1 flex-wrap">
+                                    <span class="text-[0.5rem] font-semibold uppercase tracking-wide px-1 py-0 rounded {{ $typeCls }}" title="{{ $day->day_type ?: 'Veranstaltungstag' }}">{{ $typeTxt }}</span>
+                                    <span class="text-[0.55rem] font-bold px-1.5 py-0 rounded {{ $statusBadge($day->day_status) }}">{{ $day->day_status }}</span>
+                                    <button wire:click.stop="deleteDay('{{ $day->uuid }}')" wire:confirm="Tag löschen?"
+                                            class="ml-auto opacity-0 group-hover:opacity-100 text-red-500 p-0.5">
+                                        @svg('heroicon-o-trash', 'w-2.5 h-2.5')
+                                    </button>
+                                </div>
+                                @if($day->von || $day->bis)
+                                    <div class="flex items-center gap-1 text-[0.58rem] font-mono text-[var(--ui-muted)]">
+                                        @svg('heroicon-o-clock', 'w-2.5 h-2.5')
+                                        {{ $day->von ?: '00:00' }}–{{ $day->bis ?: '00:00' }}
+                                    </div>
+                                @endif
+                                @if($day->pers_von || $day->pers_bis || $splitA !== 50 || $day->children_count)
+                                    <div class="flex items-center gap-1 flex-wrap">
+                                        @if($day->pers_von || $day->pers_bis)
+                                            <span class="text-[0.55rem] text-[var(--ui-muted)] flex items-center gap-0.5">
+                                                @svg('heroicon-o-users', 'w-2.5 h-2.5')
+                                                {{ $day->pers_von ?: '?' }}–{{ $day->pers_bis ?: '?' }}
+                                            </span>
+                                        @endif
+                                        @if($splitA !== 50)
+                                            <span class="text-[0.5rem] font-mono font-semibold px-1 py-0 rounded bg-slate-100" title="Verteilung A/B">
+                                                <span class="text-blue-600">{{ $splitA }}</span>/<span class="text-pink-600">{{ 100 - $splitA }}</span>
+                                            </span>
+                                        @endif
+                                        @if($day->children_count)
+                                            <span class="text-[0.5rem] font-semibold text-amber-700 bg-amber-50 px-1 py-0 rounded" title="Kinderanzahl">K {{ $day->children_count }}</span>
+                                        @endif
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     @endforeach
