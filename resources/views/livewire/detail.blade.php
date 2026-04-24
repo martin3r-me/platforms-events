@@ -1063,12 +1063,15 @@
                 </div>
                 <div>
                     <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Typ</label>
+                    @php $dayTypeOptions = $settings['day_types'] ?? ['Veranstaltungstag']; @endphp
                     <select wire:model="dayForm.day_type"
                             class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                        <option value="Veranstaltungstag">Veranstaltungstag</option>
-                        <option value="Aufbautag">Aufbautag</option>
-                        <option value="Abbautag">Abbautag</option>
-                        <option value="Rüsttag">Rüsttag</option>
+                        @foreach($dayTypeOptions as $dt)
+                            <option value="{{ $dt }}">{{ $dt }}</option>
+                        @endforeach
+                        @if($dayForm['day_type'] ?? null && !in_array($dayForm['day_type'], $dayTypeOptions, true))
+                            <option value="{{ $dayForm['day_type'] }}">{{ $dayForm['day_type'] }}</option>
+                        @endif
                     </select>
                     @error('dayForm.day_type') <p class="mt-1 text-[0.62rem] text-red-600">{{ $message }}</p> @enderror
                 </div>

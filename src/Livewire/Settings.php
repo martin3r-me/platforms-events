@@ -32,6 +32,7 @@ class Settings extends Component
     public array $eventTypes      = [];
     public array $bestuhlungOptions = [];
     public array $scheduleDescriptions = [];
+    public array $dayTypes        = [];
     public array $bausteine       = [];
 
     public string $newCostCenter  = '';
@@ -41,6 +42,7 @@ class Settings extends Component
     public string $newEventType   = '';
     public string $newBestuhlung  = '';
     public string $newScheduleDescription = '';
+    public string $newDayType     = '';
     public array $newBaustein     = ['name' => '', 'bg' => '#f8fafc', 'text' => '#64748b'];
 
     // ========== Management-Report-Felder ==========
@@ -86,6 +88,7 @@ class Settings extends Component
         $this->eventTypes        = SettingsService::eventTypes($teamId);
         $this->bestuhlungOptions     = SettingsService::bestuhlungOptions($teamId);
         $this->scheduleDescriptions  = SettingsService::scheduleDescriptions($teamId);
+        $this->dayTypes              = SettingsService::dayTypes($teamId);
         $this->bausteine             = SettingsService::bausteine($teamId);
     }
 
@@ -103,6 +106,8 @@ class Settings extends Component
     public function removeBestuhlung(int $i): void { $this->removeAt('bestuhlungOptions', $i); SettingsService::setBestuhlungOptions($this->teamId(), $this->bestuhlungOptions); }
     public function addScheduleDescription(): void { $this->pushSimple('scheduleDescriptions', 'newScheduleDescription'); SettingsService::setScheduleDescriptions($this->teamId(), $this->scheduleDescriptions); }
     public function removeScheduleDescription(int $i): void { $this->removeAt('scheduleDescriptions', $i); SettingsService::setScheduleDescriptions($this->teamId(), $this->scheduleDescriptions); }
+    public function addDayType(): void          { $this->pushSimple('dayTypes', 'newDayType'); SettingsService::setDayTypes($this->teamId(), $this->dayTypes); }
+    public function removeDayType(int $i): void { $this->removeAt('dayTypes', $i); SettingsService::setDayTypes($this->teamId(), $this->dayTypes); }
 
     public function addBaustein(): void
     {

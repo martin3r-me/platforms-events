@@ -1257,6 +1257,7 @@ class Detail extends Component
             'event_types'           => SettingsService::eventTypes($teamId),
             'bestuhlung'            => SettingsService::bestuhlungOptions($teamId),
             'schedule_descriptions' => SettingsService::scheduleDescriptions($teamId),
+            'day_types'             => SettingsService::dayTypes($teamId),
         ];
 
         // Signaturen pro role

@@ -12,6 +12,7 @@
             'event_types'   => ['label' => 'Anlass-Typen',   'icon' => 'heroicon-o-calendar-days'],
             'bestuhlung'    => ['label' => 'Bestuhlung',     'icon' => 'heroicon-o-table-cells'],
             'schedule_desc' => ['label' => 'Ablaufplan-Beschreibungen', 'icon' => 'heroicon-o-list-bullet'],
+            'day_types'     => ['label' => 'Tages-Typen',    'icon' => 'heroicon-o-calendar'],
             'bausteine'     => ['label' => 'Text-Bausteine',    'icon' => 'heroicon-o-puzzle-piece'],
             'mr_fields'     => ['label' => 'Management Report', 'icon' => 'heroicon-o-chart-bar-square'],
             'templates'     => ['label' => 'Dokumentvorlagen',  'icon' => 'heroicon-o-document-text'],
@@ -52,6 +53,7 @@
                 'event_types'   => ['title' => 'Anlass-Typen',    'subtitle' => 'Wird im Event-Basis-Tab im Anlass-Feld als Auswahl angezeigt.',     'list' => $eventTypes,        'new' => 'newEventType',     'add' => 'addEventType',     'remove' => 'removeEventType',     'placeholder' => 'z.B. Teamevent'],
                 'bestuhlung'    => ['title' => 'Bestuhlungs-Arten','subtitle' => 'Wird im Raumbuchungs-Modal als Dropdown angezeigt.',                'list' => $bestuhlungOptions, 'new' => 'newBestuhlung',    'add' => 'addBestuhlung',    'remove' => 'removeBestuhlung',    'placeholder' => 'z.B. Bankett'],
                 'schedule_desc' => ['title' => 'Ablaufplan-Beschreibungen','subtitle' => 'Vorschlaege im Beschreibung-Feld des Ablaufplans. Freitext bleibt weiterhin moeglich.', 'list' => $scheduleDescriptions, 'new' => 'newScheduleDescription', 'add' => 'addScheduleDescription', 'remove' => 'removeScheduleDescription', 'placeholder' => 'z.B. Empfang'],
+                'day_types'     => ['title' => 'Tages-Typen',     'subtitle' => 'Auswahl im Tag-Modal (Veranstaltungstag, Aufbautag, Abbautag, Rüsttag, …).', 'list' => $dayTypes, 'new' => 'newDayType', 'add' => 'addDayType', 'remove' => 'removeDayType', 'placeholder' => 'z.B. Probentag'],
             ];
         @endphp
 
