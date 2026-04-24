@@ -308,6 +308,23 @@
                                     {{ $event->start_date->format('d.m.Y') }}@if($event->end_date && $event->end_date != $event->start_date) – {{ $event->end_date->format('d.m.Y') }}@endif
                                 </span>
                             @endif
+                            @php
+                                $hdrPersMin = 0; $hdrPersMax = 0; $hdrPersAny = false;
+                                foreach ($days as $d) {
+                                    $mn = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_von);
+                                    $mx = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_bis);
+                                    if ($mn === 0 && $mx === 0) continue;
+                                    if ($mn === 0) $mn = $mx;
+                                    if ($mx === 0) $mx = $mn;
+                                    $hdrPersMin += $mn; $hdrPersMax += $mx; $hdrPersAny = true;
+                                }
+                            @endphp
+                            @if($hdrPersAny)
+                                <span class="flex items-center gap-1 font-mono" title="Summe Personen über alle Tage (Min–Max)">
+                                    @svg('heroicon-o-users', 'w-3 h-3')
+                                    {{ $hdrPersMin === $hdrPersMax ? $hdrPersMax : $hdrPersMin . '–' . $hdrPersMax }}
+                                </span>
+                            @endif
                             @if($event->customer)
                                 <span class="flex items-center gap-1">
                                     @svg('heroicon-o-user', 'w-3 h-3')

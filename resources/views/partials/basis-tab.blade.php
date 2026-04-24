@@ -10,33 +10,11 @@
     {{-- ========== Col 1: Termine ========== --}}
     <div>
         <x-ui-panel>
-            @php
-                $persMinSum = 0;
-                $persMaxSum = 0;
-                $persAny = false;
-                foreach ($days as $d) {
-                    $min = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_von);
-                    $max = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_bis);
-                    if ($min === 0 && $max === 0) continue;
-                    if ($min === 0) $min = $max;
-                    if ($max === 0) $max = $min;
-                    $persMinSum += $min;
-                    $persMaxSum += $max;
-                    $persAny = true;
-                }
-            @endphp
             <div class="flex items-center justify-between p-2 border-b border-[var(--ui-border)]">
-                <div class="flex items-center gap-2 flex-wrap">
+                <div class="flex items-center gap-2">
                     <span class="w-0.5 h-3.5 rounded-full bg-blue-500"></span>
                     <span class="text-[0.72rem] font-bold text-[var(--ui-secondary)]">Termine</span>
                     <span class="text-[0.55rem] font-semibold text-[var(--ui-muted)] bg-[var(--ui-muted-5)] px-1.5 py-0.5 rounded-full">{{ $days->count() }} Tage</span>
-                    @if($persAny)
-                        <span class="text-[0.55rem] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-full flex items-center gap-0.5"
-                              title="Summe Personen über alle Tage (Min–Max)">
-                            @svg('heroicon-o-users', 'w-2.5 h-2.5')
-                            Σ {{ $persMinSum === $persMaxSum ? $persMaxSum : $persMinSum . '–' . $persMaxSum }}
-                        </span>
-                    @endif
                 </div>
                 <button wire:click="openDayCreate" type="button"
                         class="w-5 h-5 rounded border border-[var(--ui-border)] text-[var(--ui-muted)] hover:text-[var(--ui-primary)] hover:border-[var(--ui-primary)]/40 flex items-center justify-center text-sm leading-none">+</button>
