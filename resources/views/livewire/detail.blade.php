@@ -1127,6 +1127,31 @@
                     </div>
                 </div>
 
+                <div class="grid grid-cols-[1fr_90px] gap-3 items-end">
+                    <div x-data="{ a: Number(@js($dayForm['split_a'] ?? 50)) }"
+                         x-init="$watch('a', v => $wire.set('dayForm.split_a', v, false))">
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)]">Verteilung</label>
+                            <div class="text-[0.62rem] font-mono tabular-nums">
+                                <span class="text-blue-600 font-semibold">A <span x-text="a"></span>%</span>
+                                <span class="text-[var(--ui-muted)] mx-1">·</span>
+                                <span class="text-pink-600 font-semibold">B <span x-text="100 - a"></span>%</span>
+                            </div>
+                        </div>
+                        <div class="relative h-2 rounded-full overflow-hidden bg-slate-100 mb-1.5">
+                            <div class="absolute inset-y-0 left-0 bg-blue-500 transition-[width] duration-75" :style="`width: ${a}%`"></div>
+                            <div class="absolute inset-y-0 right-0 bg-pink-500 transition-[width] duration-75" :style="`width: ${100 - a}%`"></div>
+                        </div>
+                        <input x-model.number="a" type="range" min="0" max="100" step="1"
+                               class="w-full cursor-pointer accent-[var(--ui-primary)]">
+                    </div>
+                    <div>
+                        <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Kinder</label>
+                        <input wire:model="dayForm.children_count" type="number" min="0" placeholder="0"
+                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                    </div>
+                </div>
+
                 <div class="flex justify-end gap-2 pt-4 border-t border-[var(--ui-border)]">
                     <x-ui-button type="button" variant="secondary-outline" size="sm" wire:click="closeDayModal">Abbrechen</x-ui-button>
                     <x-ui-button type="submit" variant="primary" size="sm">Speichern</x-ui-button>

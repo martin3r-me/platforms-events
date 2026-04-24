@@ -31,14 +31,18 @@ class EventDay extends Model
         'bis',
         'pers_von',
         'pers_bis',
+        'split_a',
+        'children_count',
         'day_status',
         'sort_order',
     ];
 
     protected $casts = [
-        'uuid'       => 'string',
-        'datum'      => 'date',
-        'sort_order' => 'integer',
+        'uuid'            => 'string',
+        'datum'           => 'date',
+        'sort_order'      => 'integer',
+        'split_a'         => 'integer',
+        'children_count'  => 'integer',
     ];
 
     protected static function booted(): void

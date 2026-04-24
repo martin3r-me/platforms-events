@@ -451,16 +451,18 @@ class Detail extends Component
     public function openDayCreate(): void
     {
         $this->dayForm = [
-            'label'       => '',
-            'day_type'    => 'Veranstaltungstag',
-            'datum'       => $this->event->start_date?->format('Y-m-d') ?? '',
-            'color'       => '#6366f1',
-            'day_of_week' => '',
-            'von'         => '',
-            'bis'         => '',
-            'pers_von'    => '',
-            'pers_bis'    => '',
-            'day_status'  => $this->event->status ?: 'Option',
+            'label'          => '',
+            'day_type'       => 'Veranstaltungstag',
+            'datum'          => $this->event->start_date?->format('Y-m-d') ?? '',
+            'color'          => '#6366f1',
+            'day_of_week'    => '',
+            'von'            => '',
+            'bis'            => '',
+            'pers_von'       => '',
+            'pers_bis'       => '',
+            'split_a'        => 50,
+            'children_count' => null,
+            'day_status'     => $this->event->status ?: 'Option',
         ];
         $this->editingDayUuid = null;
         $this->resetErrorBag();
@@ -471,16 +473,18 @@ class Detail extends Component
     {
         $day = $this->event->days()->where('uuid', $uuid)->firstOrFail();
         $this->dayForm = [
-            'label'       => $day->label,
-            'day_type'    => $day->day_type ?: 'Veranstaltungstag',
-            'datum'       => $day->datum?->format('Y-m-d') ?? '',
-            'color'       => $day->color ?: '#6366f1',
-            'day_of_week' => $day->day_of_week ?? '',
-            'von'         => $day->von ?? '',
-            'bis'         => $day->bis ?? '',
-            'pers_von'    => $day->pers_von ?? '',
-            'pers_bis'    => $day->pers_bis ?? '',
-            'day_status'  => $day->day_status ?: 'Option',
+            'label'          => $day->label,
+            'day_type'       => $day->day_type ?: 'Veranstaltungstag',
+            'datum'          => $day->datum?->format('Y-m-d') ?? '',
+            'color'          => $day->color ?: '#6366f1',
+            'day_of_week'    => $day->day_of_week ?? '',
+            'von'            => $day->von ?? '',
+            'bis'            => $day->bis ?? '',
+            'pers_von'       => $day->pers_von ?? '',
+            'pers_bis'       => $day->pers_bis ?? '',
+            'split_a'        => $day->split_a ?? 50,
+            'children_count' => $day->children_count,
+            'day_status'     => $day->day_status ?: 'Option',
         ];
         $this->editingDayUuid = $uuid;
         $this->resetErrorBag();
@@ -495,10 +499,12 @@ class Detail extends Component
     public function saveDay(): void
     {
         $this->validate([
-            'dayForm.label'      => 'required|string|max:50',
-            'dayForm.day_type'   => 'nullable|string|max:40',
-            'dayForm.datum'      => 'required|date',
-            'dayForm.day_status' => 'nullable|string|max:64',
+            'dayForm.label'          => 'required|string|max:50',
+            'dayForm.day_type'       => 'nullable|string|max:40',
+            'dayForm.datum'          => 'required|date',
+            'dayForm.day_status'     => 'nullable|string|max:64',
+            'dayForm.split_a'        => 'nullable|integer|min:0|max:100',
+            'dayForm.children_count' => 'nullable|integer|min:0|max:65535',
         ]);
 
         $payload = $this->dayForm;
