@@ -235,7 +235,7 @@
                     </td>
                     <td class="px-1.5 py-1.5 align-top relative" x-data="{ showArticles: false }">
                         <input wire:model.live.debounce.300ms="newPosition.name" type="text" placeholder="Bezeichnung / Artikel suchen"
-                               @keydown.enter="$wire.addPosition()"
+                               @keydown.enter.prevent="$wire.set('newPosition.name', $event.target.value, false); $wire.addPosition()"
                                @focus="showArticles = true"
                                @click.outside="showArticles = false"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] bg-white">
