@@ -25,6 +25,10 @@
             const r = this.locations.find(x => x.value === this.val);
             return r?.short || '';
         },
+        get currentLabel() {
+            const r = this.locations.find(x => x.value === this.val);
+            return r?.label || '';
+        },
         get filtered() {
             const q = this.search.trim().toLowerCase();
             if (!q) return this.locations;
@@ -80,7 +84,7 @@
     @else
         <button type="button" x-ref="trigger" @click="toggle()"
                 class="w-full flex items-center justify-between gap-1 border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs bg-white hover:border-[var(--ui-primary)]/40 cursor-pointer">
-            <span x-show="val" x-text="currentShort" class="truncate font-mono"></span>
+            <span x-show="val" x-text="currentLabel" class="truncate"></span>
             <span x-show="!val" class="text-slate-400">{{ $placeholder }}</span>
             <svg class="w-2.5 h-2.5 text-slate-400 transition-transform flex-shrink-0" :class="open ? 'rotate-180' : ''"
                  fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
