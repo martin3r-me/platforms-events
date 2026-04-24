@@ -62,8 +62,29 @@
         <div class="flex items-center gap-2">
             <div class="w-[3px] h-3.5 bg-blue-600 rounded-sm"></div>
             <span class="text-[0.72rem] font-bold text-[var(--ui-secondary)]">Positionen</span>
-            <span class="text-[0.55rem] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded {{ $isBrutto ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600' }}"
-                  title="Preis-Modus des Vorgangs">{{ $isBrutto ? 'Brutto' : 'Netto' }}</span>
+            @php $posCount = $positions->count(); @endphp
+            <select x-data
+                    @change="
+                        const next = $event.target.value;
+                        if (next === @js($priceMode)) return;
+                        if (@js($posCount) > 0) {
+                            const ok = confirm(
+                                'Preis-Modus wechseln auf „' + (next === 'brutto' ? 'Brutto' : 'Netto') + '“?\n\n' +
+                                @js($posCount) + ' Position(en) werden entsprechend umgerechnet.'
+                            );
+                            if (!ok) {
+                                $event.target.value = @js($priceMode);
+                                return;
+                            }
+                        }
+                        $wire.updateItemPriceMode(next);
+                    "
+                    class="border border-slate-200 rounded px-1.5 py-0.5 text-[0.55rem] font-bold uppercase tracking-wide cursor-pointer bg-white
+                           {{ $isBrutto ? 'text-amber-700' : 'text-slate-600' }}"
+                    title="Preis-Modus des Vorgangs umschalten">
+                <option value="netto"  @selected(!$isBrutto)>Netto</option>
+                <option value="brutto" @selected($isBrutto)>Brutto</option>
+            </select>
             <span class="text-[0.6rem] text-[var(--ui-muted)]">· {{ $totalArticles }} Artikel · {{ $fmt($totalGesamt) }} €</span>
         </div>
         <div class="flex items-center gap-2">

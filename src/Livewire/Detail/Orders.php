@@ -144,6 +144,39 @@ class Orders extends Component
         }
     }
 
+    public function updateItemPriceMode(string $mode): void
+    {
+        if (!in_array($mode, ['netto', 'brutto'], true)) return;
+        if (!$this->activeItemId) return;
+
+        $event = $this->event();
+        $item = OrderItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($this->activeItemId);
+        if (!$item) return;
+
+        $old = (string) ($item->price_mode ?? 'netto');
+        if ($old === $mode) return;
+
+        $bausteine = ['Headline', 'Trenntext', 'Speisentexte'];
+        foreach ($item->posList as $pos) {
+            if (in_array((string) $pos->gruppe, $bausteine, true)) continue;
+
+            $pct = (float) filter_var((string) ($pos->mwst ?? '0%'), FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+            if ($pct <= 0) continue;
+
+            $factor = 1 + $pct / 100;
+            if ($mode === 'brutto') {
+                $pos->preis  = round((float) $pos->preis  * $factor, 2);
+                $pos->gesamt = round((float) $pos->gesamt * $factor, 2);
+            } else {
+                $pos->preis  = round((float) $pos->preis  / $factor, 2);
+                $pos->gesamt = round((float) $pos->gesamt / $factor, 2);
+            }
+            $pos->save();
+        }
+
+        $item->update(['price_mode' => $mode]);
+    }
+
     public function updateItemLieferant(string $lieferant): void
     {
         if (!$this->activeItemId) return;
