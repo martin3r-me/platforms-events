@@ -8,6 +8,7 @@
             'cost_centers'  => ['label' => 'Kostenstellen',  'icon' => 'heroicon-o-currency-euro'],
             'cost_carriers' => ['label' => 'Kostenträger',   'icon' => 'heroicon-o-inbox-stack'],
             'quote_status'  => ['label' => 'Angebots-Status','icon' => 'heroicon-o-document-duplicate'],
+            'quote_options' => ['label' => 'Angebots-Optionen','icon' => 'heroicon-o-adjustments-horizontal'],
             'order_status'  => ['label' => 'Bestell-Status', 'icon' => 'heroicon-o-shopping-cart'],
             'event_types'   => ['label' => 'Anlass-Typen',   'icon' => 'heroicon-o-calendar-days'],
             'bestuhlung'    => ['label' => 'Bestuhlung',     'icon' => 'heroicon-o-table-cells'],
@@ -92,6 +93,25 @@
                 </div>
             @endif
         @endforeach
+
+        @if($activeTab === 'quote_options')
+            <div class="pt-6 space-y-4">
+                <x-ui-panel title="Angebots-Optionen" subtitle="Team-weite Standardwerte fuer neue und bestehende Angebote. Projektleiter koennen am einzelnen Angebot davon abweichen.">
+                    <div class="p-4 space-y-4">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="checkbox" wire:model.live="attachFloorPlansDefault"
+                                   class="mt-0.5 h-4 w-4 rounded border-[var(--ui-border)] text-[var(--ui-primary)] focus:ring-[var(--ui-primary)]/30">
+                            <span class="flex-1">
+                                <span class="block text-xs font-semibold text-[var(--ui-secondary)]">Raumgrundrisse standardmaessig ans Angebot anhaengen</span>
+                                <span class="block mt-0.5 text-[0.7rem] text-[var(--ui-muted)]">
+                                    Wenn aktiviert, werden bei neuen Angeboten die Grundrisse der gebuchten Raeume automatisch in das Angebots-PDF und in den oeffentlichen Einsichtslink aufgenommen. Der Projektleiter kann das pro Angebot ein- oder ausschalten.
+                                </span>
+                            </span>
+                        </label>
+                    </div>
+                </x-ui-panel>
+            </div>
+        @endif
 
         @if($activeTab === 'order_number')
             <div class="pt-6 space-y-4">

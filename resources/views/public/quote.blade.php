@@ -113,6 +113,46 @@
                 </div>
             </div>
 
+            @if($quote->shouldAttachFloorPlans())
+                @php $floorPlanLocations = $quote->floorPlanLocations(); @endphp
+                @if($floorPlanLocations->isNotEmpty())
+                    <div style="margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                        <h2 style="border: none; padding: 0; margin: 0 0 12px 0;">Raumgrundrisse</h2>
+                        <p style="color: #64748b; font-size: 0.78rem; margin: 0 0 14px 0;">
+                            Uebersicht der Grundrisse fuer die in diesem Angebot gebuchten Raeume.
+                        </p>
+                        @foreach($floorPlanLocations as $loc)
+                            @php $fpUrl = $loc->floorPlanUrl(); @endphp
+                            <div style="margin-bottom: 18px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 12px; flex-wrap: wrap;">
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 0.95rem;">{{ $loc->name }}</div>
+                                        @if($loc->kuerzel)
+                                            <div style="color: #64748b; font-size: 0.75rem;">{{ $loc->kuerzel }}</div>
+                                        @endif
+                                    </div>
+                                    @if($fpUrl)
+                                        <a href="{{ $fpUrl }}" target="_blank" rel="noopener"
+                                           style="display: inline-block; padding: 6px 12px; border-radius: 6px; background: #2563eb; color: white; font-size: 0.75rem; font-weight: 600; text-decoration: none;">
+                                            In neuem Tab oeffnen
+                                        </a>
+                                    @endif
+                                </div>
+                                @if($fpUrl && $loc->floorPlanIsImage())
+                                    <img src="{{ $fpUrl }}" alt="Grundriss {{ $loc->name }}"
+                                         style="max-width: 100%; border-radius: 6px; display: block; background: white;" />
+                                @elseif($fpUrl && $loc->floorPlanIsPdf())
+                                    <iframe src="{{ $fpUrl }}" title="Grundriss {{ $loc->name }}"
+                                            style="width: 100%; height: 620px; border: 1px solid #cbd5e1; border-radius: 6px; background: white;"></iframe>
+                                @else
+                                    <p style="color: #b45309; font-size: 0.78rem; margin: 0;">Grundriss nicht verfuegbar.</p>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            @endif
+
             @if($quote->status === 'sent')
                 <form method="POST" action="{{ route('events.public.quote.respond', ['token' => $quote->token]) }}" style="margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
                     @csrf

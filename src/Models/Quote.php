@@ -24,6 +24,7 @@ class Quote extends Model
         'sent_at', 'responded_at', 'response_note',
         'last_viewed_at', 'view_count',
         'version', 'parent_id', 'is_current', 'pdf_snapshot',
+        'attach_floor_plans',
         'approval_status', 'approver_id', 'approval_requested_by',
         'approval_requested_at', 'approval_decided_at', 'approval_comment',
     ];
@@ -35,6 +36,7 @@ class Quote extends Model
         'responded_at'          => 'datetime',
         'last_viewed_at'        => 'datetime',
         'is_current'            => 'boolean',
+        'attach_floor_plans'    => 'boolean',
         'approval_requested_at' => 'datetime',
         'approval_decided_at'   => 'datetime',
     ];
@@ -87,5 +89,50 @@ class Quote extends Model
     public function approvalRequester(): BelongsTo
     {
         return $this->belongsTo(\Platform\Core\Models\User::class, 'approval_requested_by');
+    }
+
+    /**
+     * Effektiver Wert fuer "Raumgrundrisse ans Angebot anhaengen":
+     * Override am Angebot hat Vorrang, sonst Team-Default aus SettingsService.
+     */
+    public function shouldAttachFloorPlans(): bool
+    {
+        if ($this->attach_floor_plans !== null) {
+            return (bool) $this->attach_floor_plans;
+        }
+        return \Platform\Events\Services\SettingsService::attachFloorPlansDefault($this->team_id);
+    }
+
+    /**
+     * Alle im Event gebuchten Locations (deduped), nach Sortierung der Buchungen.
+     * Liefert leere Collection, wenn Event nicht ladbar.
+     *
+     * @return \Illuminate\Support\Collection<int, \Platform\Locations\Models\Location>
+     */
+    public function bookedLocations(): \Illuminate\Support\Collection
+    {
+        $event = $this->event;
+        if (!$event) {
+            return collect();
+        }
+
+        return $event->bookings()
+            ->whereNotNull('location_id')
+            ->with('location')
+            ->get()
+            ->pluck('location')
+            ->filter()
+            ->unique(fn ($loc) => $loc->id)
+            ->values();
+    }
+
+    /**
+     * Gebuchte Locations, fuer die ein Grundriss hinterlegt ist.
+     *
+     * @return \Illuminate\Support\Collection<int, \Platform\Locations\Models\Location>
+     */
+    public function floorPlanLocations(): \Illuminate\Support\Collection
+    {
+        return $this->bookedLocations()->filter(fn ($loc) => $loc->hasFloorPlan())->values();
     }
 }

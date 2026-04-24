@@ -312,6 +312,32 @@ class Quotes extends Component
         }
     }
 
+    /**
+     * Override fuer "Raumgrundrisse anhaengen" am Angebot setzen.
+     * Werte: 'default' = Team-Default uebernehmen (null),
+     *        'on' = explizit anhaengen, 'off' = explizit weglassen.
+     */
+    public function setQuoteFloorPlans(int $quoteId, string $value): void
+    {
+        $q = Quote::where('event_id', $this->eventId)->find($quoteId);
+        if (!$q) return;
+
+        $new = match ($value) {
+            'on'  => true,
+            'off' => false,
+            default => null,
+        };
+
+        $q->update(['attach_floor_plans' => $new]);
+
+        $label = match ($new) {
+            true  => 'Grundrisse am Angebot v' . $q->version . ' aktiviert',
+            false => 'Grundrisse am Angebot v' . $q->version . ' deaktiviert',
+            null  => 'Grundrisse am Angebot v' . $q->version . ' auf Team-Default gesetzt',
+        };
+        ActivityLogger::log($this->event(), 'quote', $label);
+    }
+
     // ========== QuoteItem ==========
 
     public function openItemCreate(int $eventDayId): void
@@ -902,6 +928,19 @@ class Quotes extends Component
                 ->keyBy('rule_id');
         }
 
+        // Raum-Grundrisse: wie viele gebuchte Raeume haben einen Grundriss?
+        $bookedLocations = $event->bookings()
+            ->whereNotNull('location_id')
+            ->with('location')
+            ->get()
+            ->pluck('location')
+            ->filter()
+            ->unique(fn ($loc) => $loc->id)
+            ->values();
+        $floorPlanRoomCount   = $bookedLocations->count();
+        $floorPlanReadyCount  = $bookedLocations->filter(fn ($loc) => $loc->hasFloorPlan())->count();
+        $floorPlansTeamDefault = SettingsService::attachFloorPlansDefault($event->team_id);
+
         return view('events::livewire.detail.quotes', [
             'event'          => $event,
             'quotes'         => $quotes,
@@ -922,6 +961,9 @@ class Quotes extends Component
             'currentUserId'  => Auth::id(),
             'eligibleFlatRates' => $eligibleFlatRates,
             'activeFlatRateApplications' => $activeFlatRateApplications,
+            'floorPlanRoomCount'     => $floorPlanRoomCount,
+            'floorPlanReadyCount'    => $floorPlanReadyCount,
+            'floorPlansTeamDefault'  => $floorPlansTeamDefault,
         ]);
     }
 }

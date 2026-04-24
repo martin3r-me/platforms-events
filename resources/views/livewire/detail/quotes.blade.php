@@ -272,6 +272,33 @@
                                     @if($q->approval_comment)
                                         <p class="text-[0.58rem] text-[var(--ui-muted)] italic mt-0.5">„{{ $q->approval_comment }}"</p>
                                     @endif
+
+                                    @php
+                                        $fpOverride = $q->attach_floor_plans;
+                                        $fpValue    = $fpOverride === null ? 'default' : ($fpOverride ? 'on' : 'off');
+                                        $fpEffective = $q->shouldAttachFloorPlans();
+                                    @endphp
+                                    @if($floorPlanRoomCount > 0)
+                                        <div class="mt-1.5 flex items-center gap-2 flex-wrap">
+                                            <span class="text-[0.58rem] text-[var(--ui-muted)] flex items-center gap-1">
+                                                @svg('heroicon-o-map', 'w-3 h-3')
+                                                Raumgrundrisse:
+                                            </span>
+                                            <select wire:change="setQuoteFloorPlans({{ $q->id }}, $event.target.value)"
+                                                    class="text-[0.6rem] border border-[var(--ui-border)] rounded px-1.5 py-0.5 bg-white">
+                                                <option value="default" @selected($fpValue === 'default')>Standard ({{ $floorPlansTeamDefault ? 'an' : 'aus' }})</option>
+                                                <option value="on"      @selected($fpValue === 'on')>Anhaengen</option>
+                                                <option value="off"     @selected($fpValue === 'off')>Weglassen</option>
+                                            </select>
+                                            @if($fpEffective)
+                                                <span class="text-[0.58rem] text-emerald-700 font-semibold">
+                                                    {{ $floorPlanReadyCount }}/{{ $floorPlanRoomCount }} Raeume mit Plan
+                                                </span>
+                                            @else
+                                                <span class="text-[0.58rem] text-[var(--ui-muted)] italic">nicht angehaengt</span>
+                                            @endif
+                                        </div>
+                                    @endif
                                 </div>
 
                                 <div class="flex gap-1.5 flex-wrap">

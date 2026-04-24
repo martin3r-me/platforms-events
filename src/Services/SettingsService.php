@@ -22,6 +22,7 @@ class SettingsService
     protected const KEY_SCHEDULE_DESCRIPTIONS = 'schedule_descriptions';
     protected const KEY_DAY_TYPES       = 'day_types';
     protected const KEY_ORDER_NUMBER_SCHEMA = 'order_number_schema';
+    protected const KEY_ATTACH_FLOOR_PLANS_DEFAULT = 'attach_floor_plans_default';
 
     public static function defaults(): array
     {
@@ -77,6 +78,24 @@ class SettingsService
     public static function setOrderNumberSchema(?int $teamId, string $schema): void
     {
         \Platform\Events\Models\Setting::setFor($teamId, self::KEY_ORDER_NUMBER_SCHEMA, trim($schema));
+    }
+
+    /**
+     * Ob Raum-Grundrisse standardmaessig ans Angebot angehaengt werden sollen.
+     * Default: false — der Projektleiter muss es bewusst aktivieren.
+     */
+    public static function attachFloorPlansDefault(?int $teamId): bool
+    {
+        $raw = Setting::getFor($teamId, self::KEY_ATTACH_FLOOR_PLANS_DEFAULT);
+        if ($raw === null) {
+            return false;
+        }
+        return in_array((string) $raw, ['1', 'true', 'on', 'yes'], true);
+    }
+
+    public static function setAttachFloorPlansDefault(?int $teamId, bool $value): void
+    {
+        Setting::setFor($teamId, self::KEY_ATTACH_FLOOR_PLANS_DEFAULT, $value ? '1' : '0');
     }
 
     public static function setCostCenters(?int $teamId, array $items): void       { self::setArray($teamId, self::KEY_COST_CENTERS, array_values(array_filter(array_map('trim', $items)))); }

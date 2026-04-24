@@ -115,5 +115,44 @@
     @if($quote->valid_until)
         <p style="margin-top: 16px; font-size: 9pt; color: #64748b;">Gültig bis {{ $quote->valid_until->format('d.m.Y') }}</p>
     @endif
+
+    @if($quote->shouldAttachFloorPlans())
+        @php $floorPlanLocations = $quote->floorPlanLocations(); @endphp
+        @if($floorPlanLocations->isNotEmpty())
+            <div style="page-break-before: always;"></div>
+            <h2 style="margin-top: 0;">Raumgrundrisse</h2>
+            <p style="font-size: 9pt; color: #64748b; margin: 0 0 12px 0;">
+                Grundrisse der im Angebot gebuchten Raeume.
+            </p>
+
+            @foreach($floorPlanLocations as $loc)
+                <div style="margin-bottom: 14px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px;">
+                    <div style="font-size: 10.5pt; font-weight: bold; color: #1e293b; margin-bottom: 6px;">
+                        {{ $loc->name }}
+                        @if($loc->kuerzel) <span style="color: #64748b; font-weight: normal; font-size: 9pt;">({{ $loc->kuerzel }})</span>@endif
+                    </div>
+                    @if($loc->floorPlanIsImage())
+                        @php
+                            $raw = $loc->floorPlanContents();
+                            $mime = $loc->floorPlanMimeType();
+                        @endphp
+                        @if($raw && $mime)
+                            <img src="data:{{ $mime }};base64,{{ base64_encode($raw) }}"
+                                 style="max-width: 100%; max-height: 620px; display: block; margin: 0 auto;" />
+                        @else
+                            <p style="font-size: 9pt; color: #b45309; margin: 4px 0 0 0;">Grundriss konnte nicht geladen werden.</p>
+                        @endif
+                    @elseif($loc->floorPlanIsPdf())
+                        <p style="font-size: 9pt; color: #64748b; margin: 4px 0 0 0;">
+                            PDF-Grundriss hinterlegt. Einsehbar im Online-Angebot unter dem Kunden-Link.
+                        </p>
+                    @endif
+                </div>
+                @if(!$loop->last)
+                    <div style="page-break-after: always;"></div>
+                @endif
+            @endforeach
+        @endif
+    @endif
 </body>
 </html>
