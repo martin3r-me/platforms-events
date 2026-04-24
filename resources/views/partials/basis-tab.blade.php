@@ -39,53 +39,6 @@
                     };
                 @endphp
 
-                <div class="px-2 pt-2 text-[0.48rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Variante A · kompakt gestapelt</div>
-                <div class="divide-y divide-[var(--ui-border)]/30">
-                    @foreach($days as $day)
-                        @php
-                            [$typeCls, $typeTxt] = $typeBadge($day->day_type ?: 'Veranstaltungstag');
-                            $splitA = (int) ($day->split_a ?? 50);
-                        @endphp
-                        <div wire:click="openDayEdit('{{ $day->uuid }}')"
-                             class="px-2 py-1.5 hover:bg-[var(--ui-muted-5)]/50 cursor-pointer group">
-                            <div class="flex items-center gap-1.5">
-                                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: {{ $day->color }}"></span>
-                                <span class="text-[0.55rem] font-bold text-[var(--ui-muted)]">{{ $day->day_of_week ?: '' }}</span>
-                                <span class="text-[0.72rem] font-mono font-semibold text-[var(--ui-secondary)]">{{ $day->datum?->format('d.m.Y') ?: '—' }}</span>
-                                <span class="ml-auto text-[0.5rem] font-semibold uppercase tracking-wide px-1 py-0 rounded {{ $typeCls }}" title="{{ $day->day_type ?: 'Veranstaltungstag' }}">{{ $typeTxt }}</span>
-                                <button wire:click.stop="deleteDay('{{ $day->uuid }}')" wire:confirm="Tag löschen?"
-                                        class="opacity-0 group-hover:opacity-100 text-red-500 p-0.5">
-                                    @svg('heroicon-o-trash', 'w-2.5 h-2.5')
-                                </button>
-                            </div>
-                            @if($day->von || $day->bis)
-                                <div class="pl-3.5 mt-0.5 flex items-center gap-1 text-[0.58rem] font-mono text-[var(--ui-muted)]">
-                                    @svg('heroicon-o-clock', 'w-2.5 h-2.5')
-                                    {{ $day->von ?: '00:00' }}–{{ $day->bis ?: '00:00' }}
-                                </div>
-                            @endif
-                            <div class="pl-3.5 mt-0.5 flex items-center gap-1 flex-wrap">
-                                @if($day->pers_von || $day->pers_bis)
-                                    <span class="text-[0.55rem] text-[var(--ui-muted)] flex items-center gap-0.5">
-                                        @svg('heroicon-o-users', 'w-2.5 h-2.5')
-                                        {{ $day->pers_von ?: '?' }}–{{ $day->pers_bis ?: '?' }}
-                                    </span>
-                                @endif
-                                @if($splitA !== 50)
-                                    <span class="text-[0.5rem] font-mono font-semibold px-1 py-0 rounded bg-slate-100" title="Verteilung A/B">
-                                        <span class="text-blue-600">{{ $splitA }}</span>/<span class="text-pink-600">{{ 100 - $splitA }}</span>
-                                    </span>
-                                @endif
-                                @if($day->children_count)
-                                    <span class="text-[0.5rem] font-semibold text-amber-700 bg-amber-50 px-1 py-0 rounded" title="Kinderanzahl">K {{ $day->children_count }}</span>
-                                @endif
-                                <span class="ml-auto text-[0.55rem] font-bold px-1.5 py-0 rounded {{ $statusBadge($day->day_status) }}">{{ $day->day_status }}</span>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-
-                <div class="px-2 pt-3 border-t border-[var(--ui-border)]/50 text-[0.48rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Variante B · Datum-Block + Meta-Spalte</div>
                 <div class="divide-y divide-[var(--ui-border)]/30">
                     @foreach($days as $day)
                         @php
