@@ -21,6 +21,10 @@ AI-Tools, API-Controllern und Kommandos.
 | `ProcurementTypeResolver`  | Aufloesung stock/supplier/kitchen: Position-Override vor Artikel-Stamm.                   |
 | `PickListGenerator`        | Packliste aus Bestellungen mit Baustein-Filter + Typ-Klassifizierung; analyze/generate.   |
 | `EventFactory`             | Event-Erstellung: Nummer-Vergabe, EventDays, Defaults (Verantwortlich/Unterschrift=User). |
+| `PositionValidator`        | Pruef-Regeln fuer Quote-/Order-Positionen (Zeiten, Gruppen-Pflicht gegen Artikelstamm).   |
+| `OrderNumberBuilder`       | Baut die Ordernummer aus Schema-Platzhaltern (USER_INITIALS/COST_CENTER/…).               |
+| `FlatRateEngine`           | Sandbox-Expression-Evaluator fuer Pauschal-Formeln (Whitelist-Funktionen).                |
+| `FlatRateApplicator`       | Wendet Pauschal-Regeln auf einen QuoteItem an (Kontext-Builder, idempotentes Apply).      |
 
 ## Ideen fuer weitere Extraktionen
 
