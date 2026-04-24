@@ -314,37 +314,6 @@
             </div>
             <div class="p-2 space-y-1.5">
                 <div>
-                    <label class="{{ $lbl }}">Lieferant</label>
-                    @php $s = ($crmSlots ?? [])['delivery'] ?? []; @endphp
-                    @include('events::partials.crm-company-picker', [
-                        'slot'          => 'delivery',
-                        'available'     => $crmCompanyAvailable ?? false,
-                        'options'       => $s['options']   ?? [],
-                        'label'         => ($s['label']     ?? null) ?: $event->delivery_supplier,
-                        'url'           => $s['url']       ?? null,
-                        'currentId'     => $s['currentId'] ?? null,
-                        'fallbackField' => 'delivery_supplier',
-                        'placeholder'   => '— CRM-Firma wählen —',
-                    ])
-                </div>
-                <div>
-                    <label class="{{ $lbl }}">Ansprechpartner</label>
-                    @php $c = ($crmContactSlots ?? [])['delivery'] ?? []; @endphp
-                    <div wire:key="crm-contact-delivery-{{ md5(json_encode($c['contacts'] ?? [])) }}">
-                        @include('events::partials.crm-contact-picker', [
-                            'slot'          => 'delivery',
-                            'available'     => $crmContactAvailable ?? false,
-                            'contacts'      => $c['contacts']     ?? [],
-                            'currentId'     => $c['currentId']    ?? null,
-                            'currentLabel'  => $c['currentLabel'] ?? $event->delivery_contact,
-                            'currentUrl'    => $c['currentUrl']   ?? null,
-                            'hasCompany'    => $c['hasCompany']   ?? false,
-                            'fallbackField' => 'delivery_contact',
-                            'placeholder'   => '— Kontakt wählen —',
-                        ])
-                    </div>
-                </div>
-                <div>
                     <label class="{{ $lbl }}">Lieferadresse</label>
                     @php $sa = ($crmSlots ?? [])['delivery_address'] ?? []; @endphp
                     @include('events::partials.crm-company-picker', [
@@ -357,6 +326,12 @@
                         'fallbackField' => 'delivery_address',
                         'placeholder'   => '— CRM-Firma wählen —',
                     ])
+                </div>
+                <div>
+                    <label class="{{ $lbl }}">Bemerkung</label>
+                    <input wire:model.blur="event.delivery_note" type="text"
+                           placeholder="z.B. Haupteingang, Anlieferung über Hof…"
+                           class="{{ $in }}">
                 </div>
             </div>
         </x-ui-panel>
