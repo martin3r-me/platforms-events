@@ -57,6 +57,19 @@
                                         {{ $day->pers_von ?: '?' }}–{{ $day->pers_bis ?: '?' }}
                                     </span>
                                 @endif
+                                @php $splitA = (int) ($day->split_a ?? 50); @endphp
+                                @if($splitA !== 50)
+                                    <span class="text-[0.5rem] font-mono font-semibold text-[var(--ui-muted)] px-1 py-0 rounded bg-slate-100"
+                                          title="Verteilung A/B">
+                                        <span class="text-blue-600">{{ $splitA }}</span>/<span class="text-pink-600">{{ 100 - $splitA }}</span>
+                                    </span>
+                                @endif
+                                @if($day->children_count)
+                                    <span class="text-[0.5rem] font-semibold text-amber-700 bg-amber-50 px-1 py-0 rounded flex items-center gap-0.5"
+                                          title="Kinderanzahl">
+                                        K {{ $day->children_count }}
+                                    </span>
+                                @endif
                                 <span class="text-[0.55rem] font-bold px-1.5 py-0 rounded
                                     {{ match($day->day_status) {
                                         'Vertrag' => 'bg-green-100 text-green-700',
