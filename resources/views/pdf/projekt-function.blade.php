@@ -90,15 +90,15 @@
                 <div class="info-value">{{ $event['cost_carrier'] ?: '—' }}</div>
             </td>
         </tr>
-        @if(!empty($event['delivery_supplier']) || !empty($event['delivery_contact']))
+        @if(!empty($event['delivery_location']) || !empty($event['delivery_address']) || !empty($event['delivery_note']))
         <tr>
             <td>
-                <div class="info-label">Lieferant</div>
-                <div class="info-value">{{ $event['delivery_supplier'] ?: '—' }}</div>
+                <div class="info-label">Lieferadresse</div>
+                <div class="info-value">{{ $event['delivery_location'] ?: ($event['delivery_address'] ?: '—') }}</div>
             </td>
             <td colspan="2">
-                <div class="info-label">Lieferkontakt</div>
-                <div class="info-value">{{ $event['delivery_contact'] ?: '—' }}</div>
+                <div class="info-label">Bemerkung</div>
+                <div class="info-value">{{ $event['delivery_note'] ?: '—' }}</div>
             </td>
         </tr>
         @endif

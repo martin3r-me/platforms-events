@@ -110,8 +110,9 @@ class GetEventTool implements ToolContract, ToolMetadataContract
 
                 'follow_up_date'  => $event->follow_up_date?->toDateString(),
                 'follow_up_note'  => $event->follow_up_note,
-                'delivery_supplier' => $event->delivery_supplier,
-                'delivery_contact'  => $event->delivery_contact,
+                'delivery_address'     => $event->delivery_address,
+                'delivery_location_id' => $event->delivery_location_id,
+                'delivery_note'        => $event->delivery_note,
 
                 'inquiry_date' => $event->inquiry_date?->toDateString(),
                 'inquiry_time' => $event->inquiry_time,

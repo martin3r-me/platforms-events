@@ -314,7 +314,16 @@
             </div>
             <div class="p-2 space-y-1.5">
                 <div>
-                    <label class="{{ $lbl }}">Lieferadresse</label>
+                    <label class="{{ $lbl }}">Eigene Location</label>
+                    @include('events::partials.location-picker', [
+                        'model'       => 'event.delivery_location_id',
+                        'locations'   => $locations,
+                        'current'     => $event->delivery_location_id,
+                        'placeholder' => '— Location wählen —',
+                    ])
+                </div>
+                <div>
+                    <label class="{{ $lbl }}">Externe Lieferadresse (CRM)</label>
                     @php $sa = ($crmSlots ?? [])['delivery_address'] ?? []; @endphp
                     @include('events::partials.crm-company-picker', [
                         'slot'          => 'delivery_address',

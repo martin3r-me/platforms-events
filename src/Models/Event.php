@@ -48,8 +48,7 @@ class Event extends Model
         // Wiedervorlage
         'follow_up_date', 'follow_up_note',
         // Lieferung
-        'delivery_supplier', 'delivery_crm_company_id', 'delivery_contact', 'delivery_crm_contact_id',
-        'delivery_address', 'delivery_address_crm_company_id', 'delivery_note',
+        'delivery_address', 'delivery_address_crm_company_id', 'delivery_location_id', 'delivery_note',
         // Eingang
         'inquiry_date', 'inquiry_time', 'inquiry_note', 'potential',
         // Weiterleitung
@@ -133,6 +132,11 @@ class Event extends Model
     public function team(): BelongsTo
     {
         return $this->belongsTo(\Platform\Core\Models\Team::class);
+    }
+
+    public function deliveryLocation(): BelongsTo
+    {
+        return $this->belongsTo(\Platform\Locations\Models\Location::class, 'delivery_location_id');
     }
 
     public function days(): HasMany

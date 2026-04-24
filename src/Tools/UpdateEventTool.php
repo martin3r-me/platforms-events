@@ -21,7 +21,7 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
         'responsible', 'cost_center', 'cost_carrier',
         'sign_left', 'sign_right',
         'follow_up_note',
-        'delivery_supplier', 'delivery_contact',
+        'delivery_address', 'delivery_note',
         'inquiry_time', 'inquiry_note', 'potential',
         'forwarding_time',
     ];
@@ -56,11 +56,12 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
         return [
             'type' => 'object',
             'properties' => array_merge([
-                'event_id'     => ['type' => 'integer'],
-                'uuid'         => ['type' => 'string'],
-                'event_number' => ['type' => 'string'],
-                'mr_data'      => ['type' => 'object', 'description' => 'Management-Report als Key/Value-Map (ersetzt den gesamten Inhalt).'],
-                'forwarded'    => ['type' => 'boolean'],
+                'event_id'             => ['type' => 'integer'],
+                'uuid'                 => ['type' => 'string'],
+                'event_number'         => ['type' => 'string'],
+                'mr_data'              => ['type' => 'object', 'description' => 'Management-Report als Key/Value-Map (ersetzt den gesamten Inhalt).'],
+                'forwarded'            => ['type' => 'boolean'],
+                'delivery_location_id' => ['type' => 'integer', 'description' => 'FK auf locations_locations.id.'],
             ], $stringFields, $dateFields),
         ];
     }
@@ -105,6 +106,11 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
             }
             if (array_key_exists('forwarded', $arguments)) {
                 $update['forwarded'] = (bool) $arguments['forwarded'];
+            }
+            if (array_key_exists('delivery_location_id', $arguments)) {
+                $update['delivery_location_id'] = $arguments['delivery_location_id'] !== null
+                    ? (int) $arguments['delivery_location_id']
+                    : null;
             }
             if (array_key_exists('mr_data', $arguments)) {
                 $update['mr_data'] = is_array($arguments['mr_data']) ? $arguments['mr_data'] : null;

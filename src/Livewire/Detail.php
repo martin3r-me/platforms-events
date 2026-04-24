@@ -178,14 +178,12 @@ class Detail extends Component
         'organizer' => '',
         'orderer'   => '',
         'invoice'   => '',
-        'delivery'  => '',
     ];
 
     protected const CRM_SLOTS = [
         'organizer'        => ['id' => 'crm_company_id',                   'label' => 'customer'],
         'orderer'          => ['id' => 'orderer_crm_company_id',           'label' => 'orderer_company'],
         'invoice'          => ['id' => 'invoice_crm_company_id',           'label' => 'invoice_to'],
-        'delivery'         => ['id' => 'delivery_crm_company_id',          'label' => 'delivery_supplier'],
         'delivery_address' => ['id' => 'delivery_address_crm_company_id',  'label' => 'delivery_address'],
     ];
 
@@ -198,7 +196,6 @@ class Detail extends Component
         'organizer_onsite' => ['company_slot' => 'organizer', 'id' => 'organizer_onsite_crm_contact_id', 'label' => 'organizer_contact_onsite'],
         'orderer'          => ['company_slot' => 'orderer',   'id' => 'orderer_crm_contact_id',          'label' => 'orderer_contact'],
         'invoice'          => ['company_slot' => 'invoice',   'id' => 'invoice_crm_contact_id',          'label' => 'invoice_contact'],
-        'delivery'         => ['company_slot' => 'delivery',  'id' => 'delivery_crm_contact_id',         'label' => 'delivery_contact'],
     ];
 
     public function pickCrmCompany(string $slot, ?int $companyId, ?string $label = null): void
@@ -259,10 +256,10 @@ class Detail extends Component
             'event.invoice_crm_company_id'        => 'nullable|integer',
             'event.invoice_contact'               => 'nullable|string|max:255',
             'event.invoice_crm_contact_id'        => 'nullable|integer',
-            'event.delivery_supplier'             => 'nullable|string|max:255',
-            'event.delivery_crm_company_id'       => 'nullable|integer',
-            'event.delivery_contact'              => 'nullable|string|max:255',
-            'event.delivery_crm_contact_id'       => 'nullable|integer',
+            'event.delivery_address'              => 'nullable|string|max:255',
+            'event.delivery_address_crm_company_id' => 'nullable|integer',
+            'event.delivery_location_id'          => 'nullable|integer',
+            'event.delivery_note'                 => 'nullable|string|max:255',
             'event.organizer_contact'             => 'nullable|string|max:255',
             'event.organizer_crm_contact_id'      => 'nullable|integer',
             'event.organizer_contact_onsite'      => 'nullable|string|max:255',
@@ -291,8 +288,6 @@ class Detail extends Component
             'event.sign_right'               => 'nullable|string|max:255',
             'event.follow_up_date'           => 'nullable|date',
             'event.follow_up_note'           => 'nullable|string',
-            'event.delivery_supplier'        => 'nullable|string|max:255',
-            'event.delivery_contact'         => 'nullable|string|max:255',
             'event.inquiry_date'             => 'nullable|date',
             'event.inquiry_time'             => 'nullable|string|max:32',
             'event.inquiry_note'             => 'nullable|string',
@@ -331,6 +326,14 @@ class Detail extends Component
     public function updated($property): void
     {
         if (str_starts_with($property, 'event.') && $this->event) {
+            // Lieferadresse: Location und CRM-Firma schliessen sich gegenseitig aus.
+            if ($property === 'event.delivery_location_id' && $this->event->delivery_location_id) {
+                $this->event->delivery_address_crm_company_id = null;
+                $this->event->delivery_address = null;
+            } elseif ($property === 'event.delivery_address_crm_company_id' && $this->event->delivery_address_crm_company_id) {
+                $this->event->delivery_location_id = null;
+            }
+
             try {
                 $this->event->save();
             } catch (\Throwable $e) {

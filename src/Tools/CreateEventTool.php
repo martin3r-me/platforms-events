@@ -26,7 +26,7 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
         return 'POST /events - Erstellt ein Event. Pflichtfeld: name. Optional: customer, group, location, start_date, end_date, status, '
             . 'organizer_contact, organizer_contact_onsite, organizer_for_whom, orderer_company, orderer_contact, orderer_via, '
             . 'invoice_to, invoice_contact, invoice_date_type, responsible, cost_center, cost_carrier, event_type, '
-            . 'sign_left, sign_right, mr_data (object), follow_up_date, follow_up_note, delivery_supplier, delivery_contact, '
+            . 'sign_left, sign_right, mr_data (object), follow_up_date, follow_up_note, delivery_address, delivery_location_id, delivery_note, '
             . 'inquiry_date, inquiry_time, inquiry_note, potential, forwarded, forwarding_date, forwarding_time, '
             . 'auto_create_days (boolean, default true) – bei gesetztem start_date werden EventDays angelegt.';
     }
@@ -70,8 +70,9 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 'follow_up_date' => ['type' => 'string', 'description' => 'YYYY-MM-DD'],
                 'follow_up_note' => ['type' => 'string'],
 
-                'delivery_supplier' => ['type' => 'string'],
-                'delivery_contact'  => ['type' => 'string'],
+                'delivery_address'     => ['type' => 'string'],
+                'delivery_location_id' => ['type' => 'integer', 'description' => 'FK auf locations_locations.id (eigene Location).'],
+                'delivery_note'        => ['type' => 'string',  'description' => 'Freitext, z.B. "Haupteingang".'],
 
                 'inquiry_date' => ['type' => 'string'],
                 'inquiry_time' => ['type' => 'string'],
@@ -126,7 +127,7 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 'responsible', 'cost_center', 'cost_carrier',
                 'sign_left', 'sign_right',
                 'follow_up_date', 'follow_up_note',
-                'delivery_supplier', 'delivery_contact',
+                'delivery_address', 'delivery_location_id', 'delivery_note',
                 'inquiry_date', 'inquiry_time', 'inquiry_note', 'potential',
                 'forwarding_date', 'forwarding_time',
             ] as $f) {
