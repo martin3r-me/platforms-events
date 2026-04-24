@@ -79,6 +79,13 @@ class Manage extends Component
         $this->resetErrorBag();
     }
 
+    public function updatedStartDate($value): void
+    {
+        if (!empty($value) && empty($this->end_date)) {
+            $this->end_date = $value;
+        }
+    }
+
     public function pickCrmCompany(string $slot, ?int $companyId, ?string $label = null): void
     {
         if ($slot !== 'customer') return;

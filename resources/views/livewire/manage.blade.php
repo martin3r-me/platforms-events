@@ -329,7 +329,7 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Start *</label>
-                        <input wire:model="start_date" type="date"
+                        <input wire:model.blur="start_date" type="date"
                                class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                         @error('start_date') <p class="mt-1 text-[0.62rem] text-red-600">{{ $message }}</p> @enderror
                     </div>
