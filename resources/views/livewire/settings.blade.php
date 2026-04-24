@@ -14,6 +14,7 @@
             'schedule_desc' => ['label' => 'Ablaufplan-Beschreibungen', 'icon' => 'heroicon-o-list-bullet'],
             'day_types'     => ['label' => 'Tages-Typen',    'icon' => 'heroicon-o-calendar'],
             'order_number'  => ['label' => 'Ordernummer',    'icon' => 'heroicon-o-hashtag'],
+            'flat_rates'    => ['label' => 'Pauschalen',     'icon' => 'heroicon-o-calculator'],
             'bausteine'     => ['label' => 'Text-Bausteine',    'icon' => 'heroicon-o-puzzle-piece'],
             'mr_fields'     => ['label' => 'Management Report', 'icon' => 'heroicon-o-chart-bar-square'],
             'templates'     => ['label' => 'Dokumentvorlagen',  'icon' => 'heroicon-o-document-text'],
@@ -129,6 +130,217 @@
                 </x-ui-panel>
             </div>
         @endif
+
+        @if($activeTab === 'flat_rates')
+            <div class="pt-6 space-y-4">
+                <x-ui-panel title="Pauschal-Regeln" subtitle="Regelbasierte Kalkulation für Vorgänge (z.B. Getränke, Buffet, Bar, Equipment). Eine Regel wird im Positions-Editor des Vorgangs manuell angewendet und erzeugt eine Pauschale-Position.">
+                    <div class="p-4 border-b border-[var(--ui-border)] flex justify-end">
+                        <x-ui-button variant="primary" size="sm" wire:click="openFlatRateModal">
+                            @svg('heroicon-o-plus', 'w-3.5 h-3.5 inline') Neue Regel
+                        </x-ui-button>
+                    </div>
+                    @if($flatRateRules->isEmpty())
+                        <div class="p-8 text-xs text-[var(--ui-muted)] text-center italic">
+                            Noch keine Regel angelegt. Beispiel: <code class="font-mono bg-slate-100 px-1">day.pers_avg * (20 + (event.season == 'summer' ? 5 : 0))</code>
+                        </div>
+                    @else
+                        <ul class="divide-y divide-[var(--ui-border)]/40">
+                            @foreach($flatRateRules as $rule)
+                                <li class="p-3 flex items-start gap-3">
+                                    <button wire:click="toggleFlatRateActive({{ $rule->id }})" type="button"
+                                            title="{{ $rule->is_active ? 'Aktiv – klicken zum Deaktivieren' : 'Inaktiv – klicken zum Aktivieren' }}"
+                                            class="mt-0.5 w-2.5 h-2.5 rounded-full flex-shrink-0 {{ $rule->is_active ? 'bg-green-500' : 'bg-slate-300' }}"></button>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="text-[0.72rem] font-bold text-[var(--ui-secondary)]">{{ $rule->name }}</span>
+                                            @foreach(($rule->scope_typs ?? []) as $typ)
+                                                <span class="text-[0.55rem] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">{{ $typ }}</span>
+                                            @endforeach
+                                            @if(!empty($rule->scope_event_types))
+                                                <span class="text-[0.55rem] text-[var(--ui-muted)]">· Anlass: {{ implode(', ', $rule->scope_event_types) }}</span>
+                                            @endif
+                                        </div>
+                                        <div class="mt-1 text-[0.62rem] font-mono text-[var(--ui-muted)] break-all">{{ $rule->formula }}</div>
+                                        <div class="mt-1 text-[0.58rem] text-[var(--ui-muted)]">
+                                            Output: <span class="font-semibold text-[var(--ui-secondary)]">{{ $rule->output_name }}</span>
+                                            · Gruppe <span class="font-mono">{{ $rule->output_gruppe }}</span>
+                                            · MwSt {{ $rule->output_mwst }}
+                                            · Priorität {{ $rule->priority }}
+                                        </div>
+                                        @if($rule->last_error)
+                                            <div class="mt-1 text-[0.6rem] text-red-600 flex items-center gap-1">
+                                                @svg('heroicon-o-exclamation-triangle', 'w-3 h-3')
+                                                {{ $rule->last_error }}
+                                                <span class="text-[var(--ui-muted)]">({{ $rule->last_error_at?->format('d.m.Y H:i') }})</span>
+                                            </div>
+                                        @endif
+                                    </div>
+                                    <div class="flex items-center gap-1 flex-shrink-0">
+                                        <button wire:click="openFlatRateModal({{ $rule->id }})" class="text-[var(--ui-muted)] hover:text-[var(--ui-primary)] p-1" title="Bearbeiten">
+                                            @svg('heroicon-o-pencil', 'w-3.5 h-3.5')
+                                        </button>
+                                        <button wire:click="deleteFlatRate({{ $rule->id }})" wire:confirm="Regel löschen?"
+                                                class="text-[var(--ui-muted)] hover:text-red-600 p-1" title="Löschen">
+                                            @svg('heroicon-o-trash', 'w-3.5 h-3.5')
+                                        </button>
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </x-ui-panel>
+            </div>
+        @endif
+
+        {{-- Modal: FlatRate-Regel ---------------------------------------------------------- --}}
+        <x-ui-modal wire:model="flatRateModal" size="lg" :hideFooter="true">
+            <x-slot name="header">{{ $flatRateEditingId ? 'Pauschal-Regel bearbeiten' : 'Neue Pauschal-Regel' }}</x-slot>
+            <form wire:submit.prevent="saveFlatRate" class="space-y-3">
+                @if(session('flatRateError'))
+                    <div class="px-3 py-2 rounded-md bg-red-50 border border-red-200 text-[0.68rem] text-red-700 flex items-center gap-1.5">
+                        @svg('heroicon-o-exclamation-triangle', 'w-3.5 h-3.5') {{ session('flatRateError') }}
+                    </div>
+                @endif
+
+                <div class="grid grid-cols-[1fr_120px] gap-3">
+                    <div>
+                        <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Name *</label>
+                        <input wire:model="flatRateForm.name" type="text" placeholder="z.B. Getränke-Pauschale Hochzeit"
+                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs">
+                    </div>
+                    <div>
+                        <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Priorität</label>
+                        <input wire:model="flatRateForm.priority" type="number" min="0" max="9999"
+                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Beschreibung</label>
+                    <textarea wire:model="flatRateForm.description" rows="2" placeholder="Optional"
+                              class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Scope-Typen * (komma-getrennt)</label>
+                        <input wire:model="flatRateForm.scope_typs" type="text" placeholder="Getränke, Bar"
+                               list="flat-rate-typs"
+                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs">
+                        <datalist id="flat-rate-typs">
+                            @foreach($flatRateAllowedTypes as $t)
+                                <option value="{{ $t }}"></option>
+                            @endforeach
+                        </datalist>
+                    </div>
+                    <div>
+                        <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Scope-Anlässe (optional)</label>
+                        <input wire:model="flatRateForm.scope_event_types" type="text" placeholder="z.B. Hochzeit, Gala — leer = alle"
+                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Formel *</label>
+                    <textarea wire:model="flatRateForm.formula" rows="3"
+                              placeholder="day.pers_avg * (20 + (event.season == 'summer' ? 5 : 0))"
+                              class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-[0.72rem] font-mono"></textarea>
+                </div>
+
+                <div class="grid grid-cols-[1fr_1fr_80px_120px] gap-3">
+                    <div>
+                        <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Output-Bezeichnung</label>
+                        <input wire:model="flatRateForm.output_name" type="text" placeholder="Getränke-Pauschale"
+                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs">
+                    </div>
+                    <div>
+                        <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Output-Gruppe *</label>
+                        <input wire:model="flatRateForm.output_gruppe" type="text" placeholder="z.B. Getränke"
+                               list="flat-rate-gruppen"
+                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs">
+                        <datalist id="flat-rate-gruppen">
+                            @foreach($flatRateAllowedGruppen as $g)
+                                <option value="{{ $g }}"></option>
+                            @endforeach
+                        </datalist>
+                    </div>
+                    <div>
+                        <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">MwSt</label>
+                        <select wire:model="flatRateForm.output_mwst" class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs">
+                            <option value="0%">0%</option>
+                            <option value="7%">7%</option>
+                            <option value="19%">19%</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Beschaffung</label>
+                        <input wire:model="flatRateForm.output_procurement_type" type="text" placeholder="optional"
+                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs">
+                    </div>
+                </div>
+
+                <label class="flex items-center gap-2 cursor-pointer select-none text-[0.7rem]">
+                    <input wire:model="flatRateForm.is_active" type="checkbox" class="w-3 h-3 accent-[var(--ui-primary)] cursor-pointer">
+                    <span class="font-semibold text-[var(--ui-secondary)]">Regel ist aktiv</span>
+                </label>
+
+                {{-- Variablen-Legende + Dry-Run --}}
+                <div class="grid grid-cols-2 gap-3 border-t border-[var(--ui-border)] pt-3">
+                    <div>
+                        <div class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] mb-1">Verfügbare Variablen</div>
+                        <div class="max-h-48 overflow-y-auto border border-[var(--ui-border)] rounded-md p-2 space-y-0.5 bg-slate-50">
+                            @foreach($flatRateCatalog['variables'] as $name => $desc)
+                                <div class="text-[0.6rem] flex items-start gap-1.5">
+                                    <code class="font-mono text-blue-600 font-semibold whitespace-nowrap">{{ $name }}</code>
+                                    <span class="text-[var(--ui-muted)]">{{ $desc }}</span>
+                                </div>
+                            @endforeach
+                            <div class="pt-1 mt-1 border-t border-[var(--ui-border)]/50">
+                                @foreach($flatRateCatalog['functions'] as $name => $desc)
+                                    <div class="text-[0.6rem] flex items-start gap-1.5">
+                                        <code class="font-mono text-violet-600 font-semibold whitespace-nowrap">{{ $name }}</code>
+                                        <span class="text-[var(--ui-muted)]">{{ $desc }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] mb-1">Dry-Run gegen Vorgang</div>
+                        <select wire:model="flatRateDryRunItemId"
+                                class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-[0.7rem] mb-2">
+                            <option value="">— Vorgang wählen —</option>
+                            @foreach($flatRateDryRunItems as $it)
+                                <option value="{{ $it->id }}">{{ $it->typ }} · {{ $it->eventDay?->event?->event_number }} · {{ $it->eventDay?->datum?->format('d.m.Y') }}</option>
+                            @endforeach
+                        </select>
+                        <x-ui-button variant="secondary-outline" size="sm" type="button" wire:click="runFlatRateDryRun">
+                            @svg('heroicon-o-play', 'w-3 h-3 inline') Auswerten
+                        </x-ui-button>
+                        @if($flatRateDryRunResult)
+                            <div class="mt-2 p-2 rounded-md border {{ $flatRateDryRunResult['ok'] ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50' }}">
+                                @if($flatRateDryRunResult['ok'])
+                                    <div class="text-[0.7rem] font-bold text-green-700">Ergebnis: {{ number_format((float) $flatRateDryRunResult['value'], 2, ',', '.') }} €</div>
+                                @else
+                                    <div class="text-[0.7rem] font-semibold text-red-700">{{ $flatRateDryRunResult['error'] ?? 'Fehler' }}</div>
+                                @endif
+                                @if(!empty($flatRateDryRunResult['context']))
+                                    <details class="mt-1">
+                                        <summary class="text-[0.58rem] font-semibold text-[var(--ui-muted)] cursor-pointer">Kontext anzeigen</summary>
+                                        <pre class="text-[0.55rem] font-mono whitespace-pre-wrap break-all text-[var(--ui-muted)] mt-1">{{ json_encode($flatRateDryRunResult['context'], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) }}</pre>
+                                    </details>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-[var(--ui-border)]">
+                    <x-ui-button type="button" variant="secondary-outline" size="sm" wire:click="$set('flatRateModal', false)">Abbrechen</x-ui-button>
+                    <x-ui-button type="submit" variant="primary" size="sm">Speichern</x-ui-button>
+                </div>
+            </form>
+        </x-ui-modal>
 
         @if($activeTab === 'bausteine')
             <div class="pt-6 space-y-4">

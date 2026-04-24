@@ -8,12 +8,15 @@ use Livewire\Component;
 use Platform\Events\Models\Article;
 use Platform\Events\Models\ArticlePackage;
 use Platform\Events\Models\Event;
+use Platform\Events\Models\FlatRateApplication;
+use Platform\Events\Models\FlatRateRule;
 use Platform\Events\Models\Quote;
 use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\QuotePosition;
 use Platform\Events\Services\ActivityLogger;
 use Platform\Events\Services\ArticlePackageApplicator;
 use Platform\Events\Services\ArticleSearchService;
+use Platform\Events\Services\FlatRateApplicator;
 use Platform\Events\Services\MultiSelectHelper;
 use Platform\Events\Services\PositionCalculator;
 use Platform\Events\Services\PositionValidator;
@@ -61,6 +64,10 @@ class Quotes extends Component
     public bool $showPackagePicker = false;
     public string $packageSearch = '';
     public ?int $selectedPackagePreviewId = null;
+
+    // Pauschal-Regel-Picker
+    public bool $showFlatRateModal = false;
+    public ?int $flatRateTargetItemId = null;
 
     public function openPackagePicker(): void
     {
@@ -489,6 +496,52 @@ class Quotes extends Component
         }
     }
 
+    // ========== Pauschal-Regeln anwenden ==========
+
+    public function openFlatRatePicker(int $itemId): void
+    {
+        $this->flatRateTargetItemId = $itemId;
+        $this->showFlatRateModal = true;
+    }
+
+    public function closeFlatRatePicker(): void
+    {
+        $this->showFlatRateModal = false;
+        $this->flatRateTargetItemId = null;
+    }
+
+    public function applyFlatRate(int $ruleId): void
+    {
+        $event = $this->event();
+        $itemId = $this->flatRateTargetItemId ?? $this->activeItemId;
+        if (!$itemId) return;
+
+        $item = QuoteItem::whereHas('eventDay', fn ($q) => $q->where('event_id', $event->id))->find($itemId);
+        if (!$item) return;
+
+        $rule = FlatRateRule::where('team_id', $event->team_id)->where('is_active', true)->find($ruleId);
+        if (!$rule) {
+            session()->flash('positionError', 'Pauschal-Regel nicht gefunden oder inaktiv.');
+            return;
+        }
+
+        try {
+            $result = FlatRateApplicator::apply($rule, $item);
+        } catch (\RuntimeException $e) {
+            session()->flash('positionError', $e->getMessage());
+            return;
+        }
+
+        ActivityLogger::log(
+            $event,
+            'quote',
+            'Pauschale "' . $rule->name . '" angewendet: ' . number_format($result['value'], 2, ',', '.') . ' € auf Vorgang "' . $item->typ . '"'
+        );
+
+        $this->showFlatRateModal = false;
+        $this->flatRateTargetItemId = null;
+    }
+
     public function pickArticle(int $articleId): void
     {
         $event = $this->event();
@@ -830,6 +883,25 @@ class Quotes extends Component
 
         $allowedGruppen = PositionValidator::allowedGruppen($event->team_id);
 
+        // Pauschal-Regeln, die zum aktiven Vorgang passen, + aktuelle Applications
+        $eligibleFlatRates = collect();
+        $activeFlatRateApplications = collect();
+        if ($activeItem) {
+            $eligibleFlatRates = FlatRateRule::where('team_id', $event->team_id)
+                ->where('is_active', true)
+                ->orderBy('priority')
+                ->orderBy('name')
+                ->get()
+                ->filter(fn (FlatRateRule $r) => $r->matches((string) $activeItem->typ, (string) $event->event_type))
+                ->values();
+
+            $activeFlatRateApplications = FlatRateApplication::where('quote_item_id', $activeItem->id)
+                ->whereNull('superseded_at')
+                ->with('rule:id,name')
+                ->get()
+                ->keyBy('rule_id');
+        }
+
         return view('events::livewire.detail.quotes', [
             'event'          => $event,
             'quotes'         => $quotes,
@@ -848,6 +920,8 @@ class Quotes extends Component
             'selectedPackagePreview' => $selectedPackagePreview,
             'teamUsers'      => $teamUsers,
             'currentUserId'  => Auth::id(),
+            'eligibleFlatRates' => $eligibleFlatRates,
+            'activeFlatRateApplications' => $activeFlatRateApplications,
         ]);
     }
 }

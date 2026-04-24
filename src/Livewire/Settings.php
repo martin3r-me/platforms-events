@@ -9,7 +9,12 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use Platform\Events\Livewire\Concerns\HasContractImageUpload;
 use Platform\Events\Models\DocumentTemplate;
+use Platform\Events\Models\FlatRateRule;
 use Platform\Events\Models\MrFieldConfig;
+use Platform\Events\Models\QuoteItem;
+use Platform\Events\Services\FlatRateApplicator;
+use Platform\Events\Services\FlatRateEngine;
+use Platform\Events\Services\PositionValidator;
 use Platform\Events\Services\SettingsService;
 
 class Settings extends Component
@@ -55,6 +60,25 @@ class Settings extends Component
         'options'     => '', // textarea, eine option pro Zeile
         'is_active'   => true,
     ];
+
+    // ========== Pauschal-Kalkulations-Regeln ==========
+    public bool $flatRateModal = false;
+    public ?int $flatRateEditingId = null;
+    public array $flatRateForm = [
+        'name'                    => '',
+        'description'             => '',
+        'scope_typs'              => '',
+        'scope_event_types'       => '',
+        'formula'                 => '',
+        'output_name'             => '',
+        'output_gruppe'           => '',
+        'output_mwst'             => '19%',
+        'output_procurement_type' => '',
+        'priority'                => 100,
+        'is_active'               => true,
+    ];
+    public ?int $flatRateDryRunItemId = null;
+    public ?array $flatRateDryRunResult = null;
 
     // ========== Document-Templates ==========
     public bool $tplModal = false;
@@ -270,6 +294,144 @@ class Settings extends Component
         MrFieldConfig::seedDefaultsFor($teamId, Auth::id());
     }
 
+    // ========== Pauschal-Regeln ==========
+
+    public function openFlatRateModal(?int $id = null): void
+    {
+        $teamId = $this->teamId();
+        $this->flatRateEditingId  = $id;
+        $this->flatRateDryRunItemId = null;
+        $this->flatRateDryRunResult = null;
+
+        if ($id) {
+            $rule = FlatRateRule::where('team_id', $teamId)->find($id);
+            if (!$rule) return;
+            $this->flatRateForm = [
+                'name'                    => $rule->name,
+                'description'             => (string) $rule->description,
+                'scope_typs'              => implode(', ', (array) $rule->scope_typs),
+                'scope_event_types'       => implode(', ', (array) $rule->scope_event_types),
+                'formula'                 => (string) $rule->formula,
+                'output_name'             => $rule->output_name,
+                'output_gruppe'           => $rule->output_gruppe,
+                'output_mwst'             => $rule->output_mwst ?: '19%',
+                'output_procurement_type' => (string) $rule->output_procurement_type,
+                'priority'                => (int) $rule->priority,
+                'is_active'               => (bool) $rule->is_active,
+            ];
+        } else {
+            $this->flatRateForm = [
+                'name'                    => '',
+                'description'             => '',
+                'scope_typs'              => '',
+                'scope_event_types'       => '',
+                'formula'                 => 'day.pers_avg * 20',
+                'output_name'             => 'Pauschale',
+                'output_gruppe'           => '',
+                'output_mwst'             => '19%',
+                'output_procurement_type' => '',
+                'priority'                => 100,
+                'is_active'               => true,
+            ];
+        }
+        $this->flatRateModal = true;
+    }
+
+    public function saveFlatRate(): void
+    {
+        $teamId = $this->teamId();
+        if (!$teamId) return;
+
+        $name  = trim((string) $this->flatRateForm['name']);
+        $typs  = self::splitCsv((string) $this->flatRateForm['scope_typs']);
+        $gruppe = trim((string) $this->flatRateForm['output_gruppe']);
+
+        if ($name === '' || empty($typs) || $gruppe === '') {
+            session()->flash('flatRateError', 'Name, mindestens ein Scope-Typ und Output-Gruppe sind Pflicht.');
+            return;
+        }
+
+        $allowed = PositionValidator::allowedGruppen($teamId);
+        if (!in_array($gruppe, $allowed, true)) {
+            session()->flash('flatRateError', 'Output-Gruppe "' . $gruppe . '" existiert nicht im Artikelstamm.');
+            return;
+        }
+
+        $payload = [
+            'name'                    => $name,
+            'description'             => trim((string) $this->flatRateForm['description']) ?: null,
+            'scope_typs'              => $typs,
+            'scope_event_types'       => self::splitCsv((string) $this->flatRateForm['scope_event_types']) ?: null,
+            'formula'                 => trim((string) $this->flatRateForm['formula']),
+            'output_name'             => trim((string) $this->flatRateForm['output_name']) ?: 'Pauschale',
+            'output_gruppe'           => $gruppe,
+            'output_mwst'             => $this->flatRateForm['output_mwst'] ?: '19%',
+            'output_procurement_type' => trim((string) $this->flatRateForm['output_procurement_type']) ?: null,
+            'priority'                => (int) ($this->flatRateForm['priority'] ?? 100),
+            'is_active'               => (bool) $this->flatRateForm['is_active'],
+        ];
+
+        if ($this->flatRateEditingId) {
+            $rule = FlatRateRule::where('team_id', $teamId)->find($this->flatRateEditingId);
+            if ($rule) $rule->update($payload);
+        } else {
+            FlatRateRule::create(array_merge($payload, [
+                'team_id' => $teamId,
+                'user_id' => Auth::id(),
+            ]));
+        }
+
+        $this->flatRateModal = false;
+        $this->flatRateEditingId = null;
+    }
+
+    public function deleteFlatRate(int $id): void
+    {
+        $teamId = $this->teamId();
+        if (!$teamId) return;
+        FlatRateRule::where('team_id', $teamId)->where('id', $id)->delete();
+    }
+
+    public function toggleFlatRateActive(int $id): void
+    {
+        $teamId = $this->teamId();
+        if (!$teamId) return;
+        $rule = FlatRateRule::where('team_id', $teamId)->find($id);
+        if ($rule) $rule->update(['is_active' => !$rule->is_active]);
+    }
+
+    public function runFlatRateDryRun(): void
+    {
+        $teamId = $this->teamId();
+        if (!$teamId || !$this->flatRateDryRunItemId) {
+            $this->flatRateDryRunResult = null;
+            return;
+        }
+
+        // Dummy-Regel aus dem aktuellen Formular bauen (kein Persist).
+        $rule = new FlatRateRule([
+            'formula'         => (string) $this->flatRateForm['formula'],
+            'output_gruppe'   => (string) $this->flatRateForm['output_gruppe'],
+            'output_name'     => (string) ($this->flatRateForm['output_name'] ?: 'Pauschale'),
+            'output_mwst'     => (string) ($this->flatRateForm['output_mwst'] ?: '19%'),
+        ]);
+        $rule->team_id = $teamId;
+
+        $item = QuoteItem::whereHas('eventDay', fn ($q) => $q->whereHas('event', fn ($q2) => $q2->where('team_id', $teamId)))
+            ->find($this->flatRateDryRunItemId);
+        if (!$item) {
+            $this->flatRateDryRunResult = ['ok' => false, 'error' => 'Vorgang nicht gefunden.', 'value' => null, 'context' => []];
+            return;
+        }
+
+        $this->flatRateDryRunResult = FlatRateApplicator::dryRun($rule, $item);
+    }
+
+    protected static function splitCsv(string $raw): array
+    {
+        return array_values(array_filter(array_map('trim', preg_split('/[,;\n]+/', $raw)), fn ($v) => $v !== ''));
+    }
+
     // ========== Document-Templates ==========
 
     public function openTplModal(?int $id = null): void
@@ -422,9 +584,34 @@ class Settings extends Component
             ? DocumentTemplate::where('team_id', $teamId)->orderBy('sort_order')->get()
             : collect();
 
+        $flatRateRules = $teamId
+            ? FlatRateRule::where('team_id', $teamId)->orderBy('priority')->orderBy('name')->get()
+            : collect();
+
+        // Vorgaenge fuer den Dry-Run-Picker – nur wenn Modal offen und relevant
+        $flatRateDryRunItems = collect();
+        if ($this->flatRateModal && $teamId) {
+            $scopeTyps = self::splitCsv((string) $this->flatRateForm['scope_typs']);
+            $q = QuoteItem::whereHas('eventDay.event', fn ($q) => $q->where('team_id', $teamId))
+                ->with(['eventDay.event:id,name,event_number']);
+            if (!empty($scopeTyps)) {
+                $q->whereIn('typ', $scopeTyps);
+            }
+            $flatRateDryRunItems = $q->orderByDesc('id')->limit(30)->get();
+        }
+
+        $flatRateCatalog      = FlatRateEngine::catalog();
+        $flatRateAllowedTypes = ['Speisen','Getränke','Personal','Equipment','Technik','Bar','Buffet','Geschirr','Sonstiges'];
+        $flatRateAllowedGruppen = PositionValidator::allowedGruppen($teamId);
+
         return view('events::livewire.settings', [
-            'mrFields'  => $mrFields,
-            'templates' => $templates,
+            'mrFields'               => $mrFields,
+            'templates'              => $templates,
+            'flatRateRules'          => $flatRateRules,
+            'flatRateDryRunItems'    => $flatRateDryRunItems,
+            'flatRateCatalog'        => $flatRateCatalog,
+            'flatRateAllowedTypes'   => $flatRateAllowedTypes,
+            'flatRateAllowedGruppen' => $flatRateAllowedGruppen,
         ])->layout('platform::layouts.app');
     }
 }

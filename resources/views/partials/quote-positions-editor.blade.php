@@ -88,6 +88,17 @@
             <span class="text-[0.6rem] text-[var(--ui-muted)]">· {{ $totalArticles }} Artikel · {{ $fmt($totalGesamt) }} €</span>
         </div>
         <div class="flex items-center gap-2">
+            @if(($eligibleFlatRates ?? collect())->isNotEmpty())
+                <button wire:click="openFlatRatePicker({{ $activeItem->id }})" type="button"
+                        class="flex items-center gap-1 px-2 py-1 rounded border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[0.6rem] font-bold cursor-pointer"
+                        title="Pauschal-Kalkulation anwenden">
+                    @svg('heroicon-o-calculator', 'w-3 h-3')
+                    Pauschale
+                    @if(($activeFlatRateApplications ?? collect())->isNotEmpty())
+                        <span class="ml-1 px-1 rounded bg-emerald-600 text-white text-[0.55rem]">{{ ($activeFlatRateApplications)->count() }}</span>
+                    @endif
+                </button>
+            @endif
             <button wire:click="convertQuoteItemToOrder({{ $activeItem->id }})"
                     wire:confirm="Vorgang „{{ $activeItem->typ }}" mit allen Positionen in Bestellung überführen?"
                     class="flex items-center gap-1 px-2 py-1 rounded border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 text-[0.6rem] font-bold cursor-pointer"

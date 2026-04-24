@@ -10,7 +10,8 @@
         }
     ],
     "require": {
-        "barryvdh/laravel-dompdf": "^3.0"
+        "barryvdh/laravel-dompdf": "^3.0",
+        "symfony/expression-language": "^7.0"
     },
     "autoload": {
         "psr-4": {

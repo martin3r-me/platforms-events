@@ -490,4 +490,45 @@
             </div>
         </form>
     </x-ui-modal>
+
+    {{-- Modal: Pauschal-Regel anwenden --}}
+    <x-ui-modal wire:model="showFlatRateModal" size="md" :hideFooter="true">
+        <x-slot name="header">Pauschale anwenden</x-slot>
+        @if(($eligibleFlatRates ?? collect())->isEmpty())
+            <div class="p-6 text-center text-[0.72rem] text-[var(--ui-muted)] italic">
+                Keine passenden Regeln für diesen Vorgang. Neue Regel in Einstellungen → Pauschalen anlegen.
+            </div>
+        @else
+            <div class="space-y-2">
+                @foreach($eligibleFlatRates as $rule)
+                    @php $existing = ($activeFlatRateApplications ?? collect())->get($rule->id); @endphp
+                    <div class="border border-[var(--ui-border)] rounded-md p-3 hover:bg-slate-50">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-[0.74rem] font-bold text-[var(--ui-secondary)]">{{ $rule->name }}</span>
+                                    @if($existing)
+                                        <span class="text-[0.55rem] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">aktiv: {{ number_format((float) $existing->result_value, 2, ',', '.') }} €</span>
+                                    @endif
+                                </div>
+                                @if($rule->description)
+                                    <div class="mt-0.5 text-[0.62rem] text-[var(--ui-muted)]">{{ $rule->description }}</div>
+                                @endif
+                                <div class="mt-1 text-[0.58rem] font-mono text-[var(--ui-muted)] break-all">{{ $rule->formula }}</div>
+                                <div class="mt-1 text-[0.56rem] text-[var(--ui-muted)]">
+                                    Output: {{ $rule->output_name }} · Gruppe {{ $rule->output_gruppe }} · MwSt {{ $rule->output_mwst }}
+                                </div>
+                            </div>
+                            <x-ui-button variant="primary" size="sm" wire:click="applyFlatRate({{ $rule->id }})">
+                                {{ $existing ? 'Neu berechnen' : 'Anwenden' }}
+                            </x-ui-button>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+        <div class="flex justify-end pt-3 border-t border-[var(--ui-border)] mt-3">
+            <x-ui-button type="button" variant="secondary-outline" size="sm" wire:click="closeFlatRatePicker">Schliessen</x-ui-button>
+        </div>
+    </x-ui-modal>
 </div>
