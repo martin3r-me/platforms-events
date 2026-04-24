@@ -295,6 +295,16 @@ class Orders extends Component
             return;
         }
 
+        // Gruppe ist Pflicht, sobald die Position Inhalt hat – ohne Gruppe
+        // fehlt in der Buchhaltung das Erloeskonto.
+        $gruppe = trim((string) ($this->newPosition['gruppe'] ?? ''));
+        $name   = trim((string) ($this->newPosition['name'] ?? ''));
+        $ek     = (float) ($this->newPosition['ek'] ?? 0);
+        if ($gruppe === '' && ($name !== '' || $ek > 0)) {
+            session()->flash('positionError', 'Bitte eine Gruppe auswählen — ohne Gruppe fehlt das Erlöskonto für die Buchhaltung.');
+            return;
+        }
+
         $event = $this->event();
         $item = OrderItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($this->activeItemId);
         if (!$item) return;

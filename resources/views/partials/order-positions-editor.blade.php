@@ -223,7 +223,8 @@
                 <tr>
                     <td class="w-[8px]"></td>
                     <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model="newPosition.gruppe" type="text" placeholder="Gruppe / Typ"
+                        <input wire:model="newPosition.gruppe" type="text" placeholder="Gruppe / Typ *"
+                               title="Pflicht – ohne Gruppe fehlt das Erlöskonto für die Buchhaltung"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] bg-white">
                     </td>
                     <td class="px-1.5 py-1.5 align-top relative" x-data="{ showArticles: false }">

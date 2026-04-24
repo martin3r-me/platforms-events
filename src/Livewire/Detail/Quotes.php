@@ -515,6 +515,17 @@ class Quotes extends Component
             return;
         }
 
+        // Gruppe ist Pflicht, wenn die Position Inhalt hat – sonst fehlt in der
+        // Buchhaltung das Erloeskonto. Bausteine (Headline/Trenntext/...) sind
+        // valide Gruppen und werden hier nicht gesondert behandelt.
+        $gruppe = trim((string) ($this->newPosition['gruppe'] ?? ''));
+        $name   = trim((string) ($this->newPosition['name'] ?? ''));
+        $preis  = (float) ($this->newPosition['preis'] ?? 0);
+        if ($gruppe === '' && ($name !== '' || $preis > 0)) {
+            session()->flash('positionError', 'Bitte eine Gruppe auswählen — ohne Gruppe fehlt das Erlöskonto für die Buchhaltung.');
+            return;
+        }
+
         $event = $this->event();
         $item = QuoteItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($this->activeItemId);
         if (!$item) return;
