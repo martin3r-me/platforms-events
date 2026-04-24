@@ -22,6 +22,24 @@
         ];
     @endphp
 
+    {{-- Einstellungs-Navigation als zweite Sidebar (vertikal) --}}
+    <x-slot name="sidebar">
+        <x-ui-page-sidebar title="Einstellungen" width="w-fit min-w-[200px] max-w-[280px]" :defaultOpen="true">
+            <nav class="p-2 space-y-0.5 text-xs">
+                @foreach($tabs as $key => $meta)
+                    <button wire:click="$set('activeTab', '{{ $key }}')" type="button"
+                            class="w-full flex items-center gap-2 px-3 py-2 rounded-md transition text-left
+                                   {{ $activeTab === $key
+                                      ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold'
+                                      : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
+                        @svg($meta['icon'], 'w-4 h-4 flex-shrink-0')
+                        <span class="flex-1 whitespace-nowrap">{{ $meta['label'] }}</span>
+                    </button>
+                @endforeach
+            </nav>
+        </x-ui-page-sidebar>
+    </x-slot>
+
     <x-ui-page-container>
         <x-ui-page-actionbar :breadcrumbs="[
             ['label' => 'Events', 'route' => 'events.dashboard'],
@@ -30,21 +48,6 @@
 
         {{-- Spacer zur Breadcrumb-Leiste --}}
         <div aria-hidden="true" style="height:0.625rem;"></div>
-
-        <div class="border-b border-[var(--ui-border)] overflow-x-auto">
-            <nav class="flex gap-1">
-                @foreach($tabs as $key => $meta)
-                    <button wire:click="$set('activeTab', '{{ $key }}')" type="button"
-                            class="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap
-                                   {{ $activeTab === $key
-                                      ? 'border-[var(--ui-primary)] text-[var(--ui-primary)]'
-                                      : 'border-transparent text-[var(--ui-muted)] hover:text-[var(--ui-secondary)] hover:border-[var(--ui-border)]' }}">
-                        @svg($meta['icon'], 'w-4 h-4')
-                        {{ $meta['label'] }}
-                    </button>
-                @endforeach
-            </nav>
-        </div>
 
         {{-- Konfiguration der einfachen Listen-Sektionen --}}
         @php
