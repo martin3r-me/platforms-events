@@ -56,4 +56,25 @@ class FlatRateApplication extends Model
     {
         return $this->belongsTo(QuotePosition::class);
     }
+
+    /**
+     * Aktueller Preis der verknuepften QuotePosition (oder null, wenn sie
+     * geloescht wurde). Dient der Override-Erkennung.
+     */
+    public function currentPrice(): ?float
+    {
+        $pos = $this->quotePosition;
+        return $pos ? (float) $pos->preis : null;
+    }
+
+    /**
+     * True, wenn der PL den Preis der Pauschale-Position manuell veraendert
+     * hat (Wert weicht um mehr als 1 Cent vom berechneten result_value ab).
+     */
+    public function isOverridden(): bool
+    {
+        $current = $this->currentPrice();
+        if ($current === null) return false;
+        return abs($current - (float) $this->result_value) > 0.01;
+    }
 }

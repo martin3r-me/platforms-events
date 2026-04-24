@@ -501,14 +501,23 @@
         @else
             <div class="space-y-2">
                 @foreach($eligibleFlatRates as $rule)
-                    @php $existing = ($activeFlatRateApplications ?? collect())->get($rule->id); @endphp
-                    <div class="border border-[var(--ui-border)] rounded-md p-3 hover:bg-slate-50">
+                    @php
+                        $existing = ($activeFlatRateApplications ?? collect())->get($rule->id);
+                        $isOverridden = $existing?->isOverridden() ?? false;
+                        $currentPrice = $existing?->currentPrice();
+                        $computed = $existing ? (float) $existing->result_value : null;
+                        $fmt = fn ($v) => number_format((float) $v, 2, ',', '.');
+                    @endphp
+                    <div class="border {{ $isOverridden ? 'border-amber-300 bg-amber-50/30' : 'border-[var(--ui-border)]' }} rounded-md p-3 hover:bg-slate-50/80">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <span class="text-[0.74rem] font-bold text-[var(--ui-secondary)]">{{ $rule->name }}</span>
-                                    @if($existing)
-                                        <span class="text-[0.55rem] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">aktiv: {{ number_format((float) $existing->result_value, 2, ',', '.') }} €</span>
+                                    @if($existing && !$isOverridden)
+                                        <span class="text-[0.55rem] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">aktiv: {{ $fmt($computed) }} €</span>
+                                    @endif
+                                    @if($isOverridden)
+                                        <span class="text-[0.55rem] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800" title="Preis wurde manuell angepasst">manuell angepasst</span>
                                     @endif
                                 </div>
                                 @if($rule->description)
@@ -518,10 +527,26 @@
                                 <div class="mt-1 text-[0.56rem] text-[var(--ui-muted)]">
                                     Output: {{ $rule->output_name }} · Gruppe {{ $rule->output_gruppe }} · MwSt {{ $rule->output_mwst }}
                                 </div>
+                                @if($isOverridden)
+                                    <div class="mt-1.5 text-[0.62rem] font-mono flex items-center gap-2">
+                                        <span class="text-[var(--ui-muted)]">aktuell:</span>
+                                        <span class="font-semibold text-amber-700">{{ $fmt($currentPrice) }} €</span>
+                                        <span class="text-[var(--ui-muted)]">→ Regel würde liefern:</span>
+                                        <span class="font-semibold text-[var(--ui-secondary)]">{{ $fmt($computed) }} €</span>
+                                    </div>
+                                @endif
                             </div>
-                            <x-ui-button variant="primary" size="sm" wire:click="applyFlatRate({{ $rule->id }})">
-                                {{ $existing ? 'Neu berechnen' : 'Anwenden' }}
-                            </x-ui-button>
+                            @if($isOverridden)
+                                <x-ui-button variant="warning" size="sm"
+                                             wire:click="applyFlatRate({{ $rule->id }})"
+                                             wire:confirm="Der aktuelle Preis ({{ $fmt($currentPrice) }} €) wurde manuell angepasst. Durch „Neu berechnen“ wird er mit {{ $fmt($computed) }} € ueberschrieben. Wirklich?">
+                                    Neu berechnen
+                                </x-ui-button>
+                            @else
+                                <x-ui-button variant="primary" size="sm" wire:click="applyFlatRate({{ $rule->id }})">
+                                    {{ $existing ? 'Neu berechnen' : 'Anwenden' }}
+                                </x-ui-button>
+                            @endif
                         </div>
                     </div>
                 @endforeach

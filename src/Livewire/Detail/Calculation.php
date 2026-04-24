@@ -5,14 +5,19 @@ namespace Platform\Events\Livewire\Detail;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Platform\Events\Models\Event;
+use Platform\Events\Models\FlatRateApplication;
+use Platform\Events\Models\FlatRateRule;
 use Platform\Events\Models\OrderItem;
 use Platform\Events\Models\QuoteItem;
+use Platform\Events\Services\ActivityLogger;
+use Platform\Events\Services\FlatRateApplicator;
 
 class Calculation extends Component
 {
     public int $eventId;
 
     public array $openKat = [];
+    public array $openApp = [];
 
     public function mount(int $eventId): void
     {
@@ -24,16 +29,72 @@ class Calculation extends Component
         $this->openKat[$key] = !($this->openKat[$key] ?? false);
     }
 
-    public function render()
+    public function toggleApp(int $id): void
     {
-        $event = Event::with(['days' => fn ($q) => $q->orderBy('sort_order')])->findOrFail($this->eventId);
+        $this->openApp[$id] = !($this->openApp[$id] ?? false);
+    }
+
+    protected function event(): Event
+    {
+        $event = Event::findOrFail($this->eventId);
         $team = Auth::user()->currentTeam;
         if ($event->team_id !== $team?->id) abort(403);
+        return $event;
+    }
+
+    public function reapplyFlatRate(int $applicationId): void
+    {
+        $event = $this->event();
+        $app = FlatRateApplication::where('team_id', $event->team_id)
+            ->whereNull('superseded_at')
+            ->with(['rule', 'quoteItem'])
+            ->find($applicationId);
+        if (!$app || !$app->rule || !$app->quoteItem) return;
+
+        try {
+            $result = FlatRateApplicator::apply($app->rule, $app->quoteItem);
+        } catch (\RuntimeException $e) {
+            session()->flash('calcError', $e->getMessage());
+            return;
+        }
+
+        ActivityLogger::log(
+            $event,
+            'quote',
+            'Pauschale "' . $app->rule->name . '" neu berechnet: ' . number_format($result['value'], 2, ',', '.') . ' €'
+        );
+    }
+
+    public function removeFlatRate(int $applicationId): void
+    {
+        $event = $this->event();
+        $app = FlatRateApplication::where('team_id', $event->team_id)
+            ->whereNull('superseded_at')
+            ->with(['rule'])
+            ->find($applicationId);
+        if (!$app) return;
+
+        $ruleName = $app->rule?->name ?? 'Regel';
+        FlatRateApplicator::remove($app);
+        ActivityLogger::log($event, 'quote', 'Pauschale "' . $ruleName . '" entfernt.');
+    }
+
+    public function render()
+    {
+        $event = $this->event();
+        $event->load(['days' => fn ($q) => $q->orderBy('sort_order')]);
 
         $dayIds = $event->days->pluck('id');
         $quoteItems = QuoteItem::whereIn('event_day_id', $dayIds)->get();
         $orderItems = OrderItem::whereIn('event_day_id', $dayIds)->get();
         $daysById = $event->days->keyBy('id');
+
+        // Aktive Pauschal-Anwendungen fuer alle QuoteItems dieses Events
+        $flatRateApplications = FlatRateApplication::whereIn('quote_item_id', $quoteItems->pluck('id'))
+            ->whereNull('superseded_at')
+            ->with(['rule:id,name,formula,output_gruppe,output_mwst', 'quoteItem.eventDay:id,datum,day_of_week', 'quotePosition'])
+            ->orderBy('created_at')
+            ->get();
 
         $colorMap = [
             'speisen'   => ['label' => 'Speisen',   'color' => '#16a34a', 'bg' => '#f0fdf4'],
@@ -108,6 +169,7 @@ class Calculation extends Component
             'gesamtEk'     => $gesamtEk,
             'gesamtDb'     => $gesamtDb,
             'gesamtDbPct'  => $gesamtDbPct,
+            'flatRateApplications' => $flatRateApplications,
         ]);
     }
 }

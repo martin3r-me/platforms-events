@@ -127,6 +127,30 @@ class FlatRateApplicator
     }
 
     /**
+     * Entfernt eine aktive Pauschal-Anwendung: loescht die erzeugte
+     * QuotePosition, markiert die Application als superseded, rechnet den
+     * QuoteItem-Rollup neu. Altdaten bleiben fuer Audit erhalten.
+     */
+    public static function remove(FlatRateApplication $application): void
+    {
+        if ($application->superseded_at) return;
+
+        DB::transaction(function () use ($application) {
+            $position = $application->quotePosition;
+            $item     = $application->quoteItem;
+
+            if ($position) {
+                $position->delete();
+            }
+            $application->update(['superseded_at' => now()]);
+
+            if ($item) {
+                self::recalculateItem($item);
+            }
+        });
+    }
+
+    /**
      * Fuehrt eine reine Dry-Run-Auswertung durch (ohne Persistierung).
      *
      * @return array{ok: bool, value: ?float, error: ?string, context: array}

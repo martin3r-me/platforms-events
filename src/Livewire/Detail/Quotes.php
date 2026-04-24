@@ -897,7 +897,7 @@ class Quotes extends Component
 
             $activeFlatRateApplications = FlatRateApplication::where('quote_item_id', $activeItem->id)
                 ->whereNull('superseded_at')
-                ->with('rule:id,name')
+                ->with(['rule:id,name', 'quotePosition'])
                 ->get()
                 ->keyBy('rule_id');
         }
