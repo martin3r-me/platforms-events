@@ -33,7 +33,7 @@ class FlatRateEngine
         }
 
         try {
-            $result = self::engine()->evaluate($formula, $context);
+            $result = self::engine()->evaluate($formula, self::asObjectScope($context));
         } catch (\Throwable $e) {
             return ['ok' => false, 'value' => null, 'error' => $e->getMessage()];
         }
@@ -95,6 +95,26 @@ class FlatRateEngine
                 'is_weekend(dateStr)'     => 'true/false',
             ],
         ];
+    }
+
+    /**
+     * ExpressionLanguage unterstuetzt Punkt-Notation nur auf Objekten, nicht
+     * auf assoziativen Arrays. Die Top-Level-Scopes (event/day/item/…) werden
+     * deshalb in stdClass konvertiert — damit "day.pers_avg" funktioniert.
+     * Innere Maps (z.B. item.sum_by_gruppe) bleiben bewusst als Array, damit
+     * weiterhin "item.sum_by_gruppe['Bier']" mit Bracket-Zugriff geht.
+     */
+    protected static function asObjectScope(array $context): array
+    {
+        $out = [];
+        foreach ($context as $key => $value) {
+            if (is_array($value) && !array_is_list($value)) {
+                $out[$key] = (object) $value;
+            } else {
+                $out[$key] = $value;
+            }
+        }
+        return $out;
     }
 
     protected static function engine(): ExpressionLanguage
