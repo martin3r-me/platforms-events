@@ -509,12 +509,12 @@ class Quotes extends Component
     {
         if (!$this->activeItemId) return;
 
-        if ($err = PositionValidator::validate($this->newPosition)) {
+        $event = $this->event();
+        if ($err = PositionValidator::validate($this->newPosition, PositionValidator::allowedGruppen($event->team_id))) {
             session()->flash('positionError', $err);
             return;
         }
 
-        $event = $this->event();
         $item = QuoteItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($this->activeItemId);
         if (!$item) return;
 
@@ -828,6 +828,8 @@ class Quotes extends Component
             QuoteItem::whereIn('event_day_id', $event->days->pluck('id'))->pluck('id')
         )->count();
 
+        $allowedGruppen = PositionValidator::allowedGruppen($event->team_id);
+
         return view('events::livewire.detail.quotes', [
             'event'          => $event,
             'quotes'         => $quotes,
@@ -836,6 +838,7 @@ class Quotes extends Component
             'items'          => $items,
             'activeItem'     => $activeItem,
             'eventWidePositionCount' => $eventWidePositionCount,
+            'allowedGruppen' => $allowedGruppen,
             'activeDay'      => $activeDay,
             'allPositions'   => $allPositions,
             'positions'      => $positions,

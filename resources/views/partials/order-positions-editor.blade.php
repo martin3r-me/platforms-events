@@ -224,8 +224,14 @@
                     <td class="w-[8px]"></td>
                     <td class="px-1.5 py-1.5 align-top">
                         <input wire:model="newPosition.gruppe" type="text" placeholder="Gruppe / Typ *"
+                               list="order-gruppen-{{ $activeItem->id }}"
                                title="Pflicht – ohne Gruppe fehlt das Erlöskonto für die Buchhaltung"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] bg-white">
+                        <datalist id="order-gruppen-{{ $activeItem->id }}">
+                            @foreach(($allowedGruppen ?? []) as $g)
+                                <option value="{{ $g }}"></option>
+                            @endforeach
+                        </datalist>
                     </td>
                     <td class="px-1.5 py-1.5 align-top relative" x-data="{ showArticles: false }">
                         <input wire:model.live.debounce.300ms="newPosition.name" type="text" placeholder="Bezeichnung / Artikel suchen"

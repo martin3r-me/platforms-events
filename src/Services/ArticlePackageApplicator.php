@@ -45,10 +45,10 @@ class ArticlePackageApplicator
             ];
             $payload['gesamt'] = (float) ($pi->gesamt ?: ((float) $payload['anz']) * $payload['preis']);
 
-            // Package-Items ohne Gruppe muessen sichtbar scheitern — sonst
-            // entstehen hier genau die Buchhaltungs-Chaos-Positionen, die die
-            // addPosition-Validierung verhindern soll.
-            if ($err = PositionValidator::validate($payload)) {
+            // Package-Items ohne bzw. mit unbekannter Gruppe muessen sichtbar
+            // scheitern — sonst entstehen hier genau die Buchhaltungs-Chaos-
+            // Positionen, die die addPosition-Validierung verhindern soll.
+            if ($err = PositionValidator::validate($payload, PositionValidator::allowedGruppen($teamId))) {
                 throw new \RuntimeException(
                     'Paket "' . $package->name . '", Position "' . ($payload['name'] ?: '—') . '": ' . $err
                 );

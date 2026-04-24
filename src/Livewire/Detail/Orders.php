@@ -285,12 +285,12 @@ class Orders extends Component
     {
         if (!$this->activeItemId) return;
 
-        if ($err = PositionValidator::validate($this->newPosition)) {
+        $event = $this->event();
+        if ($err = PositionValidator::validate($this->newPosition, PositionValidator::allowedGruppen($event->team_id))) {
             session()->flash('positionError', $err);
             return;
         }
 
-        $event = $this->event();
         $item = OrderItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($this->activeItemId);
         if (!$item) return;
 
@@ -426,6 +426,7 @@ class Orders extends Component
         }
 
         $bausteine = SettingsService::bausteine($event->team_id);
+        $allowedGruppen = PositionValidator::allowedGruppen($event->team_id);
 
         $articleMatches = $this->view === 'editor'
             ? ArticleSearchService::search($event->team_id, (string) ($this->newPosition['name'] ?? ''))
@@ -439,9 +440,10 @@ class Orders extends Component
             'activeItem'     => $activeItem,
             'activeDay'      => $activeDay,
             'articleMatches' => $articleMatches,
-            'allPositions' => $allPositions,
-            'positions'    => $positions,
-            'bausteine'    => $bausteine,
+            'allPositions'   => $allPositions,
+            'positions'      => $positions,
+            'bausteine'      => $bausteine,
+            'allowedGruppen' => $allowedGruppen,
         ]);
     }
 }
