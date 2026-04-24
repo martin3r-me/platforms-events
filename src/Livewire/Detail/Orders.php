@@ -13,6 +13,7 @@ use Platform\Events\Services\ActivityLogger;
 use Platform\Events\Services\ArticleSearchService;
 use Platform\Events\Services\MultiSelectHelper;
 use Platform\Events\Services\PositionCalculator;
+use Platform\Events\Services\PositionValidator;
 use Platform\Events\Services\SettingsService;
 
 class Orders extends Component
@@ -284,24 +285,8 @@ class Orders extends Component
     {
         if (!$this->activeItemId) return;
 
-        $uhrzeit = (string) ($this->newPosition['uhrzeit'] ?? '');
-        $bis     = (string) ($this->newPosition['bis'] ?? '');
-        if ($uhrzeit !== '' && !PositionCalculator::isValidTime($uhrzeit)) {
-            session()->flash('positionError', 'Uhrzeit "' . $uhrzeit . '" ist nicht zulaessig.');
-            return;
-        }
-        if ($bis !== '' && !PositionCalculator::isValidTime($bis)) {
-            session()->flash('positionError', 'Uhrzeit "' . $bis . '" ist nicht zulaessig.');
-            return;
-        }
-
-        // Gruppe ist Pflicht, sobald die Position Inhalt hat – ohne Gruppe
-        // fehlt in der Buchhaltung das Erloeskonto.
-        $gruppe = trim((string) ($this->newPosition['gruppe'] ?? ''));
-        $name   = trim((string) ($this->newPosition['name'] ?? ''));
-        $ek     = (float) ($this->newPosition['ek'] ?? 0);
-        if ($gruppe === '' && ($name !== '' || $ek > 0)) {
-            session()->flash('positionError', 'Bitte eine Gruppe auswählen — ohne Gruppe fehlt das Erlöskonto für die Buchhaltung.');
+        if ($err = PositionValidator::validate($this->newPosition)) {
+            session()->flash('positionError', $err);
             return;
         }
 

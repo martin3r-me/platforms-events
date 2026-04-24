@@ -8,6 +8,7 @@ use Platform\Events\Models\Article;
 use Platform\Events\Models\ArticlePackage;
 use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\QuotePosition;
+use Platform\Events\Services\PositionValidator;
 
 /**
  * Fuegt ein ArticlePackage als neue QuotePositions an einen QuoteItem an.
@@ -33,28 +34,39 @@ class ArticlePackageApplicator
                 ? Article::with('group:id,name')->where('team_id', $teamId)->find($pi->article_id)
                 : null;
 
-            $name    = (string) ($pi->name ?? $article?->name ?? '');
-            $gruppe  = (string) ($pi->gruppe ?? $article?->group?->name ?? '');
-            $gebinde = (string) ($pi->gebinde ?? $article?->gebinde ?? '');
-            $anz     = (string) ($pi->quantity ?? 1);
-            $ek      = (float)  ($article->ek ?? 0);
-            $preis   = (float)  ($pi->vk ?? $article?->vk ?? 0);
-            $mwst    = (string) ($article?->mwst ?? '7%');
-            $gesamt  = (float)  ($pi->gesamt ?: ((float) $anz) * $preis);
+            $payload = [
+                'name'    => (string) ($pi->name ?? $article?->name ?? ''),
+                'gruppe'  => (string) ($pi->gruppe ?? $article?->group?->name ?? ''),
+                'gebinde' => (string) ($pi->gebinde ?? $article?->gebinde ?? ''),
+                'anz'     => (string) ($pi->quantity ?? 1),
+                'ek'      => (float)  ($article->ek ?? 0),
+                'preis'   => (float)  ($pi->vk ?? $article?->vk ?? 0),
+                'mwst'    => (string) ($article?->mwst ?? '7%'),
+            ];
+            $payload['gesamt'] = (float) ($pi->gesamt ?: ((float) $payload['anz']) * $payload['preis']);
+
+            // Package-Items ohne Gruppe muessen sichtbar scheitern — sonst
+            // entstehen hier genau die Buchhaltungs-Chaos-Positionen, die die
+            // addPosition-Validierung verhindern soll.
+            if ($err = PositionValidator::validate($payload)) {
+                throw new \RuntimeException(
+                    'Paket "' . $package->name . '", Position "' . ($payload['name'] ?: '—') . '": ' . $err
+                );
+            }
 
             $pos = QuotePosition::create([
                 'team_id'       => $teamId,
                 'user_id'       => Auth::id(),
                 'quote_item_id' => $target->id,
-                'gruppe'        => $gruppe,
-                'name'          => $name,
-                'anz'           => $anz,
-                'gebinde'       => $gebinde,
-                'basis_ek'      => $ek,
-                'ek'            => $ek,
-                'preis'         => $preis,
-                'mwst'          => $mwst,
-                'gesamt'        => $gesamt,
+                'gruppe'        => $payload['gruppe'],
+                'name'          => $payload['name'],
+                'anz'           => $payload['anz'],
+                'gebinde'       => $payload['gebinde'],
+                'basis_ek'      => $payload['ek'],
+                'ek'            => $payload['ek'],
+                'preis'         => $payload['preis'],
+                'mwst'          => $payload['mwst'],
+                'gesamt'        => $payload['gesamt'],
                 'sort_order'    => ++$maxSort,
             ]);
             $created->push($pos);

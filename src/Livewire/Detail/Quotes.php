@@ -16,6 +16,7 @@ use Platform\Events\Services\ArticlePackageApplicator;
 use Platform\Events\Services\ArticleSearchService;
 use Platform\Events\Services\MultiSelectHelper;
 use Platform\Events\Services\PositionCalculator;
+use Platform\Events\Services\PositionValidator;
 use Platform\Events\Services\QuoteOrderConverter;
 use Platform\Events\Services\SettingsService;
 
@@ -476,7 +477,12 @@ class Quotes extends Component
         $package = ArticlePackage::where('team_id', $event->team_id)->find($packageId);
         if (!$package) return;
 
-        $created = ArticlePackageApplicator::apply($package, $item);
+        try {
+            $created = ArticlePackageApplicator::apply($package, $item);
+        } catch (\RuntimeException $e) {
+            session()->flash('positionError', $e->getMessage());
+            return;
+        }
         if ($created->isNotEmpty()) {
             $this->recalculateItem($item);
             ActivityLogger::log($event, 'quote', 'Vorlage "' . $package->name . '" eingefuegt (' . $created->count() . ' Positionen)');
@@ -503,26 +509,8 @@ class Quotes extends Component
     {
         if (!$this->activeItemId) return;
 
-        // Server-seitige Validierung von Zeiten
-        $uhrzeit = (string) ($this->newPosition['uhrzeit'] ?? '');
-        $bis     = (string) ($this->newPosition['bis'] ?? '');
-        if ($uhrzeit !== '' && !PositionCalculator::isValidTime($uhrzeit)) {
-            session()->flash('positionError', 'Uhrzeit "' . $uhrzeit . '" ist nicht zulaessig.');
-            return;
-        }
-        if ($bis !== '' && !PositionCalculator::isValidTime($bis)) {
-            session()->flash('positionError', 'Uhrzeit "' . $bis . '" ist nicht zulaessig.');
-            return;
-        }
-
-        // Gruppe ist Pflicht, wenn die Position Inhalt hat – sonst fehlt in der
-        // Buchhaltung das Erloeskonto. Bausteine (Headline/Trenntext/...) sind
-        // valide Gruppen und werden hier nicht gesondert behandelt.
-        $gruppe = trim((string) ($this->newPosition['gruppe'] ?? ''));
-        $name   = trim((string) ($this->newPosition['name'] ?? ''));
-        $preis  = (float) ($this->newPosition['preis'] ?? 0);
-        if ($gruppe === '' && ($name !== '' || $preis > 0)) {
-            session()->flash('positionError', 'Bitte eine Gruppe auswählen — ohne Gruppe fehlt das Erlöskonto für die Buchhaltung.');
+        if ($err = PositionValidator::validate($this->newPosition)) {
+            session()->flash('positionError', $err);
             return;
         }
 
