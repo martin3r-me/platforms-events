@@ -23,6 +23,7 @@ use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\ScheduleItem;
 use Platform\Events\Services\ActivityLogger;
 use Platform\Events\Services\MultiSelectHelper;
+use Platform\Events\Services\OrderNumberBuilder;
 use Platform\Events\Services\SettingsService;
 use Platform\Locations\Models\Location;
 
@@ -1262,6 +1263,7 @@ class Detail extends Component
             'schedule_descriptions' => SettingsService::scheduleDescriptions($teamId),
             'day_types'             => SettingsService::dayTypes($teamId),
         ];
+        $orderNumber = OrderNumberBuilder::build($this->event, SettingsService::orderNumberSchema($teamId));
 
         // Signaturen pro role
         $signatures = DocumentSignature::where('event_id', $this->event->id)
@@ -1350,6 +1352,7 @@ class Detail extends Component
             'quoteTree'      => $quoteTree,
             'orderTree'      => $orderTree,
             'settings'       => $settings,
+            'orderNumber'    => $orderNumber,
             'signatures'     => $signatures,
             'teamUsers'      => $teamUsers,
             'crmCompanyAvailable' => $crmCompanyAvailable,

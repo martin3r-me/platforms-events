@@ -274,6 +274,22 @@
                         <input wire:model.blur="event.cost_carrier" type="text" placeholder="{{ $event->event_number }}" class="{{ $inMn }}">
                     </div>
                 </div>
+                @if(!empty($orderNumber))
+                    <div>
+                        <label class="{{ $lbl }}">Ordernummer</label>
+                        <div class="flex items-center gap-1.5 border border-[var(--ui-border)] rounded-md px-2 py-1 bg-[var(--ui-muted-5)]/40"
+                             x-data="{ copied: false }">
+                            <span class="flex-1 text-[0.7rem] font-mono font-semibold text-[var(--ui-secondary)] truncate">{{ $orderNumber }}</span>
+                            <button type="button"
+                                    @click="navigator.clipboard.writeText(@js($orderNumber)).then(() => { copied = true; setTimeout(() => copied = false, 1500); })"
+                                    :title="copied ? 'Kopiert!' : 'In Zwischenablage kopieren'"
+                                    class="p-0.5 text-[var(--ui-muted)] hover:text-[var(--ui-primary)] transition">
+                                <template x-if="!copied">@svg('heroicon-o-clipboard', 'w-3.5 h-3.5')</template>
+                                <template x-if="copied">@svg('heroicon-o-check', 'w-3.5 h-3.5 text-green-600')</template>
+                            </button>
+                        </div>
+                    </div>
+                @endif
             </div>
         </x-ui-panel>
     </div>

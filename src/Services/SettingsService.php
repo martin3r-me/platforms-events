@@ -21,6 +21,7 @@ class SettingsService
     protected const KEY_POSITION_BAUSTEINE = 'position_bausteine';
     protected const KEY_SCHEDULE_DESCRIPTIONS = 'schedule_descriptions';
     protected const KEY_DAY_TYPES       = 'day_types';
+    protected const KEY_ORDER_NUMBER_SCHEMA = 'order_number_schema';
 
     public static function defaults(): array
     {
@@ -66,6 +67,17 @@ class SettingsService
     public static function scheduleDescriptions(?int $teamId): array { return self::getArray($teamId, self::KEY_SCHEDULE_DESCRIPTIONS, self::defaults()[self::KEY_SCHEDULE_DESCRIPTIONS]); }
     public static function dayTypes(?int $teamId): array         { return self::getArray($teamId, self::KEY_DAY_TYPES,       self::defaults()[self::KEY_DAY_TYPES]); }
     public static function bausteine(?int $teamId): array        { return self::getArray($teamId, self::KEY_POSITION_BAUSTEINE, self::defaults()[self::KEY_POSITION_BAUSTEINE]); }
+
+    public static function orderNumberSchema(?int $teamId): string
+    {
+        $raw = \Platform\Events\Models\Setting::getFor($teamId, self::KEY_ORDER_NUMBER_SCHEMA);
+        return is_string($raw) && $raw !== '' ? $raw : \Platform\Events\Services\OrderNumberBuilder::DEFAULT_SCHEMA;
+    }
+
+    public static function setOrderNumberSchema(?int $teamId, string $schema): void
+    {
+        \Platform\Events\Models\Setting::setFor($teamId, self::KEY_ORDER_NUMBER_SCHEMA, trim($schema));
+    }
 
     public static function setCostCenters(?int $teamId, array $items): void       { self::setArray($teamId, self::KEY_COST_CENTERS, array_values(array_filter(array_map('trim', $items)))); }
     public static function setCostCarriers(?int $teamId, array $items): void      { self::setArray($teamId, self::KEY_COST_CARRIERS, array_values(array_filter(array_map('trim', $items)))); }

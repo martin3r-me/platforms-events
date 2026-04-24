@@ -34,6 +34,7 @@ class Settings extends Component
     public array $scheduleDescriptions = [];
     public array $dayTypes        = [];
     public array $bausteine       = [];
+    public string $orderNumberSchema = '';
 
     public string $newCostCenter  = '';
     public string $newCostCarrier = '';
@@ -90,6 +91,7 @@ class Settings extends Component
         $this->scheduleDescriptions  = SettingsService::scheduleDescriptions($teamId);
         $this->dayTypes              = SettingsService::dayTypes($teamId);
         $this->bausteine             = SettingsService::bausteine($teamId);
+        $this->orderNumberSchema     = SettingsService::orderNumberSchema($teamId);
     }
 
     public function addCostCenter(): void      { $this->pushSimple('costCenters', 'newCostCenter'); SettingsService::setCostCenters($this->teamId(), $this->costCenters); }
@@ -108,6 +110,17 @@ class Settings extends Component
     public function removeScheduleDescription(int $i): void { $this->removeAt('scheduleDescriptions', $i); SettingsService::setScheduleDescriptions($this->teamId(), $this->scheduleDescriptions); }
     public function addDayType(): void          { $this->pushSimple('dayTypes', 'newDayType'); SettingsService::setDayTypes($this->teamId(), $this->dayTypes); }
     public function removeDayType(int $i): void { $this->removeAt('dayTypes', $i); SettingsService::setDayTypes($this->teamId(), $this->dayTypes); }
+
+    public function saveOrderNumberSchema(): void
+    {
+        SettingsService::setOrderNumberSchema($this->teamId(), $this->orderNumberSchema);
+    }
+
+    public function resetOrderNumberSchema(): void
+    {
+        $this->orderNumberSchema = \Platform\Events\Services\OrderNumberBuilder::DEFAULT_SCHEMA;
+        SettingsService::setOrderNumberSchema($this->teamId(), $this->orderNumberSchema);
+    }
 
     public function addBaustein(): void
     {

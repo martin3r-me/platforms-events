@@ -13,6 +13,7 @@
             'bestuhlung'    => ['label' => 'Bestuhlung',     'icon' => 'heroicon-o-table-cells'],
             'schedule_desc' => ['label' => 'Ablaufplan-Beschreibungen', 'icon' => 'heroicon-o-list-bullet'],
             'day_types'     => ['label' => 'Tages-Typen',    'icon' => 'heroicon-o-calendar'],
+            'order_number'  => ['label' => 'Ordernummer',    'icon' => 'heroicon-o-hashtag'],
             'bausteine'     => ['label' => 'Text-Bausteine',    'icon' => 'heroicon-o-puzzle-piece'],
             'mr_fields'     => ['label' => 'Management Report', 'icon' => 'heroicon-o-chart-bar-square'],
             'templates'     => ['label' => 'Dokumentvorlagen',  'icon' => 'heroicon-o-document-text'],
@@ -90,6 +91,44 @@
                 </div>
             @endif
         @endforeach
+
+        @if($activeTab === 'order_number')
+            <div class="pt-6 space-y-4">
+                <x-ui-panel title="Ordernummer-Schema" subtitle="Wird im Event-Basis-Tab in der Kachel „Zuständigkeit“ angezeigt und kann per Klick in die Zwischenablage kopiert werden.">
+                    <div class="p-4 space-y-3">
+                        <div>
+                            <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Schema</label>
+                            <input wire:model="orderNumberSchema" wire:keydown.enter.prevent="saveOrderNumberSchema" type="text"
+                                   placeholder="{{ \Platform\Events\Services\OrderNumberBuilder::DEFAULT_SCHEMA }}"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <x-ui-button variant="primary" size="sm" wire:click="saveOrderNumberSchema">
+                                @svg('heroicon-o-check', 'w-3.5 h-3.5 inline') Speichern
+                            </x-ui-button>
+                            <x-ui-button variant="secondary-outline" size="sm" wire:click="resetOrderNumberSchema">
+                                Zurück auf Default
+                            </x-ui-button>
+                        </div>
+                        <div class="pt-2 border-t border-[var(--ui-border)]">
+                            <div class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] mb-2">Verfügbare Platzhalter</div>
+                            <ul class="space-y-1">
+                                @foreach(\Platform\Events\Services\OrderNumberBuilder::PLACEHOLDERS as $ph => $desc)
+                                    <li class="flex items-start gap-2 text-[0.7rem]">
+                                        <code class="font-mono font-semibold text-[var(--ui-primary)] bg-[var(--ui-muted-5)] px-1.5 py-0.5 rounded whitespace-nowrap">{{ $ph }}</code>
+                                        <span class="text-[var(--ui-muted)]">{{ $desc }}</span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                            <div class="mt-3 text-[0.65rem] text-[var(--ui-muted)]">
+                                Beispiel: <code class="font-mono">{{ \Platform\Events\Services\OrderNumberBuilder::DEFAULT_SCHEMA }}</code>
+                                → <code class="font-mono font-semibold text-[var(--ui-secondary)]">CW-1500-VA#2026-044</code>
+                            </div>
+                        </div>
+                    </div>
+                </x-ui-panel>
+            </div>
+        @endif
 
         @if($activeTab === 'bausteine')
             <div class="pt-6 space-y-4">
