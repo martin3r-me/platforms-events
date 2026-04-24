@@ -283,6 +283,7 @@ class Detail extends Component
             'event.invoice_contact'          => 'nullable|string|max:255',
             'event.invoice_date_type'        => 'nullable|string|max:64',
             'event.responsible'              => 'nullable|string|max:255',
+            'event.responsible_onsite'       => 'nullable|string|max:255',
             'event.cost_center'              => 'nullable|string|max:255',
             'event.cost_carrier'             => 'nullable|string|max:255',
             'event.sign_left'                => 'nullable|string|max:255',

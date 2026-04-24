@@ -246,14 +246,25 @@
                 <span class="text-[0.72rem] font-bold text-[var(--ui-secondary)]">Zuständigkeit</span>
             </div>
             <div class="p-2 space-y-1.5">
-                <div>
-                    <label class="{{ $lbl }}">Verantwortlich</label>
-                    @include('events::partials.user-picker', [
-                        'field'       => 'event.responsible',
-                        'users'       => $teamUsers,
-                        'current'     => $event->responsible,
-                        'placeholder' => '— Teammitglied wählen —',
-                    ])
+                <div class="grid grid-cols-2 gap-1.5">
+                    <div>
+                        <label class="{{ $lbl }}">Verantwortlich</label>
+                        @include('events::partials.user-picker', [
+                            'field'       => 'event.responsible',
+                            'users'       => $teamUsers,
+                            'current'     => $event->responsible,
+                            'placeholder' => '— Teammitglied wählen —',
+                        ])
+                    </div>
+                    <div>
+                        <label class="{{ $lbl }}">Vor Ort</label>
+                        @include('events::partials.user-picker', [
+                            'field'       => 'event.responsible_onsite',
+                            'users'       => $teamUsers,
+                            'current'     => $event->responsible_onsite,
+                            'placeholder' => '— Teammitglied wählen —',
+                        ])
+                    </div>
                 </div>
                 <div class="grid grid-cols-2 gap-1.5">
                     <div>

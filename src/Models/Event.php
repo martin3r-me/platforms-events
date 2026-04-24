@@ -36,7 +36,7 @@ class Event extends Model
         // Rechnung
         'invoice_to', 'invoice_crm_company_id', 'invoice_contact', 'invoice_crm_contact_id', 'invoice_date_type',
         // Zuständigkeit
-        'responsible', 'cost_center', 'cost_carrier',
+        'responsible', 'responsible_onsite', 'cost_center', 'cost_carrier',
         // Anlass
         'event_type',
         // Unterschriften
