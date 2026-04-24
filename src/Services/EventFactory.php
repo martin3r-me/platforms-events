@@ -60,6 +60,12 @@ class EventFactory
 
         $event = Event::create($payload);
 
+        // Kostentraeger mit Event-Nummer vorbelegen, wenn nichts anderes gesetzt wurde.
+        if (empty($event->cost_carrier) && !empty($event->event_number)) {
+            $event->cost_carrier = $event->event_number;
+            $event->save();
+        }
+
         if ($createDays && !empty($payload['start_date'])) {
             self::createDaysForRange($event, $user->id, $teamId, $payload['start_date'], $payload['end_date'] ?? null, $status);
         }

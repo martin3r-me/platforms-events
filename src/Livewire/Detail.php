@@ -309,6 +309,12 @@ class Detail extends Component
             abort(404);
         }
 
+        // Kostentraeger mit Event-Nummer vorbelegen, falls leer (Altbestaende).
+        if (empty($event->cost_carrier) && !empty($event->event_number)) {
+            $event->cost_carrier = $event->event_number;
+            $event->save();
+        }
+
         $this->event = $event;
     }
 
