@@ -22,7 +22,7 @@
     };
 
     $totalArticles = $positions->filter(fn($p) => !$isBaustein((string) $p->gruppe))->count();
-    $priceMode = (string) ($activeItem->price_mode ?? 'netto');
+    $priceMode = (string) ($event->quote_price_mode ?? 'netto');
     $isBrutto  = $priceMode === 'brutto';
 
     // MwSt-Aufschluesselung pro Satz. Je nach Preis-Modus des Vorgangs wird
@@ -62,26 +62,26 @@
         <div class="flex items-center gap-2">
             <div class="w-[3px] h-3.5 bg-blue-600 rounded-sm"></div>
             <span class="text-[0.72rem] font-bold text-[var(--ui-secondary)]">Positionen</span>
-            @php $posCount = $positions->count(); @endphp
+            @php $posCount = (int) ($eventWidePositionCount ?? 0); @endphp
             <select x-data
                     @change="
                         const next = $event.target.value;
                         if (next === @js($priceMode)) return;
                         if (@js($posCount) > 0) {
                             const ok = confirm(
-                                'Preis-Modus wechseln auf „' + (next === 'brutto' ? 'Brutto' : 'Netto') + '“?\n\n' +
-                                @js($posCount) + ' Position(en) werden entsprechend umgerechnet.'
+                                'Preis-Modus des gesamten Angebots wechseln auf „' + (next === 'brutto' ? 'Brutto' : 'Netto') + '“?\n\n' +
+                                @js($posCount) + ' Position(en) in allen Vorgängen werden umgerechnet.'
                             );
                             if (!ok) {
                                 $event.target.value = @js($priceMode);
                                 return;
                             }
                         }
-                        $wire.updateItemPriceMode(next);
+                        $wire.updateQuotePriceMode(next);
                     "
                     class="border border-slate-200 rounded px-1.5 py-0.5 text-[0.55rem] font-bold uppercase tracking-wide cursor-pointer bg-white
                            {{ $isBrutto ? 'text-amber-700' : 'text-slate-600' }}"
-                    title="Preis-Modus des Vorgangs umschalten">
+                    title="Preis-Modus des gesamten Angebots umschalten">
                 <option value="netto"  @selected(!$isBrutto)>Netto</option>
                 <option value="brutto" @selected($isBrutto)>Brutto</option>
             </select>

@@ -469,7 +469,7 @@
     <x-ui-modal wire:model="showItemModal" size="md" :hideFooter="true">
         <x-slot name="header">Neuer Angebots-Vorgang</x-slot>
         <form wire:submit.prevent="saveItem" class="space-y-4">
-            <div class="grid grid-cols-3 gap-3">
+            <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Typ</label>
                     <input wire:model="itemTyp" type="text" placeholder="Speisen / Getränke / Personal / …"
@@ -480,14 +480,10 @@
                     <input wire:model="itemStatus" type="text"
                            class="w-full border border-slate-200 rounded-md px-3 py-2 text-xs">
                 </div>
-                <div>
-                    <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Preis-Modus</label>
-                    <select wire:model="itemPriceMode" class="w-full border border-slate-200 rounded-md px-3 py-2 text-xs">
-                        <option value="netto">Netto</option>
-                        <option value="brutto">Brutto</option>
-                    </select>
-                </div>
             </div>
+            <p class="text-[0.62rem] text-[var(--ui-muted)] italic">
+                Preis-Modus (Netto/Brutto) gilt angebotsweit und lässt sich im Positions-Editor umschalten.
+            </p>
             <div class="flex justify-end gap-2 pt-4 border-t border-[var(--ui-border)]">
                 <x-ui-button type="button" variant="secondary-outline" size="sm" wire:click="closeItemModal">Abbrechen</x-ui-button>
                 <x-ui-button type="submit" variant="primary" size="sm">Anlegen</x-ui-button>

@@ -49,7 +49,6 @@ class Quotes extends Component
     public ?int $itemEventDayId = null;
     public string $itemTyp = 'Speisen';
     public string $itemStatus = 'Entwurf';
-    public string $itemPriceMode = 'netto';
 
     // Approval-Modal
     public bool $showApprovalModal = false;
@@ -312,7 +311,6 @@ class Quotes extends Component
         $this->itemEventDayId = $eventDayId;
         $this->itemTyp = 'Speisen';
         $this->itemStatus = 'Entwurf';
-        $this->itemPriceMode = 'netto';
         $this->showItemModal = true;
     }
 
@@ -334,7 +332,6 @@ class Quotes extends Component
             'event_day_id' => $this->itemEventDayId,
             'typ'          => $this->itemTyp,
             'status'       => $this->itemStatus,
-            'price_mode'   => $this->itemPriceMode,
             'sort_order'   => $maxSort + 1,
         ]);
 
@@ -364,43 +361,44 @@ class Quotes extends Component
     }
 
     /**
-     * Preis-Modus (netto|brutto) des aktiven Vorgangs wechseln.
-     * Vorhandene Positionen werden umgerechnet:
+     * Preis-Modus (netto|brutto) fuer das komplette Angebot (event-weit) wechseln.
+     * Alle Positionen aller Vorgaenge werden umgerechnet:
      *   netto -> brutto: preis *= (1 + mwst/100)
      *   brutto -> netto: preis /= (1 + mwst/100)
-     * gesamt wird mit demselben Faktor skaliert. Bausteine bleiben unberuehrt.
+     * gesamt wird mit demselben Faktor skaliert. Bausteine (Headline/Trenntext/
+     * Speisentexte) bleiben unberuehrt.
      */
-    public function updateItemPriceMode(string $mode): void
+    public function updateQuotePriceMode(string $mode): void
     {
         if (!in_array($mode, ['netto', 'brutto'], true)) return;
-        if (!$this->activeItemId) return;
 
         $event = $this->event();
-        $item = QuoteItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($this->activeItemId);
-        if (!$item) return;
-
-        $old = (string) ($item->price_mode ?? 'netto');
+        $old = (string) ($event->quote_price_mode ?? 'netto');
         if ($old === $mode) return;
 
         $bausteine = ['Headline', 'Trenntext', 'Speisentexte'];
-        foreach ($item->posList as $pos) {
-            if (in_array((string) $pos->gruppe, $bausteine, true)) continue;
+        $itemIds = QuoteItem::whereIn('event_day_id', $event->days->pluck('id'))->pluck('id');
+        if ($itemIds->isNotEmpty()) {
+            $positions = QuotePosition::whereIn('quote_item_id', $itemIds)->get();
+            foreach ($positions as $pos) {
+                if (in_array((string) $pos->gruppe, $bausteine, true)) continue;
 
-            $pct = (float) filter_var((string) ($pos->mwst ?? '0%'), FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-            if ($pct <= 0) continue;
+                $pct = (float) filter_var((string) ($pos->mwst ?? '0%'), FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+                if ($pct <= 0) continue;
 
-            $factor = 1 + $pct / 100;
-            if ($mode === 'brutto') {
-                $pos->preis  = round((float) $pos->preis  * $factor, 2);
-                $pos->gesamt = round((float) $pos->gesamt * $factor, 2);
-            } else {
-                $pos->preis  = round((float) $pos->preis  / $factor, 2);
-                $pos->gesamt = round((float) $pos->gesamt / $factor, 2);
+                $factor = 1 + $pct / 100;
+                if ($mode === 'brutto') {
+                    $pos->preis  = round((float) $pos->preis  * $factor, 2);
+                    $pos->gesamt = round((float) $pos->gesamt * $factor, 2);
+                } else {
+                    $pos->preis  = round((float) $pos->preis  / $factor, 2);
+                    $pos->gesamt = round((float) $pos->gesamt / $factor, 2);
+                }
+                $pos->save();
             }
-            $pos->save();
         }
 
-        $item->update(['price_mode' => $mode]);
+        $event->update(['quote_price_mode' => $mode]);
     }
 
     /**
@@ -827,6 +825,10 @@ class Quotes extends Component
             ? ArticleSearchService::search($event->team_id, (string) ($this->newPosition['name'] ?? ''))
             : collect();
 
+        $eventWidePositionCount = (int) QuotePosition::whereIn('quote_item_id',
+            QuoteItem::whereIn('event_day_id', $event->days->pluck('id'))->pluck('id')
+        )->count();
+
         return view('events::livewire.detail.quotes', [
             'event'          => $event,
             'quotes'         => $quotes,
@@ -834,6 +836,7 @@ class Quotes extends Component
             'days'           => $event->days,
             'items'          => $items,
             'activeItem'     => $activeItem,
+            'eventWidePositionCount' => $eventWidePositionCount,
             'activeDay'      => $activeDay,
             'allPositions'   => $allPositions,
             'positions'      => $positions,

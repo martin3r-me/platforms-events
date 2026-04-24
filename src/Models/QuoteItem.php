@@ -19,7 +19,7 @@ class QuoteItem extends Model
 
     protected $fillable = [
         'uuid', 'user_id', 'team_id', 'event_day_id',
-        'typ', 'status', 'price_mode',
+        'typ', 'status',
         'artikel', 'positionen', 'umsatz', 'mwst', 'sort_order',
     ];
 
