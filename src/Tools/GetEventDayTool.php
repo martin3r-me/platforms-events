@@ -62,6 +62,7 @@ class GetEventDayTool implements ToolContract, ToolMetadataContract
                 'uuid'        => $day->uuid,
                 'event_id'    => $day->event_id,
                 'label'       => $day->label,
+                'day_type'    => $day->day_type,
                 'datum'       => $day->datum?->toDateString(),
                 'day_of_week' => $day->day_of_week,
                 'von'         => $day->von,

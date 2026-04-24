@@ -30,6 +30,24 @@
                                 <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: {{ $day->color }}"></span>
                                 <span class="text-[0.55rem] font-bold text-[var(--ui-muted)] w-4 text-center">{{ $day->day_of_week ?: '' }}</span>
                                 <span class="text-[0.65rem] font-mono text-[var(--ui-secondary)]">{{ $day->datum?->format('d.m.Y') ?: '—' }}</span>
+                                @php $dt = $day->day_type ?: 'Veranstaltungstag'; @endphp
+                                <span class="text-[0.5rem] font-semibold uppercase tracking-wide px-1 py-0 rounded
+                                    {{ match($dt) {
+                                        'Veranstaltungstag' => 'bg-blue-50 text-blue-700',
+                                        'Aufbautag'         => 'bg-amber-50 text-amber-700',
+                                        'Abbautag'          => 'bg-slate-100 text-slate-600',
+                                        'Rüsttag'           => 'bg-violet-50 text-violet-700',
+                                        default             => 'bg-slate-50 text-slate-500',
+                                    } }}"
+                                    title="{{ $dt }}">
+                                    {{ match($dt) {
+                                        'Veranstaltungstag' => 'VA',
+                                        'Aufbautag'         => 'AUF',
+                                        'Abbautag'          => 'AB',
+                                        'Rüsttag'           => 'RÜST',
+                                        default             => $dt,
+                                    } }}
+                                </span>
                                 <span class="ml-auto text-[0.6rem] font-mono text-[var(--ui-muted)]">{{ $day->von ?: '00:00' }}–{{ $day->bis ?: '00:00' }}</span>
                             </div>
                             <div class="flex items-center gap-1 pl-5">

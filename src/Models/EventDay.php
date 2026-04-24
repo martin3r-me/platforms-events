@@ -23,6 +23,7 @@ class EventDay extends Model
         'team_id',
         'event_id',
         'label',
+        'day_type',
         'datum',
         'color',
         'day_of_week',

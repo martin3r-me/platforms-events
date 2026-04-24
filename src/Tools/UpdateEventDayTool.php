@@ -11,7 +11,7 @@ use Platform\Events\Models\EventDay;
 class UpdateEventDayTool implements ToolContract, ToolMetadataContract
 {
     protected const FIELDS = [
-        'label', 'datum', 'day_of_week', 'von', 'bis',
+        'label', 'day_type', 'datum', 'day_of_week', 'von', 'bis',
         'pers_von', 'pers_bis', 'day_status', 'color',
     ];
 
@@ -23,7 +23,7 @@ class UpdateEventDayTool implements ToolContract, ToolMetadataContract
     public function getDescription(): string
     {
         return 'PATCH /events/days/{id} - Aktualisiert einen Event-Tag. Identifikation: day_id ODER uuid. '
-            . 'Optionale Felder: label, datum, day_of_week, von, bis, pers_von, pers_bis, day_status, color, sort_order.';
+            . 'Optionale Felder: label, day_type (Veranstaltungstag|Aufbautag|Abbautag|Rüsttag), datum, day_of_week, von, bis, pers_von, pers_bis, day_status, color, sort_order.';
     }
 
     public function getSchema(): array

@@ -46,8 +46,8 @@ class ListEventDaysTool implements ToolContract, ToolMetadataContract
 
             $query = $event->days();
 
-            $this->applyStandardFilters($query, $arguments, ['label', 'datum', 'day_of_week', 'day_status', 'von', 'bis']);
-            $this->applyStandardSearch($query, $arguments, ['label', 'day_of_week', 'day_status']);
+            $this->applyStandardFilters($query, $arguments, ['label', 'day_type', 'datum', 'day_of_week', 'day_status', 'von', 'bis']);
+            $this->applyStandardSearch($query, $arguments, ['label', 'day_type', 'day_of_week', 'day_status']);
             $this->applyStandardSort($query, $arguments, ['sort_order', 'datum', 'label', 'created_at'], 'sort_order', 'asc');
             $this->applyStandardPagination($query, $arguments);
 
@@ -56,6 +56,7 @@ class ListEventDaysTool implements ToolContract, ToolMetadataContract
                 'uuid'        => $d->uuid,
                 'event_id'    => $d->event_id,
                 'label'       => $d->label,
+                'day_type'    => $d->day_type,
                 'datum'       => $d->datum?->toDateString(),
                 'day_of_week' => $d->day_of_week,
                 'von'         => $d->von,

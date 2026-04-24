@@ -441,6 +441,7 @@ class Detail extends Component
     {
         $this->dayForm = [
             'label'       => '',
+            'day_type'    => 'Veranstaltungstag',
             'datum'       => $this->event->start_date?->format('Y-m-d') ?? '',
             'color'       => '#6366f1',
             'day_of_week' => '',
@@ -460,6 +461,7 @@ class Detail extends Component
         $day = $this->event->days()->where('uuid', $uuid)->firstOrFail();
         $this->dayForm = [
             'label'       => $day->label,
+            'day_type'    => $day->day_type ?: 'Veranstaltungstag',
             'datum'       => $day->datum?->format('Y-m-d') ?? '',
             'color'       => $day->color ?: '#6366f1',
             'day_of_week' => $day->day_of_week ?? '',
@@ -483,6 +485,7 @@ class Detail extends Component
     {
         $this->validate([
             'dayForm.label'      => 'required|string|max:50',
+            'dayForm.day_type'   => 'nullable|string|max:40',
             'dayForm.datum'      => 'required|date',
             'dayForm.day_status' => 'nullable|string|max:64',
         ]);

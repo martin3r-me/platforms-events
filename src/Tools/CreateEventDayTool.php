@@ -22,7 +22,7 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
     public function getDescription(): string
     {
         return 'POST /events/{event}/days - Legt einen Event-Tag an. Pflicht: event_selector (event_id|event_uuid|event_number), label, datum. '
-            . 'Optional: von, bis, pers_von, pers_bis, day_status, color. day_of_week wird aus datum abgeleitet wenn leer.';
+            . 'Optional: day_type (Veranstaltungstag|Aufbautag|Abbautag|Rüsttag), von, bis, pers_von, pers_bis, day_status, color. day_of_week wird aus datum abgeleitet wenn leer.';
     }
 
     public function getSchema(): array
@@ -31,6 +31,7 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
             'type' => 'object',
             'properties' => array_merge($this->eventSelectorSchema(), [
                 'label'       => ['type' => 'string',  'description' => 'Anzeigename des Tages (z.B. "Tag 1" oder "20.03.2026").'],
+                'day_type'    => ['type' => 'string',  'description' => 'Veranstaltungstag|Aufbautag|Abbautag|Rüsttag. Default Veranstaltungstag.'],
                 'datum'       => ['type' => 'string',  'description' => 'YYYY-MM-DD.'],
                 'day_of_week' => ['type' => 'string'],
                 'von'         => ['type' => 'string'],
@@ -75,6 +76,7 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
                 'team_id'     => $event->team_id,
                 'user_id'     => $context->user->id,
                 'label'       => $arguments['label'],
+                'day_type'    => $arguments['day_type'] ?? 'Veranstaltungstag',
                 'datum'       => $arguments['datum'],
                 'day_of_week' => $dow,
                 'von'         => $arguments['von'] ?? null,
