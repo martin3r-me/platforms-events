@@ -396,7 +396,7 @@
                         <div class="p-5 space-y-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Unterschrift links (Projektverantwortlicher)</label>
+                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Projektleitung</label>
                                     @include('events::partials.user-picker', [
                                         'field'       => 'event.sign_left',
                                         'users'       => $teamUsers,
@@ -405,7 +405,7 @@
                                     ])
                                 </div>
                                 <div>
-                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Unterschrift rechts (Vorgesetzter)</label>
+                                    <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Mitzeichnung</label>
                                     @include('events::partials.user-picker', [
                                         'field'       => 'event.sign_right',
                                         'users'       => $teamUsers,
@@ -417,7 +417,7 @@
 
                             @php $currentUserName = auth()->user()?->name; @endphp
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-[var(--ui-border)]">
-                                @foreach(['left' => 'Links (Projektverantwortlicher)', 'right' => 'Rechts (Vorgesetzter)'] as $role => $roleLabel)
+                                @foreach(['left' => 'Projektleitung', 'right' => 'Mitzeichnung'] as $role => $roleLabel)
                                     @php
                                         $sig = $signatures->get($role);
                                         $assignedName = $role === 'left' ? $event->sign_left : $event->sign_right;
@@ -1443,8 +1443,8 @@
                     const modal = document.getElementById('signature-modal');
                     modal.style.display = 'flex';
                     document.getElementById('signature-title').textContent = role === 'left'
-                        ? 'Unterschrift Auftraggeber (links)'
-                        : 'Unterschrift Auftragnehmer (rechts)';
+                        ? 'Unterschrift Projektleitung'
+                        : 'Unterschrift Mitzeichnung';
 
                     setTimeout(() => {
                         const init = initCanvas();

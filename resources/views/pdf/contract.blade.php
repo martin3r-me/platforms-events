@@ -62,11 +62,11 @@
     <div class="signatures">
         <div class="sig">
             <div style="height: 40px;"></div>
-            <div class="sig-line">{{ $event->sign_left ?: 'Unterschrift Auftraggeber' }}</div>
+            <div class="sig-line">{{ $event->sign_left ?: 'Projektleitung' }}</div>
         </div>
         <div class="sig">
             <div style="height: 40px;"></div>
-            <div class="sig-line">{{ $event->sign_right ?: 'Unterschrift Auftragnehmer' }}</div>
+            <div class="sig-line">{{ $event->sign_right ?: 'Mitzeichnung' }}</div>
         </div>
     </div>
 </body>
