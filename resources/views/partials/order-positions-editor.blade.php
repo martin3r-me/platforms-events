@@ -17,6 +17,8 @@
     };
     $totalArticles = $positions->filter(fn($p) => !$isBaustein((string) $p->gruppe))->count();
     $totalGesamt = (float) $positions->sum('gesamt');
+    $priceMode   = (string) ($activeItem->price_mode ?? 'netto');
+    $isBrutto    = $priceMode === 'brutto';
 @endphp
 <div id="order-positions-editor-{{ $activeItem->id }}"
      x-data
@@ -27,6 +29,8 @@
         <div class="flex items-center gap-2">
             <div class="w-[3px] h-3.5 bg-orange-600 rounded-sm"></div>
             <span class="text-[0.72rem] font-bold text-[var(--ui-secondary)]">Bestellpositionen</span>
+            <span class="text-[0.55rem] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded {{ $isBrutto ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600' }}"
+                  title="Preis-Modus des Vorgangs">{{ $isBrutto ? 'Brutto' : 'Netto' }}</span>
             <span class="text-[0.6rem] text-[var(--ui-muted)]">· {{ $totalArticles }} Artikel · Einkauf {{ $fmt($totalGesamt) }} €</span>
         </div>
         <div class="flex items-center gap-2">

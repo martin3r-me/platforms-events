@@ -481,11 +481,10 @@
                            class="w-full border border-slate-200 rounded-md px-3 py-2 text-xs">
                 </div>
                 <div>
-                    <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">MwSt</label>
-                    <select wire:model="itemMwst" class="w-full border border-slate-200 rounded-md px-3 py-2 text-xs">
-                        <option value="0%">0%</option>
-                        <option value="7%">7%</option>
-                        <option value="19%">19%</option>
+                    <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Preis-Modus</label>
+                    <select wire:model="itemPriceMode" class="w-full border border-slate-200 rounded-md px-3 py-2 text-xs">
+                        <option value="netto">Netto</option>
+                        <option value="brutto">Brutto</option>
                     </select>
                 </div>
             </div>

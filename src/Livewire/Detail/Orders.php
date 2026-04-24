@@ -27,6 +27,7 @@ class Orders extends Component
     public string $itemTyp = 'Speisen';
     public string $itemStatus = 'Offen';
     public string $itemLieferant = '';
+    public string $itemPriceMode = 'netto';
 
     public array $newPosition = [
         'gruppe' => '', 'name' => '', 'anz' => '', 'anz2' => '',
@@ -90,6 +91,7 @@ class Orders extends Component
         $this->itemTyp = 'Speisen';
         $this->itemStatus = 'Offen';
         $this->itemLieferant = '';
+        $this->itemPriceMode = 'netto';
         $this->showItemModal = true;
     }
 
@@ -109,6 +111,7 @@ class Orders extends Component
             'event_day_id' => $this->itemEventDayId,
             'typ'          => $this->itemTyp,
             'status'       => $this->itemStatus,
+            'price_mode'   => $this->itemPriceMode,
             'lieferant'    => $this->itemLieferant,
             'sort_order'   => $maxSort + 1,
         ]);

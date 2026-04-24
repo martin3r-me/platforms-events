@@ -202,7 +202,7 @@
     <x-ui-modal wire:model="showItemModal" size="md" :hideFooter="true">
         <x-slot name="header">Neuer Bestell-Vorgang</x-slot>
         <form wire:submit.prevent="saveItem" class="space-y-4">
-            <div class="grid grid-cols-3 gap-3">
+            <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Typ</label>
                     <input wire:model="itemTyp" type="text" placeholder="Speisen / Getränke / Equipment / …"
@@ -217,6 +217,13 @@
                     <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Lieferant</label>
                     <input wire:model="itemLieferant" type="text"
                            class="w-full border border-slate-200 rounded-md px-3 py-2 text-xs">
+                </div>
+                <div>
+                    <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Preis-Modus</label>
+                    <select wire:model="itemPriceMode" class="w-full border border-slate-200 rounded-md px-3 py-2 text-xs">
+                        <option value="netto">Netto</option>
+                        <option value="brutto">Brutto</option>
+                    </select>
                 </div>
             </div>
             <div class="flex justify-end gap-2 pt-4 border-t border-[var(--ui-border)]">

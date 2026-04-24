@@ -19,7 +19,7 @@ class OrderItem extends Model
 
     protected $fillable = [
         'uuid', 'user_id', 'team_id', 'event_day_id',
-        'typ', 'status',
+        'typ', 'status', 'price_mode',
         'artikel', 'positionen', 'einkauf', 'lieferant', 'sort_order',
     ];
 

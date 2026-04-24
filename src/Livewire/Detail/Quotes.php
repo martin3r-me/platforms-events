@@ -49,7 +49,7 @@ class Quotes extends Component
     public ?int $itemEventDayId = null;
     public string $itemTyp = 'Speisen';
     public string $itemStatus = 'Entwurf';
-    public string $itemMwst = '19%';
+    public string $itemPriceMode = 'netto';
 
     // Approval-Modal
     public bool $showApprovalModal = false;
@@ -312,7 +312,7 @@ class Quotes extends Component
         $this->itemEventDayId = $eventDayId;
         $this->itemTyp = 'Speisen';
         $this->itemStatus = 'Entwurf';
-        $this->itemMwst = '19%';
+        $this->itemPriceMode = 'netto';
         $this->showItemModal = true;
     }
 
@@ -334,7 +334,7 @@ class Quotes extends Component
             'event_day_id' => $this->itemEventDayId,
             'typ'          => $this->itemTyp,
             'status'       => $this->itemStatus,
-            'mwst'         => $this->itemMwst,
+            'price_mode'   => $this->itemPriceMode,
             'sort_order'   => $maxSort + 1,
         ]);
 

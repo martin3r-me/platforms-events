@@ -22,22 +22,35 @@
     };
 
     $totalArticles = $positions->filter(fn($p) => !$isBaustein((string) $p->gruppe))->count();
-    $totalGesamt = (float) $positions->sum('gesamt');
+    $priceMode = (string) ($activeItem->price_mode ?? 'netto');
+    $isBrutto  = $priceMode === 'brutto';
 
-    // MwSt-Aufschluesselung pro Satz: Netto(gesamt), Steuer, Brutto
+    // MwSt-Aufschluesselung pro Satz. Je nach Preis-Modus des Vorgangs wird
+    // der gespeicherte `gesamt`-Wert als Netto (Default) oder Brutto
+    // interpretiert; netto/brutto werden daraus abgeleitet.
     $mwstBreakdown = $positions
         ->filter(fn($p) => !$isBaustein((string) $p->gruppe))
         ->groupBy(fn($p) => (string) ($p->mwst ?: '0%'))
-        ->map(function ($group, $rate) {
-            $net = (float) $group->sum('gesamt');
+        ->map(function ($group, $rate) use ($isBrutto) {
+            $raw = (float) $group->sum('gesamt');
             $pct = (float) filter_var($rate, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-            $tax = round($net * ($pct / 100), 2);
-            return ['rate' => $rate, 'pct' => $pct, 'net' => $net, 'tax' => $tax, 'gross' => $net + $tax];
+            if ($isBrutto) {
+                $gross = $raw;
+                $net   = $pct > 0 ? round($gross / (1 + $pct / 100), 2) : $gross;
+                $tax   = round($gross - $net, 2);
+            } else {
+                $net   = $raw;
+                $tax   = round($net * ($pct / 100), 2);
+                $gross = round($net + $tax, 2);
+            }
+            return ['rate' => $rate, 'pct' => $pct, 'net' => $net, 'tax' => $tax, 'gross' => $gross];
         })
         ->sortBy('pct')
         ->values();
-    $totalTax = (float) $mwstBreakdown->sum('tax');
-    $totalGross = $totalGesamt + $totalTax;
+    $totalNet   = (float) $mwstBreakdown->sum('net');
+    $totalTax   = (float) $mwstBreakdown->sum('tax');
+    $totalGross = (float) $mwstBreakdown->sum('gross');
+    $totalGesamt = $isBrutto ? $totalGross : $totalNet;
 @endphp
 <div id="positions-editor-{{ $activeItem->id }}"
      x-data
@@ -49,6 +62,8 @@
         <div class="flex items-center gap-2">
             <div class="w-[3px] h-3.5 bg-blue-600 rounded-sm"></div>
             <span class="text-[0.72rem] font-bold text-[var(--ui-secondary)]">Positionen</span>
+            <span class="text-[0.55rem] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded {{ $isBrutto ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600' }}"
+                  title="Preis-Modus des Vorgangs">{{ $isBrutto ? 'Brutto' : 'Netto' }}</span>
             <span class="text-[0.6rem] text-[var(--ui-muted)]">· {{ $totalArticles }} Artikel · {{ $fmt($totalGesamt) }} €</span>
         </div>
         <div class="flex items-center gap-2">
@@ -222,7 +237,7 @@
                         <td colspan="11" class="py-2 px-2.5 text-right text-[0.58rem] font-bold uppercase tracking-wider text-slate-500">
                             Positionen <span class="text-[var(--ui-secondary)] font-mono ml-1">{{ $totalArticles }}</span> · Netto
                         </td>
-                        <td class="py-2 px-1.5 text-right font-mono font-semibold text-slate-600 text-[0.7rem]">{{ $fmt($totalGesamt) }} €</td>
+                        <td class="py-2 px-1.5 text-right font-mono font-semibold text-slate-600 text-[0.7rem]">{{ $fmt($totalNet) }} €</td>
                         <td colspan="2"></td>
                     </tr>
                     @foreach($mwstBreakdown as $row)
