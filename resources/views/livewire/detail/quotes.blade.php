@@ -313,8 +313,12 @@
                                         </button>
                                     @endif
                                     @if($apStatus === 'none' || $apStatus === 'rejected')
-                                        <button wire:click="openApprovalRequest({{ $q->id }})"
-                                                class="px-2.5 py-1 border border-amber-300 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-700 text-[0.62rem] font-semibold cursor-pointer">
+                                        @php $canRequestApproval = $q->status === 'draft'; @endphp
+                                        <button @if($canRequestApproval) wire:click="openApprovalRequest({{ $q->id }})" @else disabled title="Angebot bereits versendet – Freigabe nicht mehr moeglich" @endif
+                                                class="px-2.5 py-1 border rounded-md text-[0.62rem] font-semibold
+                                                       {{ $canRequestApproval
+                                                          ? 'border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 cursor-pointer'
+                                                          : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed opacity-60' }}">
                                             Freigabe anfordern
                                         </button>
                                     @elseif($apStatus === 'pending' && (int) $q->approval_requested_by === (int) $currentUserId)
