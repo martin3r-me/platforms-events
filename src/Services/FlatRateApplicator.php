@@ -190,10 +190,23 @@ class FlatRateApplicator
             $sumVkNetto += $g;
         }
 
-        $sumByGruppe = $positions
-            ->groupBy(fn ($p) => (string) $p->gruppe)
-            ->map(fn ($group) => round((float) $group->sum('gesamt'), 2))
-            ->all();
+        // Pro Gruppe: Summe (gesamt), Anzahl Positionen, Summe Mengen (anz),
+        // sowie EK-Summe — damit Formeln z.B. "pro gebuchtem Bier 2 Euro" oder
+        // "30% Aufschlag auf Getränke-EK" sauber rechnen koennen.
+        $sumByGruppe      = [];
+        $countByGruppe    = [];
+        $anzByGruppe      = [];
+        $sumEkByGruppe    = [];
+        foreach ($positions as $p) {
+            $key = (string) $p->gruppe;
+            if ($key === '') $key = '_ohne';
+            $sumByGruppe[$key]    = round(((float) ($sumByGruppe[$key] ?? 0)) + (float) $p->gesamt, 2);
+            $countByGruppe[$key]  = (int) ($countByGruppe[$key] ?? 0) + 1;
+            $anzByGruppe[$key]    = round(((float) ($anzByGruppe[$key] ?? 0)) + (float) preg_replace('/[^0-9.-]/', '', (string) $p->anz), 2);
+            $sumEkByGruppe[$key]  = round(((float) ($sumEkByGruppe[$key] ?? 0)) + (float) $p->ek, 2);
+        }
+
+        $sumAnz = array_sum($anzByGruppe);
 
         // Andere Vorgaenge des gleichen EventDay fuer "items.sum_by_typ"
         $sumByTyp = [];
@@ -252,14 +265,18 @@ class FlatRateApplicator
                 'datum'          => $dayIso,
             ],
             'item' => [
-                'sum_ek'        => round($sumEk, 2),
-                'sum_vk_netto'  => round($sumVkNetto, 2),
-                'sum_gesamt'    => round($sumGes, 2),
-                'count'         => $positions->count(),
-                'price_mode'    => $priceMode,
-                'sum_by_gruppe' => $sumByGruppe,
-                'sum_by_typ'    => $sumByTyp,
-                'typ'           => (string) $target->typ,
+                'sum_ek'          => round($sumEk, 2),
+                'sum_vk_netto'    => round($sumVkNetto, 2),
+                'sum_gesamt'      => round($sumGes, 2),
+                'count'           => $positions->count(),
+                'sum_anz'         => round((float) $sumAnz, 2),
+                'price_mode'      => $priceMode,
+                'sum_by_gruppe'   => $sumByGruppe,
+                'count_by_gruppe' => $countByGruppe,
+                'anz_by_gruppe'   => $anzByGruppe,
+                'ek_by_gruppe'    => $sumEkByGruppe,
+                'sum_by_typ'      => $sumByTyp,
+                'typ'             => (string) $target->typ,
             ],
         ];
     }
