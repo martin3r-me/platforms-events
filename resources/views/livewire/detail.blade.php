@@ -76,16 +76,16 @@
                     ['key' => 'ablauf',       'label' => 'Ablauf',           'icon' => 'heroicon-o-clock',             'badge' => $counts['ablauf']],
                     ['key' => 'aktivitaeten', 'label' => 'Aktivitäten',      'icon' => 'heroicon-o-bolt',              'badge' => $counts['aktivitaeten']],
                     ['key' => 'kalkulation',  'label' => 'Kalkulation',      'icon' => 'heroicon-o-calculator'],
-                    ['key' => 'projekt',      'label' => 'Projekt Function', 'icon' => 'heroicon-o-document-check'],
                     ['key' => 'vertraege',    'label' => 'Verträge',         'icon' => 'heroicon-o-document',          'badge' => $counts['vertraege'],    'badgeColor' => 'purple'],
-                    ['key' => 'packliste',    'label' => 'Packliste',        'icon' => 'heroicon-o-cube',              'badge' => $counts['packliste']],
                     ['key' => 'kommunikation','label' => 'Kommunikation',    'icon' => 'heroicon-o-envelope',          'badge' => $counts['kommunikation'], 'badgeColor' => 'blue'],
                 ];
 
                 $tailTabs = [
-                    ['key' => 'rechnungen', 'label' => 'Rechnungen',    'icon' => 'heroicon-o-receipt-percent',          'badge' => $counts['rechnungen']],
-                    ['key' => 'schluss',    'label' => 'Schlussbericht','icon' => 'heroicon-o-presentation-chart-line'],
-                    ['key' => 'feedback',   'label' => 'Feedback',      'icon' => 'heroicon-o-chat-bubble-left-right',   'badge' => $counts['feedback']],
+                    ['key' => 'projekt',    'label' => 'Projekt Function', 'icon' => 'heroicon-o-document-check'],
+                    ['key' => 'packliste',  'label' => 'Packliste',        'icon' => 'heroicon-o-cube',                    'badge' => $counts['packliste']],
+                    ['key' => 'rechnungen', 'label' => 'Rechnungen',       'icon' => 'heroicon-o-receipt-percent',         'badge' => $counts['rechnungen']],
+                    ['key' => 'schluss',    'label' => 'Schlussbericht',   'icon' => 'heroicon-o-presentation-chart-line'],
+                    ['key' => 'feedback',   'label' => 'Feedback',         'icon' => 'heroicon-o-chat-bubble-left-right',  'badge' => $counts['feedback']],
                 ];
             @endphp
 
