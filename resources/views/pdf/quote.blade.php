@@ -144,7 +144,7 @@
                         @endif
                     @elseif($loc->floorPlanIsPdf())
                         <p style="font-size: 9pt; color: #64748b; margin: 4px 0 0 0;">
-                            PDF-Grundriss hinterlegt. Einsehbar im Online-Angebot unter dem Kunden-Link.
+                            Grundriss als PDF beigefuegt — siehe folgende Seiten.
                         </p>
                     @endif
                 </div>

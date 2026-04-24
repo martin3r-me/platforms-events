@@ -31,4 +31,29 @@ class PdfService
 
         return $pdf->stream($filename);
     }
+
+    /**
+     * Wie render(), haengt aber zusaetzliche PDF-Binaries (z. B. Raumgrundrisse)
+     * per Ghostscript als Seiten ans Ende an. Wenn der Merge scheitert, wird
+     * das Basis-PDF unveraendert ausgeliefert (siehe PdfFloorPlanMerger).
+     *
+     * @param list<string> $pdfAppendBinaries
+     */
+    public static function renderWithAppendedPdfs(string $view, array $data, string $filename, array $pdfAppendBinaries = []): Response
+    {
+        $pdf = Pdf::loadView($view, $data)
+            ->setPaper('a4', 'portrait')
+            ->setOption('defaultFont', 'sans-serif');
+
+        $binary = $pdf->output();
+        if (!empty($pdfAppendBinaries)) {
+            $binary = PdfFloorPlanMerger::append($binary, $pdfAppendBinaries);
+        }
+
+        return response($binary, 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Length'      => (string) strlen($binary),
+        ]);
+    }
 }

@@ -30,11 +30,33 @@ class QuotePdfController extends Controller
             ->get()
             ->groupBy('event_day_id');
 
-        return PdfService::render('events::pdf.quote', [
+        $filename = 'Angebot-' . $eventModel->slug . '-v' . $quote->version . '.pdf';
+        $data = [
             'event' => $eventModel,
             'quote' => $quote,
             'items' => $items,
             'days'  => $eventModel->days()->orderBy('sort_order')->get(),
-        ], 'Angebot-' . $eventModel->slug . '-v' . $quote->version . '.pdf');
+        ];
+
+        // Grundriss-Anhang: PDF-Grundrisse als echte Seiten anhaengen (Bilder werden
+        // direkt in der Blade eingebettet; PDFs koennen wir nicht inline rendern).
+        $appendPdfs = [];
+        if ($quote->shouldAttachFloorPlans()) {
+            foreach ($quote->floorPlanLocations() as $loc) {
+                if (!$loc->floorPlanIsPdf()) {
+                    continue;
+                }
+                $content = $loc->floorPlanContents();
+                if (is_string($content) && $content !== '') {
+                    $appendPdfs[] = $content;
+                }
+            }
+        }
+
+        if (!empty($appendPdfs)) {
+            return PdfService::renderWithAppendedPdfs('events::pdf.quote', $data, $filename, $appendPdfs);
+        }
+
+        return PdfService::render('events::pdf.quote', $data, $filename);
     }
 }
