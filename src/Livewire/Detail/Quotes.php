@@ -626,8 +626,15 @@ class Quotes extends Component
         $eventDay = $item->eventDay;
         if (!$eventDay) return collect();
 
-        $locationIds = $eventDay->bookings()
-            ->whereNotNull('location_id')
+        // Bookings haengen am Event (nicht am EventDay). Filter ueber Event + Datum
+        // des Tages liefert die am betreffenden Tag gebuchten Raeume.
+        $bookingsQuery = \Platform\Events\Models\Booking::where('event_id', $eventDay->event_id)
+            ->whereNotNull('location_id');
+        if ($eventDay->datum) {
+            $bookingsQuery->where('datum', $eventDay->datum);
+        }
+
+        $locationIds = $bookingsQuery
             ->pluck('location_id')
             ->unique()
             ->values();
