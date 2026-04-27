@@ -735,10 +735,13 @@
             </div>
         @endif
 
+        @php
+            $lpHasAddon = !empty(array_filter($locationPricingAddonQtys ?? [], fn ($v) => $v !== null && $v !== '' && ((float) $v) > 0));
+            $lpApplyDisabled = empty($locationPricingPricingIds) && !$lpHasAddon;
+        @endphp
         <div class="flex justify-end gap-2 pt-3 border-t border-[var(--ui-border)] mt-3">
             <x-ui-button type="button" variant="secondary-outline" size="sm" wire:click="closeLocationPricingPicker">Abbrechen</x-ui-button>
-            <x-ui-button type="button" variant="primary" size="sm" wire:click="applyLocationPricing"
-                         @disabled(empty($locationPricingPricingIds) && empty(array_filter($locationPricingAddonQtys ?? [], fn ($v) => $v !== null && $v !== '' && (float) $v > 0)))>
+            <x-ui-button type="button" variant="primary" size="sm" wire:click="applyLocationPricing" :disabled="$lpApplyDisabled">
                 <span wire:loading.remove wire:target="applyLocationPricing">Einbuchen</span>
                 <span wire:loading wire:target="applyLocationPricing">Einbuchen …</span>
             </x-ui-button>
