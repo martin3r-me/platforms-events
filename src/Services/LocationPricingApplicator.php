@@ -190,18 +190,45 @@ class LocationPricingApplicator
                 $price  = (float) $addon->price_net;
                 $gesamt = round($qty * $price, 2);
 
+                $articleData = self::resolveArticle($addon->article_number, $teamId, $warnings);
+
+                if ($articleData !== null) {
+                    $gruppe          = $articleData['gruppe'] !== '' ? $articleData['gruppe'] : self::DEFAULT_ADDON_GRUPPE;
+                    // Add-on-Label hat Vorrang; falls leer, Article-Name nehmen
+                    $name            = ($addon->label !== '' ? (string) $addon->label : $articleData['name'])
+                                       . ' (' . $addon->unitLabel() . ')';
+                    $mwst            = $articleData['mwst'] !== '' ? $articleData['mwst'] : self::DEFAULT_MWST;
+                    $ek              = $articleData['ek'];
+                    $procurementType = $articleData['procurement_type'];
+                    $inhalt          = $articleData['inhalt'];
+                    $gebinde         = $articleData['gebinde'];
+                } else {
+                    $gruppe          = self::DEFAULT_ADDON_GRUPPE;
+                    $name            = $addon->label . ' (' . $addon->unitLabel() . ')';
+                    $mwst            = self::DEFAULT_MWST;
+                    $ek              = 0.0;
+                    $procurementType = null;
+                    $inhalt          = '';
+                    $gebinde         = '';
+                }
+
                 $maxSort++;
                 $pos = QuotePosition::create([
-                    'team_id'       => $teamId,
-                    'user_id'       => Auth::id(),
-                    'quote_item_id' => $target->id,
-                    'gruppe'        => self::DEFAULT_ADDON_GRUPPE,
-                    'name'          => $addon->label . ' (' . $addon->unitLabel() . ')',
-                    'anz'           => self::formatAnz($qty),
-                    'preis'         => $price,
-                    'mwst'          => self::DEFAULT_MWST,
-                    'gesamt'        => $gesamt,
-                    'sort_order'    => $maxSort,
+                    'team_id'          => $teamId,
+                    'user_id'          => Auth::id(),
+                    'quote_item_id'    => $target->id,
+                    'gruppe'           => $gruppe,
+                    'name'             => $name,
+                    'anz'              => self::formatAnz($qty),
+                    'inhalt'           => $inhalt,
+                    'gebinde'          => $gebinde,
+                    'basis_ek'         => $ek,
+                    'ek'               => $ek,
+                    'preis'            => $price,
+                    'mwst'             => $mwst,
+                    'gesamt'           => $gesamt,
+                    'procurement_type' => $procurementType,
+                    'sort_order'       => $maxSort,
                 ]);
 
                 $createdPositions[] = $pos;
@@ -212,6 +239,8 @@ class LocationPricingApplicator
                     'ref_uuid'          => $addon->uuid,
                     'qty'               => $qty,
                     'unit'              => $addon->unit,
+                    'article_number'    => $addon->article_number,
+                    'article_resolved'  => $articleData !== null,
                 ];
             }
 
