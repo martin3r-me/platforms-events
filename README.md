@@ -7,6 +7,7 @@ Veranstaltungs-Verwaltung für die Platform: Events mit Tagen, Raum-Buchungen, A
 - **Event-Stammdaten** – Name, Kunde, Zeitraum, Status, Veranstalter, Besteller, Rechnung, Zuständigkeit, Unterschriften, Eingang, Wiedervorlage, Lieferung, Weiterleitung
 - **Event-Tage** – Tagesstruktur mit Datum, Zeiten, Personenbereich, Tagesstatus und Farbe
 - **Raum-Buchungen** – Verknüpfung zum `Locations`-Modul (FK `location_id`); Freitext-`raum` bleibt als Legacy-Fallback
+- **Location-Preise einbuchen** – Button im Vorgangs-Header zieht Mietpreise (passender Tag-Typ vorausgewählt) und optionale Add-ons (Heizung etc.) der gebuchten Location als QuotePositions in den Vorgang. Idempotent über Audit-Trail `events_location_pricing_applications` (Service `LocationPricingApplicator`).
 - **Ablaufplan** – Zeitleiste mit Datum, Von/Bis, Beschreibung, Raum, Bemerkung
 - **Notizen** – kategorisiert als Liefertext, Absprache oder Vereinbarung
 - **Management Report** – frei erweiterbares JSON mit 12 hardcoded Default-Feldern in vier Gruppen (Logistik/Produktion/Rechnungen/Controlling)

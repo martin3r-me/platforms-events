@@ -75,6 +75,7 @@ Konfigurierbarkeit (analog `MrFieldConfig` aus dem Alt-System) ist bewusst ausge
 
 - `Booking->location()` referenziert `Platform\Locations\Models\Location` direkt (Events setzt Locations-Modul voraus).
 - Das Locations-Modul weiß nichts von Events. Die `Occupancy`-View im Locations-Modul erwartet pro Buchung ein Array `{title, optionsrang}` – diese Integration wird später über einen Contract/Listener im Events-Modul bereitgestellt.
+- **Location-Pricing** wird per Button im Quotes-Tab eingebucht: `Platform\Events\Services\LocationPricingApplicator` zieht Mietpreise und optionale Add-ons aus der Public-API der Location (`pricings()`, `activeAddons()`, `pricingForDayType()`) und erzeugt QuotePositions. Audit-Trail in `events_location_pricing_applications` (Soft-Overwrite-Pattern wie bei FlatRate). Tag-Typ-Match läuft über Volltext-String-Vergleich von `EventDay::day_type` gegen `LocationPricing::day_type_label`. Bei Mismatch erscheint ein UI-Warning, es wird stillschweigend nichts gebucht. Add-on-Mengen-Defaults: `pro_tag` = Anzahl aller Tage, `pro_va_tag` = Anzahl Tage mit dem ersten Settings-`dayTypes()`-Eintrag (Default „Veranstaltungstag"). User-Override im Picker.
 
 ## AI-Tools (ToolRegistry)
 
