@@ -587,4 +587,140 @@
             <x-ui-button type="button" variant="secondary-outline" size="sm" wire:click="closeFlatRatePicker">Schliessen</x-ui-button>
         </div>
     </x-ui-modal>
+
+    {{-- Modal: Location-Preise einbuchen --}}
+    <x-ui-modal wire:model="showLocationPricingModal" size="lg" :hideFooter="true">
+        <x-slot name="header">Location-Preise einbuchen</x-slot>
+
+        @php
+            $lpItem = $locationPricingTargetItemId
+                ? \Platform\Events\Models\QuoteItem::with('eventDay')->find($locationPricingTargetItemId)
+                : null;
+            $lpLocations = $lpItem ? $this->locationsForItem($lpItem) : collect();
+            $lpLocation = $lpLocations->firstWhere('id', $locationPricingLocationId);
+            $lpDayType = $lpItem?->eventDay?->day_type;
+        @endphp
+
+        @if(!$lpItem || $lpLocations->isEmpty())
+            <div class="p-6 text-center text-[0.72rem] text-[var(--ui-muted)] italic">
+                Keine Locations am Tag dieses Vorgangs vorhanden.
+            </div>
+        @else
+            {{-- Location-Auswahl (wenn mehrere Bookings am Tag) --}}
+            @if($lpLocations->count() > 1)
+                <div class="mb-3">
+                    <label class="text-[0.62rem] font-semibold text-[var(--ui-muted)] block mb-1">Location</label>
+                    <div class="flex flex-wrap gap-1.5">
+                        @foreach($lpLocations as $loc)
+                            <button type="button"
+                                    wire:click="selectLocationForPricing({{ $loc->id }})"
+                                    class="px-2 py-1 rounded text-[0.65rem] font-semibold border
+                                           {{ $loc->id == $locationPricingLocationId ? 'border-[var(--ui-primary)] bg-[var(--ui-primary)]/10 text-[var(--ui-primary)]' : 'border-[var(--ui-border)] bg-white text-[var(--ui-secondary)] hover:bg-slate-50' }}">
+                                {{ $loc->name }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+            @else
+                <div class="mb-3 text-[0.62rem] text-[var(--ui-muted)]">
+                    Location: <span class="font-semibold text-[var(--ui-secondary)]">{{ $lpLocations->first()->name }}</span>
+                    @if($lpDayType)
+                        · Tag-Typ: <span class="font-semibold text-[var(--ui-secondary)]">{{ $lpDayType }}</span>
+                    @endif
+                </div>
+            @endif
+
+            @if(!empty($locationPricingWarnings))
+                <div class="mb-3 p-2 rounded border border-amber-300 bg-amber-50 text-[0.62rem] text-amber-800">
+                    @foreach($locationPricingWarnings as $w)
+                        <div class="flex items-start gap-1.5">
+                            @svg('heroicon-o-exclamation-triangle', 'w-3.5 h-3.5 flex-shrink-0 mt-0.5')
+                            <span>{{ $w }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            {{-- Pricings --}}
+            @if($lpLocation)
+                @php $pricings = $lpLocation->pricings; @endphp
+                <div class="space-y-2 mb-4">
+                    <h4 class="text-[0.65rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Mietpreise</h4>
+                    @if($pricings->isEmpty())
+                        <p class="text-[0.62rem] text-[var(--ui-muted)] italic">Keine Mietpreise an dieser Location gepflegt.</p>
+                    @else
+                        @foreach($pricings as $p)
+                            @php
+                                $isMatch = $lpDayType && $p->day_type_label === $lpDayType;
+                                $checked = in_array($p->id, $locationPricingPricingIds, true);
+                            @endphp
+                            <label class="flex items-center gap-2 p-2 rounded border cursor-pointer
+                                          {{ $checked ? 'border-[var(--ui-primary)] bg-[var(--ui-primary)]/5' : 'border-[var(--ui-border)] hover:bg-slate-50' }}">
+                                <input type="checkbox"
+                                       wire:click="toggleLocationPricing({{ $p->id }})"
+                                       @checked($checked)
+                                       class="w-3.5 h-3.5 accent-[var(--ui-primary)]">
+                                <div class="flex-1 min-w-0 flex items-center gap-2">
+                                    <span class="text-xs font-semibold text-[var(--ui-secondary)]">{{ $p->displayLabel() }}</span>
+                                    @if($isMatch)
+                                        <span class="text-[0.55rem] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">passt zu Tag-Typ</span>
+                                    @endif
+                                </div>
+                                <span class="text-xs font-mono font-semibold text-[var(--ui-secondary)]">
+                                    {{ number_format((float) $p->price_net, 2, ',', '.') }} €
+                                </span>
+                            </label>
+                        @endforeach
+                    @endif
+                </div>
+
+                {{-- Add-ons --}}
+                @php $addons = $lpLocation->activeAddons(); @endphp
+                <div class="space-y-2 pt-3 border-t border-[var(--ui-border)]">
+                    <h4 class="text-[0.65rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Add-ons</h4>
+                    @if($addons->isEmpty())
+                        <p class="text-[0.62rem] text-[var(--ui-muted)] italic">Keine aktiven Add-ons an dieser Location gepflegt.</p>
+                    @else
+                        @foreach($addons as $addon)
+                            <div class="grid grid-cols-[1fr_140px_120px] gap-2 items-center p-2 rounded border border-[var(--ui-border)] hover:bg-slate-50">
+                                <div class="min-w-0">
+                                    <div class="text-xs font-semibold text-[var(--ui-secondary)]">{{ $addon->label }}</div>
+                                    <div class="text-[0.6rem] text-[var(--ui-muted)]">
+                                        {{ number_format((float) $addon->price_net, 2, ',', '.') }} € · {{ $addon->unitLabel() }}
+                                    </div>
+                                </div>
+                                <input type="number" step="0.01" min="0" placeholder="Menge"
+                                       wire:model.live.debounce.300ms="locationPricingAddonQtys.{{ $addon->id }}"
+                                       class="w-full border border-[var(--ui-border)] rounded px-2 py-1 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                <span class="text-[0.6rem] text-[var(--ui-muted)] text-right">
+                                    @php
+                                        $qty = (float) ($locationPricingAddonQtys[$addon->id] ?? 0);
+                                        $sum = $qty * (float) $addon->price_net;
+                                    @endphp
+                                    @if($qty > 0)
+                                        = {{ number_format($sum, 2, ',', '.') }} €
+                                    @else
+                                        leer = nicht buchen
+                                    @endif
+                                </span>
+                            </div>
+                        @endforeach
+                    @endif
+                </div>
+            @endif
+
+            <div class="text-[0.6rem] text-[var(--ui-muted)] mt-3 italic">
+                Re-Apply ersetzt vorherige Location-Positionen dieser Location auf diesem Vorgang. Die alte Auswertung bleibt im Audit-Trail.
+            </div>
+        @endif
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-[var(--ui-border)] mt-3">
+            <x-ui-button type="button" variant="secondary-outline" size="sm" wire:click="closeLocationPricingPicker">Abbrechen</x-ui-button>
+            <x-ui-button type="button" variant="primary" size="sm" wire:click="applyLocationPricing"
+                         @disabled(empty($locationPricingPricingIds) && empty(array_filter($locationPricingAddonQtys ?? [], fn ($v) => $v !== null && $v !== '' && (float) $v > 0)))>
+                <span wire:loading.remove wire:target="applyLocationPricing">Einbuchen</span>
+                <span wire:loading wire:target="applyLocationPricing">Einbuchen …</span>
+            </x-ui-button>
+        </div>
+    </x-ui-modal>
 </div>

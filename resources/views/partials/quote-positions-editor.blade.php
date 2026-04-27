@@ -99,6 +99,17 @@
                     @endif
                 </button>
             @endif
+            @php
+                $itemLocations = $this->locationsForItem($activeItem);
+            @endphp
+            @if($itemLocations->isNotEmpty())
+                <button wire:click="openLocationPricingPicker({{ $activeItem->id }})" type="button"
+                        class="flex items-center gap-1 px-2 py-1 rounded border border-sky-300 bg-sky-50 hover:bg-sky-100 text-sky-700 text-[0.6rem] font-bold cursor-pointer"
+                        title="Location-Preise einbuchen">
+                    @svg('heroicon-o-map-pin', 'w-3 h-3')
+                    Location-Preise
+                </button>
+            @endif
             <button wire:click="convertQuoteItemToOrder({{ $activeItem->id }})"
                     wire:confirm="Vorgang „{{ $activeItem->typ }}" mit allen Positionen in Bestellung überführen?"
                     class="flex items-center gap-1 px-2 py-1 rounded border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 text-[0.6rem] font-bold cursor-pointer"

@@ -17,11 +17,13 @@ use Platform\Events\Services\ActivityLogger;
 use Platform\Events\Services\ArticlePackageApplicator;
 use Platform\Events\Services\ArticleSearchService;
 use Platform\Events\Services\FlatRateApplicator;
+use Platform\Events\Services\LocationPricingApplicator;
 use Platform\Events\Services\MultiSelectHelper;
 use Platform\Events\Services\PositionCalculator;
 use Platform\Events\Services\PositionValidator;
 use Platform\Events\Services\QuoteOrderConverter;
 use Platform\Events\Services\SettingsService;
+use Platform\Locations\Models\Location;
 
 class Quotes extends Component
 {
@@ -68,6 +70,17 @@ class Quotes extends Component
     // Pauschal-Regel-Picker
     public bool $showFlatRateModal = false;
     public ?int $flatRateTargetItemId = null;
+
+    // Location-Pricing-Picker
+    public bool $showLocationPricingModal = false;
+    public ?int $locationPricingTargetItemId = null;
+    public ?int $locationPricingLocationId = null;
+    /** @var array<int,int> Ausgewaehlte Pricing-IDs */
+    public array $locationPricingPricingIds = [];
+    /** @var array<int,float|string|null> addon_id => qty (null/leer => deaktiviert) */
+    public array $locationPricingAddonQtys = [];
+    /** @var array<int,string> */
+    public array $locationPricingWarnings = [];
 
     public function openPackagePicker(): void
     {
@@ -566,6 +579,165 @@ class Quotes extends Component
 
         $this->showFlatRateModal = false;
         $this->flatRateTargetItemId = null;
+    }
+
+    // ========== Location-Pricing einbuchen ==========
+
+    /**
+     * Liefert die verfuegbaren Locations fuer den EventDay des QuoteItems
+     * (alle Bookings mit gesetzter location_id).
+     *
+     * @return \Illuminate\Support\Collection<int, Location>
+     */
+    public function locationsForItem(QuoteItem $item): \Illuminate\Support\Collection
+    {
+        $eventDay = $item->eventDay;
+        if (!$eventDay) return collect();
+
+        $locationIds = $eventDay->bookings()
+            ->whereNotNull('location_id')
+            ->pluck('location_id')
+            ->unique()
+            ->values();
+
+        if ($locationIds->isEmpty()) return collect();
+
+        return Location::whereIn('id', $locationIds)
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function openLocationPricingPicker(int $itemId): void
+    {
+        $event = $this->event();
+        $item = QuoteItem::whereHas('eventDay', fn ($q) => $q->where('event_id', $event->id))->find($itemId);
+        if (!$item) {
+            session()->flash('positionError', 'Vorgang nicht gefunden.');
+            return;
+        }
+
+        $locations = $this->locationsForItem($item);
+        if ($locations->isEmpty()) {
+            session()->flash('positionError', 'Fuer diesen Tag ist keine Buchung mit Location vorhanden. Bitte zuerst eine Raum-Buchung anlegen.');
+            return;
+        }
+
+        $this->locationPricingTargetItemId = $itemId;
+        $this->locationPricingLocationId   = (int) $locations->first()->id;
+        $this->locationPricingPricingIds   = [];
+        $this->locationPricingAddonQtys    = [];
+        $this->locationPricingWarnings     = [];
+
+        $this->prefillLocationPricingSelection();
+        $this->showLocationPricingModal = true;
+    }
+
+    public function closeLocationPricingPicker(): void
+    {
+        $this->showLocationPricingModal = false;
+        $this->locationPricingTargetItemId = null;
+        $this->locationPricingLocationId = null;
+        $this->locationPricingPricingIds = [];
+        $this->locationPricingAddonQtys = [];
+        $this->locationPricingWarnings = [];
+    }
+
+    public function selectLocationForPricing(int $locationId): void
+    {
+        if (!$this->locationPricingTargetItemId) return;
+
+        $this->locationPricingLocationId = $locationId;
+        $this->locationPricingPricingIds = [];
+        $this->locationPricingAddonQtys  = [];
+        $this->prefillLocationPricingSelection();
+    }
+
+    public function toggleLocationPricing(int $pricingId): void
+    {
+        if (in_array($pricingId, $this->locationPricingPricingIds, true)) {
+            $this->locationPricingPricingIds = array_values(array_diff($this->locationPricingPricingIds, [$pricingId]));
+        } else {
+            $this->locationPricingPricingIds[] = $pricingId;
+        }
+    }
+
+    public function applyLocationPricing(): void
+    {
+        $event = $this->event();
+        $itemId = $this->locationPricingTargetItemId;
+        if (!$itemId) return;
+
+        $item = QuoteItem::whereHas('eventDay', fn ($q) => $q->where('event_id', $event->id))->find($itemId);
+        if (!$item) {
+            $this->closeLocationPricingPicker();
+            return;
+        }
+
+        $location = Location::where('team_id', $event->team_id)
+            ->find($this->locationPricingLocationId);
+        if (!$location) {
+            session()->flash('positionError', 'Location nicht gefunden oder gehoert nicht zum Team.');
+            return;
+        }
+
+        $addonSelections = [];
+        foreach ($this->locationPricingAddonQtys as $addonId => $qty) {
+            if ($qty === null || $qty === '' || (float) $qty <= 0) {
+                continue;
+            }
+            $addonSelections[] = [
+                'addon_id' => (int) $addonId,
+                'qty'      => (float) $qty,
+            ];
+        }
+
+        if (empty($this->locationPricingPricingIds) && empty($addonSelections)) {
+            session()->flash('positionError', 'Bitte mindestens ein Pricing oder Add-on auswaehlen.');
+            return;
+        }
+
+        try {
+            $result = LocationPricingApplicator::apply($item, $location, [
+                'pricing_ids'      => $this->locationPricingPricingIds,
+                'addon_selections' => $addonSelections,
+            ]);
+        } catch (\RuntimeException $e) {
+            session()->flash('positionError', $e->getMessage());
+            return;
+        }
+
+        $count = count($result['positions']);
+        ActivityLogger::log(
+            $event,
+            'quote',
+            'Location-Preise eingebucht: ' . $count . ' Position(en) von "' . $location->name . '" auf Vorgang "' . $item->typ . '"'
+        );
+
+        if (!empty($result['warnings'])) {
+            session()->flash('positionWarning', implode(' ', $result['warnings']));
+        }
+
+        $this->closeLocationPricingPicker();
+    }
+
+    /**
+     * Liefert die Vorauswahl + Warnings fuer die aktuell gewaehlte Location.
+     */
+    protected function prefillLocationPricingSelection(): void
+    {
+        $event = $this->event();
+        $itemId = $this->locationPricingTargetItemId;
+        $locId  = $this->locationPricingLocationId;
+
+        if (!$itemId || !$locId) return;
+
+        $item = QuoteItem::whereHas('eventDay', fn ($q) => $q->where('event_id', $event->id))->find($itemId);
+        $location = Location::where('team_id', $event->team_id)->find($locId);
+        if (!$item || !$location) return;
+
+        $suggestion = LocationPricingApplicator::suggestSelection($item, $location);
+        $this->locationPricingPricingIds = array_values($suggestion['suggested_pricing_ids']);
+        $this->locationPricingWarnings   = array_values($suggestion['warnings']);
     }
 
     public function pickArticle(int $articleId): void
