@@ -14,6 +14,7 @@
             'bestuhlung'    => ['label' => 'Bestuhlung',     'icon' => 'heroicon-o-table-cells'],
             'schedule_desc' => ['label' => 'Ablaufplan-Beschreibungen', 'icon' => 'heroicon-o-list-bullet'],
             'day_types'     => ['label' => 'Tages-Typen',    'icon' => 'heroicon-o-calendar'],
+            'beverage_modes'=> ['label' => 'Getränke-Modi',  'icon' => 'heroicon-o-beaker'],
             'order_number'  => ['label' => 'Ordernummer',    'icon' => 'heroicon-o-hashtag'],
             'flat_rates'    => ['label' => 'Pauschalen',     'icon' => 'heroicon-o-calculator'],
             'bausteine'     => ['label' => 'Text-Bausteine',    'icon' => 'heroicon-o-puzzle-piece'],
@@ -60,6 +61,7 @@
                 'bestuhlung'    => ['title' => 'Bestuhlungs-Arten','subtitle' => 'Wird im Raumbuchungs-Modal als Dropdown angezeigt.',                'list' => $bestuhlungOptions, 'new' => 'newBestuhlung',    'add' => 'addBestuhlung',    'remove' => 'removeBestuhlung',    'placeholder' => 'z.B. Bankett'],
                 'schedule_desc' => ['title' => 'Ablaufplan-Beschreibungen','subtitle' => 'Vorschlaege im Beschreibung-Feld des Ablaufplans. Freitext bleibt weiterhin moeglich.', 'list' => $scheduleDescriptions, 'new' => 'newScheduleDescription', 'add' => 'addScheduleDescription', 'remove' => 'removeScheduleDescription', 'placeholder' => 'z.B. Empfang'],
                 'day_types'     => ['title' => 'Tages-Typen',     'subtitle' => 'Auswahl im Tag-Modal (Veranstaltungstag, Aufbautag, Abbautag, Rüsttag, …).', 'list' => $dayTypes, 'new' => 'newDayType', 'add' => 'addDayType', 'remove' => 'removeDayType', 'placeholder' => 'z.B. Probentag'],
+                'beverage_modes'=> ['title' => 'Getränke-Modi',   'subtitle' => 'Auswahl am Vorgang/an Positionen für Getränke. „Auf Anfrage" (oder Varianten davon) blendet im Angebot den Preis aus.', 'list' => $beverageModes, 'new' => 'newBeverageMode', 'add' => 'addBeverageMode', 'remove' => 'removeBeverageMode', 'placeholder' => 'z.B. Open Bar'],
             ];
         @endphp
 

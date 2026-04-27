@@ -55,6 +55,7 @@ class Quotes extends Component
     public ?int $itemEventDayId = null;
     public string $itemTyp = 'Speisen';
     public string $itemStatus = 'Entwurf';
+    public string $itemBeverageMode = '';
 
     // Approval-Modal
     public bool $showApprovalModal = false;
@@ -358,6 +359,7 @@ class Quotes extends Component
         $this->itemEventDayId = $eventDayId;
         $this->itemTyp = 'Speisen';
         $this->itemStatus = 'Entwurf';
+        $this->itemBeverageMode = '';
         $this->showItemModal = true;
     }
 
@@ -374,15 +376,45 @@ class Quotes extends Component
         $maxSort = (int) QuoteItem::where('event_day_id', $this->itemEventDayId)->max('sort_order');
 
         QuoteItem::create([
-            'team_id'      => $event->team_id,
-            'user_id'      => Auth::id(),
-            'event_day_id' => $this->itemEventDayId,
-            'typ'          => $this->itemTyp,
-            'status'       => $this->itemStatus,
-            'sort_order'   => $maxSort + 1,
+            'team_id'       => $event->team_id,
+            'user_id'       => Auth::id(),
+            'event_day_id'  => $this->itemEventDayId,
+            'typ'           => $this->itemTyp,
+            'status'        => $this->itemStatus,
+            'beverage_mode' => $this->itemBeverageMode !== '' ? $this->itemBeverageMode : null,
+            'sort_order'    => $maxSort + 1,
         ]);
 
         $this->showItemModal = false;
+    }
+
+    /**
+     * Setzt den Getraenke-Modus am Vorgang. Leerer String/'__none__' = kein Modus.
+     */
+    public function setItemBeverageMode(int $itemId, string $mode): void
+    {
+        $event = $this->event();
+        $item = QuoteItem::whereHas('eventDay', fn ($q) => $q->where('event_id', $event->id))->find($itemId);
+        if (!$item) return;
+
+        $value = ($mode === '' || $mode === '__none__') ? null : $mode;
+        $item->update(['beverage_mode' => $value]);
+        ActivityLogger::log($event, 'quote', 'Getraenke-Modus am Vorgang "' . $item->typ . '" → ' . ($value ?? 'kein Modus'));
+    }
+
+    /**
+     * Setzt einen Position-Override fuer den Getraenke-Modus.
+     * '__inherit__' / leerer String → null (erbt vom Vorgang),
+     * sonst expliziter Override.
+     */
+    public function setPositionBeverageMode(int $positionId, string $mode): void
+    {
+        $event = $this->event();
+        $pos = QuotePosition::whereHas('quoteItem.eventDay', fn ($q) => $q->where('event_id', $event->id))->find($positionId);
+        if (!$pos) return;
+
+        $value = ($mode === '' || $mode === '__inherit__') ? null : $mode;
+        $pos->update(['beverage_mode' => $value]);
     }
 
     public function deleteItem(int $itemId): void
@@ -1036,6 +1068,7 @@ class Quotes extends Component
         }
 
         $bausteine = SettingsService::bausteine($event->team_id);
+        $beverageModes = SettingsService::beverageModes($event->team_id);
 
         // Artikel-Vorlagen (Packages) fuer den "Vorlage einfuegen"-Modal
         $packagesQuery = ArticlePackage::where('team_id', $event->team_id)
@@ -1126,6 +1159,7 @@ class Quotes extends Component
             'allPositions'   => $allPositions,
             'positions'      => $positions,
             'bausteine'      => $bausteine,
+            'beverageModes'  => $beverageModes,
             'articleMatches' => $articleMatches,
             'articlePackages'=> $articlePackages,
             'selectedPackagePreview' => $selectedPackagePreview,

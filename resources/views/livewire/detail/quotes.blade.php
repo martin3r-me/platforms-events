@@ -34,11 +34,23 @@
                     </p>
                 </div>
             </div>
-            <button wire:click="closePositions"
-                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-[0.68rem] font-semibold">
-                @svg('heroicon-o-arrow-left', 'w-3.5 h-3.5')
-                Zurück
-            </button>
+            <div class="flex items-center gap-2 flex-wrap">
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[0.6rem] uppercase tracking-wide text-[var(--ui-muted)] font-semibold">Getränke-Modus</span>
+                    <select wire:change="setItemBeverageMode({{ $activeItem->id }}, $event.target.value)"
+                            class="text-[0.65rem] border border-slate-200 rounded px-1.5 py-1 bg-white">
+                        <option value="__none__" @selected(empty($activeItem->beverage_mode))>— kein Modus —</option>
+                        @foreach(($beverageModes ?? []) as $mode)
+                            <option value="{{ $mode }}" @selected($activeItem->beverage_mode === $mode)>{{ $mode }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <button wire:click="closePositions"
+                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-[0.68rem] font-semibold">
+                    @svg('heroicon-o-arrow-left', 'w-3.5 h-3.5')
+                    Zurück
+                </button>
+            </div>
         </div>
 
         @include('events::partials.quote-positions-editor')
@@ -511,6 +523,15 @@
                     <input wire:model="itemStatus" type="text"
                            class="w-full border border-slate-200 rounded-md px-3 py-2 text-xs">
                 </div>
+            </div>
+            <div>
+                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Getränke-Modus <span class="text-[var(--ui-muted)] font-normal">(optional, gilt für alle Positionen ohne Override)</span></label>
+                <select wire:model="itemBeverageMode" class="w-full border border-slate-200 rounded-md px-3 py-2 text-xs bg-white">
+                    <option value="">— kein Modus —</option>
+                    @foreach(($beverageModes ?? []) as $mode)
+                        <option value="{{ $mode }}">{{ $mode }}</option>
+                    @endforeach
+                </select>
             </div>
             <p class="text-[0.62rem] text-[var(--ui-muted)] italic">
                 Preis-Modus (Netto/Brutto) gilt angebotsweit und lässt sich im Positions-Editor umschalten.

@@ -169,6 +169,7 @@
                     <th class="text-right py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Preis</th>
                     <th class="text-center py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">MwSt.</th>
                     <th class="text-right py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Gesamt €</th>
+                    <th class="text-left py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider" title="Getränke-Modus (Override pro Position)">Modus</th>
                     <th class="text-left py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Bemerkung</th>
                     <th class="w-8"></th>
                 </tr>
@@ -254,6 +255,17 @@
                                    x-data @blur="if (parseFloat($el.value) !== parseFloat(@js((string)$p->gesamt))) $wire.updatePositionField({{ $p->id }}, 'gesamt', $el.value)"
                                    class="{{ $inp }} font-mono text-right font-bold text-green-700">
                         </td>
+                        <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
+                            @php $hasOverride = !empty($p->beverage_mode); @endphp
+                            <select wire:change="setPositionBeverageMode({{ $p->id }}, $event.target.value)"
+                                    title="{{ $hasOverride ? 'Position-Override: ' . $p->beverage_mode : 'Erbt vom Vorgang' . ($activeItem->beverage_mode ? ' (' . $activeItem->beverage_mode . ')' : '') }}"
+                                    class="{{ $inp }} text-[0.6rem] {{ $hasOverride ? 'text-amber-700 font-semibold' : 'text-slate-400' }}">
+                                <option value="__inherit__" @selected(!$hasOverride)>⤴ Vorgang</option>
+                                @foreach(($beverageModes ?? []) as $mode)
+                                    <option value="{{ $mode }}" @selected($p->beverage_mode === $mode)>{{ $mode }}</option>
+                                @endforeach
+                            </select>
+                        </td>
                         <td class="py-1 px-1">
                             <input type="text" value="{{ $p->bemerkung }}"
                                    x-data @blur="if ($el.value !== @js((string)$p->bemerkung)) $wire.updatePositionField({{ $p->id }}, 'bemerkung', $el.value)"
@@ -268,7 +280,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="14" class="py-6 text-center text-[0.7rem] text-[var(--ui-muted)]">
+                        <td colspan="15" class="py-6 text-center text-[0.7rem] text-[var(--ui-muted)]">
                             Noch keine Positionen. Fülle die Eingabefelder unten aus oder nutze „Headline" / „Speisentexte" / „Trenntext" als Gruppe für Text-Zeilen.
                         </td>
                     </tr>
@@ -281,7 +293,7 @@
                             Positionen <span class="text-[var(--ui-secondary)] font-mono ml-1">{{ $totalArticles }}</span> · Netto
                         </td>
                         <td class="py-2 px-1.5 text-right font-mono font-semibold text-slate-600 text-[0.7rem]">{{ $fmt($totalNet) }} €</td>
-                        <td colspan="2"></td>
+                        <td colspan="3"></td>
                     </tr>
                     @foreach($mwstBreakdown as $row)
                         <tr class="bg-slate-50">
@@ -289,7 +301,7 @@
                                 MwSt {{ $row['rate'] }} <span class="text-[var(--ui-muted)]">(von Netto {{ $fmt($row['net']) }} €)</span>
                             </td>
                             <td class="py-1 px-1.5 text-right font-mono text-slate-600 text-[0.65rem]">{{ $fmt($row['tax']) }} €</td>
-                            <td colspan="2"></td>
+                            <td colspan="3"></td>
                         </tr>
                     @endforeach
                     <tr class="bg-slate-100 border-t border-slate-200">
@@ -297,14 +309,14 @@
                             Gesamt (brutto)
                         </td>
                         <td class="py-2 px-1.5 text-right font-mono font-bold text-green-700 text-[0.75rem]">{{ $fmt($totalGross) }} €</td>
-                        <td colspan="2"></td>
+                        <td colspan="3"></td>
                     </tr>
                 </tfoot>
             @endif
             {{-- Add-Row: Spalten richten sich automatisch nach der Tabelle aus --}}
             <tbody class="bg-slate-50 border-t-2 border-slate-300">
                 <tr>
-                    <td colspan="14" class="px-2.5 pt-2 pb-1">
+                    <td colspan="15" class="px-2.5 pt-2 pb-1">
                         <div class="flex items-center gap-2 flex-wrap">
                             <div class="w-[3px] h-3 bg-blue-600 rounded-sm"></div>
                             <span class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Neue Position</span>
@@ -462,6 +474,11 @@
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
+                        {{-- Modus-Spalte: neue Positionen erben standardmaessig vom Vorgang.
+                             Override kann nach dem Anlegen pro Position gesetzt werden. --}}
+                        <span class="block text-[0.55rem] text-slate-400 italic text-center py-1">⤴</span>
+                    </td>
+                    <td class="px-1.5 py-1.5 align-top">
                         <input wire:model="newPosition.bemerkung" type="text" placeholder="Bemerkung"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] bg-white">
                     </td>
@@ -474,7 +491,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <td colspan="14" class="px-2.5 pt-0.5 pb-2">
+                    <td colspan="15" class="px-2.5 pt-0.5 pb-2">
                         <p class="text-[0.52rem] text-slate-400 m-0">
                             Enter im Bezeichnungs-Feld oder „+" zum Hinzufügen · Gesamt leer → Anz × Preis wird berechnet.
                         </p>

@@ -55,7 +55,20 @@
                 @if($dayItems->isNotEmpty())
                     <h2>{{ $day->label }} · {{ $day->datum?->format('d.m.Y') }}</h2>
                     @foreach($dayItems as $item)
-                        <p style="font-weight: 600; margin: 12px 0 4px 0;">{{ $item->typ }}</p>
+                        @php
+                            $itemMode = $item->beverage_mode ?: null;
+                            $effectiveModes = $item->posList->map(fn ($p) => !empty($p->beverage_mode) ? $p->beverage_mode : $itemMode)->filter()->unique()->values();
+                            $allSameMode = $effectiveModes->count() === 1 && $itemMode !== null
+                                && $item->posList->every(fn ($p) => empty($p->beverage_mode));
+                            $showModeColumn = $effectiveModes->count() > 1
+                                || ($effectiveModes->count() === 1 && !$allSameMode);
+                        @endphp
+                        <p style="font-weight: 600; margin: 12px 0 4px 0;">
+                            {{ $item->typ }}
+                            @if($itemMode && $allSameMode)
+                                <span style="font-weight: 400; font-size: 0.78rem; color: #64748b;">· Modus: {{ $itemMode }}</span>
+                            @endif
+                        </p>
                         @if($item->posList->isNotEmpty())
                             <table>
                                 <thead>
@@ -63,6 +76,9 @@
                                         <th>Bezeichnung</th>
                                         <th class="num">Anz</th>
                                         <th>Gebinde</th>
+                                        @if($showModeColumn)
+                                            <th>Modus</th>
+                                        @endif
                                         <th class="num">Einzel</th>
                                         <th class="num">Gesamt</th>
                                     </tr>
@@ -70,17 +86,28 @@
                                 <tbody>
                                     @foreach($item->posList as $pos)
                                         @php
+                                            $posMode = !empty($pos->beverage_mode) ? $pos->beverage_mode : $itemMode;
+                                            $onRequest = \Platform\Events\Services\SettingsService::isOnRequestBeverageMode($posMode);
                                             $g = (float) $pos->gesamt;
                                             $rate = (int) $pos->mwst;
-                                            if ($rate === 7) { $totalMwst7 += $g; } else { $totalMwst19 += $g; }
-                                            $totalNetto += $g;
+                                            if (!$onRequest) {
+                                                if ($rate === 7) { $totalMwst7 += $g; } else { $totalMwst19 += $g; }
+                                                $totalNetto += $g;
+                                            }
                                         @endphp
                                         <tr>
                                             <td>{{ $pos->name }}</td>
                                             <td class="num">{{ $pos->anz }}</td>
                                             <td>{{ $pos->gebinde }}</td>
-                                            <td class="num">{{ number_format((float) $pos->preis, 2, ',', '.') }} €</td>
-                                            <td class="num">{{ number_format($g, 2, ',', '.') }} €</td>
+                                            @if($showModeColumn)
+                                                <td style="font-size: 0.72rem; color: #64748b;">{{ $posMode ?? '' }}</td>
+                                            @endif
+                                            @if($onRequest)
+                                                <td class="num" colspan="2" style="color: #64748b; font-style: italic;">auf Anfrage</td>
+                                            @else
+                                                <td class="num">{{ number_format((float) $pos->preis, 2, ',', '.') }} €</td>
+                                                <td class="num">{{ number_format($g, 2, ',', '.') }} €</td>
+                                            @endif
                                         </tr>
                                     @endforeach
                                 </tbody>

@@ -38,6 +38,7 @@ class Settings extends Component
     public array $bestuhlungOptions = [];
     public array $scheduleDescriptions = [];
     public array $dayTypes        = [];
+    public array $beverageModes   = [];
     public array $bausteine       = [];
     public string $orderNumberSchema = '';
     public bool $attachFloorPlansDefault = false;
@@ -50,6 +51,7 @@ class Settings extends Component
     public string $newBestuhlung  = '';
     public string $newScheduleDescription = '';
     public string $newDayType     = '';
+    public string $newBeverageMode = '';
     public array $newBaustein     = ['name' => '', 'bg' => '#f8fafc', 'text' => '#64748b'];
 
     // ========== Management-Report-Felder ==========
@@ -115,6 +117,7 @@ class Settings extends Component
         $this->bestuhlungOptions     = SettingsService::bestuhlungOptions($teamId);
         $this->scheduleDescriptions  = SettingsService::scheduleDescriptions($teamId);
         $this->dayTypes              = SettingsService::dayTypes($teamId);
+        $this->beverageModes         = SettingsService::beverageModes($teamId);
         $this->bausteine             = SettingsService::bausteine($teamId);
         $this->orderNumberSchema     = SettingsService::orderNumberSchema($teamId);
         $this->attachFloorPlansDefault = SettingsService::attachFloorPlansDefault($teamId);
@@ -141,6 +144,8 @@ class Settings extends Component
     public function removeScheduleDescription(int $i): void { $this->removeAt('scheduleDescriptions', $i); SettingsService::setScheduleDescriptions($this->teamId(), $this->scheduleDescriptions); }
     public function addDayType(): void          { $this->pushSimple('dayTypes', 'newDayType'); SettingsService::setDayTypes($this->teamId(), $this->dayTypes); }
     public function removeDayType(int $i): void { $this->removeAt('dayTypes', $i); SettingsService::setDayTypes($this->teamId(), $this->dayTypes); }
+    public function addBeverageMode(): void          { $this->pushSimple('beverageModes', 'newBeverageMode'); SettingsService::setBeverageModes($this->teamId(), $this->beverageModes); }
+    public function removeBeverageMode(int $i): void { $this->removeAt('beverageModes', $i); SettingsService::setBeverageModes($this->teamId(), $this->beverageModes); }
 
     public function saveOrderNumberSchema(): void
     {

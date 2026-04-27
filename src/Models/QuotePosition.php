@@ -22,6 +22,7 @@ class QuotePosition extends Model
         'uhrzeit', 'bis', 'inhalt', 'gebinde',
         'basis_ek', 'ek', 'preis', 'mwst', 'gesamt',
         'bemerkung', 'sort_order', 'procurement_type',
+        'beverage_mode',
     ];
 
     protected $casts = [
@@ -47,5 +48,29 @@ class QuotePosition extends Model
     public function quoteItem(): BelongsTo
     {
         return $this->belongsTo(QuoteItem::class);
+    }
+
+    /**
+     * Effektiver Getraenke-Modus: Position-Override wenn gesetzt, sonst
+     * Vorgang-Default vom QuoteItem, sonst null (kein Modus).
+     */
+    public function effectiveBeverageMode(): ?string
+    {
+        if (!empty($this->beverage_mode)) {
+            return $this->beverage_mode;
+        }
+        // Bevorzugt geladene Relation, sonst lazy load
+        $item = $this->relationLoaded('quoteItem') ? $this->quoteItem : $this->quoteItem()->first();
+        $mode = $item?->beverage_mode;
+        return !empty($mode) ? $mode : null;
+    }
+
+    /**
+     * True, wenn die Position einen Position-eigenen Override gesetzt hat
+     * (also nicht nur den Vorgang-Default erbt).
+     */
+    public function hasBeverageModeOverride(): bool
+    {
+        return !empty($this->beverage_mode);
     }
 }
