@@ -5,6 +5,7 @@ namespace Platform\Events\Services;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Platform\Events\Models\Article;
 use Platform\Events\Models\LocationPricingApplication;
 use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\QuotePosition;
@@ -106,24 +107,52 @@ class LocationPricingApplicator
             $createdPositions = [];
             $createdRefs = [];
 
-            // 2) Pricings einbuchen
+            // 2) Pricings einbuchen — wenn article_number gesetzt, Stammdaten
+            //    aus dem Events-Artikelstamm uebernehmen (Gruppe, Name, MwSt,
+            //    EK, Procurement-Type, Inhalt, Gebinde). Preis bleibt aus
+            //    dem Pricing-Eintrag.
             foreach ($pricings as $pricing) {
                 /** @var LocationPricing $pricing */
                 $price = (float) $pricing->price_net;
-                $name  = $pricing->displayLabel();
+
+                $articleData = self::resolveArticle($pricing->article_number, $teamId, $warnings);
+
+                if ($articleData !== null) {
+                    $gruppe          = $articleData['gruppe'] !== '' ? $articleData['gruppe'] : self::DEFAULT_PRICING_GRUPPE;
+                    // Pricing-Label hat Vorrang vor Article-Name, wenn explizit gesetzt
+                    $name            = ($pricing->label !== null && $pricing->label !== '') ? (string) $pricing->label : $articleData['name'];
+                    $mwst            = $articleData['mwst'] !== '' ? $articleData['mwst'] : self::DEFAULT_MWST;
+                    $ek              = $articleData['ek'];
+                    $procurementType = $articleData['procurement_type'];
+                    $inhalt          = $articleData['inhalt'];
+                    $gebinde         = $articleData['gebinde'];
+                } else {
+                    $gruppe          = self::DEFAULT_PRICING_GRUPPE;
+                    $name            = $pricing->displayLabel();
+                    $mwst            = self::DEFAULT_MWST;
+                    $ek              = 0.0;
+                    $procurementType = null;
+                    $inhalt          = '';
+                    $gebinde         = '';
+                }
 
                 $maxSort++;
                 $pos = QuotePosition::create([
-                    'team_id'       => $teamId,
-                    'user_id'       => Auth::id(),
-                    'quote_item_id' => $target->id,
-                    'gruppe'        => self::DEFAULT_PRICING_GRUPPE,
-                    'name'          => $name,
-                    'anz'           => '1',
-                    'preis'         => $price,
-                    'mwst'          => self::DEFAULT_MWST,
-                    'gesamt'        => $price,
-                    'sort_order'    => $maxSort,
+                    'team_id'          => $teamId,
+                    'user_id'          => Auth::id(),
+                    'quote_item_id'    => $target->id,
+                    'gruppe'           => $gruppe,
+                    'name'             => $name,
+                    'anz'              => '1',
+                    'inhalt'           => $inhalt,
+                    'gebinde'          => $gebinde,
+                    'basis_ek'         => $ek,
+                    'ek'               => $ek,
+                    'preis'            => $price,
+                    'mwst'             => $mwst,
+                    'gesamt'           => $price,
+                    'procurement_type' => $procurementType,
+                    'sort_order'       => $maxSort,
                 ]);
 
                 $createdPositions[] = $pos;
@@ -132,6 +161,8 @@ class LocationPricingApplicator
                     'source'            => 'pricing',
                     'ref_id'            => $pricing->id,
                     'ref_uuid'          => $pricing->uuid,
+                    'article_number'    => $pricing->article_number,
+                    'article_resolved'  => $articleData !== null,
                 ];
             }
 
@@ -337,6 +368,42 @@ class LocationPricingApplicator
             return (string) (int) round($qty);
         }
         return rtrim(rtrim(number_format($qty, 2, '.', ''), '0'), '.');
+    }
+
+    /**
+     * Loest eine optionale Artikelnummer (am LocationPricing) im Events-
+     * Artikelstamm des aktuellen Teams auf. Liefert ein Array mit den
+     * fuer die QuotePosition relevanten Stammdaten oder null, wenn kein
+     * Artikel verknuepft ist bzw. nicht gefunden wurde.
+     *
+     * @return array{name:string, gruppe:string, mwst:string, ek:float, procurement_type:?string, inhalt:string, gebinde:string}|null
+     */
+    protected static function resolveArticle(?string $articleNumber, int $teamId, array &$warnings): ?array
+    {
+        if ($articleNumber === null || trim($articleNumber) === '') {
+            return null;
+        }
+
+        $article = Article::where('team_id', $teamId)
+            ->where('article_number', $articleNumber)
+            ->where('is_active', true)
+            ->with('group:id,name')
+            ->first();
+
+        if (!$article) {
+            $warnings[] = "Artikelnummer '{$articleNumber}' nicht im Events-Stamm gefunden — Default-Gruppe/MwSt verwendet.";
+            return null;
+        }
+
+        return [
+            'name'             => (string) $article->name,
+            'gruppe'           => (string) ($article->group?->name ?? ''),
+            'mwst'             => (string) $article->mwst,
+            'ek'               => (float) $article->ek,
+            'procurement_type' => $article->procurement_type,
+            'inhalt'           => (string) ($article->offer_text ?: ($article->description ?: '')),
+            'gebinde'          => (string) ($article->gebinde ?? ''),
+        ];
     }
 
     /**
