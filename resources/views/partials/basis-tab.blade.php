@@ -321,7 +321,7 @@
         </x-ui-panel>
     </div>
 
-    {{-- ========== Col 3: Anlass / Lieferung an / Wiedervorlage / Liefertext ========== --}}
+    {{-- ========== Col 3: Anlass / Lieferung an / Follow-Up / Liefertext ========== --}}
     <div class="space-y-3">
 
         <x-ui-panel>
@@ -388,19 +388,60 @@
             </div>
         </x-ui-panel>
 
+        @php
+            // Status-Berechnung fuer das Follow-Up-Panel.
+            $followDate = $event->follow_up_date;
+            $followStatus = ['label' => null, 'bg' => '#f1f5f9', 'fg' => '#64748b'];
+            if ($followDate) {
+                $today = \Carbon\Carbon::today();
+                $diff = (int) $today->diffInDays($followDate, false); // negativ = Vergangenheit
+                if ($diff < 0)        { $followStatus = ['label' => abs($diff) . ' Tage überfällig', 'bg' => '#fee2e2', 'fg' => '#b91c1c']; }
+                elseif ($diff === 0)  { $followStatus = ['label' => 'heute',                          'bg' => '#fef3c7', 'fg' => '#b45309']; }
+                elseif ($diff <= 3)   { $followStatus = ['label' => 'in ' . $diff . ' Tagen',         'bg' => '#fef9c3', 'fg' => '#a16207']; }
+                elseif ($diff <= 14)  { $followStatus = ['label' => 'in ' . $diff . ' Tagen',         'bg' => '#dbeafe', 'fg' => '#1d4ed8']; }
+                else                  { $followStatus = ['label' => 'in ' . $diff . ' Tagen',         'bg' => '#dcfce7', 'fg' => '#15803d']; }
+            }
+        @endphp
         <x-ui-panel>
-            <div class="flex items-center gap-2 p-2 border-b border-[var(--ui-border)]">
-                <span class="w-0.5 h-3.5 rounded-full bg-cyan-500"></span>
-                <span class="text-[0.72rem] font-bold text-[var(--ui-secondary)]">Wiedervorlage</span>
+            <div class="flex items-center justify-between gap-2 p-2 border-b border-[var(--ui-border)]">
+                <div class="flex items-center gap-2">
+                    <span class="w-0.5 h-3.5 rounded-full bg-cyan-500"></span>
+                    <span class="text-[0.72rem] font-bold text-[var(--ui-secondary)]">Follow-Up</span>
+                </div>
+                @if($followStatus['label'])
+                    <span class="text-[0.55rem] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
+                          style="background: {{ $followStatus['bg'] }}; color: {{ $followStatus['fg'] }};">
+                        {{ $followStatus['label'] }}
+                    </span>
+                @endif
             </div>
-            <div class="p-2 space-y-1.5">
+            <div class="p-2 space-y-2">
                 <div>
                     <label class="{{ $lbl }}">Datum</label>
-                    <input wire:model.live="event.follow_up_date" type="date" class="{{ $inMn }}">
+                    <div class="flex items-center gap-1.5">
+                        <input wire:model.live="event.follow_up_date" type="date" class="{{ $inMn }} flex-1">
+                        @if($event->follow_up_date)
+                            <button type="button" wire:click="$set('event.follow_up_date', null)"
+                                    title="Termin entfernen"
+                                    class="px-1.5 py-1 text-slate-400 hover:text-red-600 transition">
+                                @svg('heroicon-o-x-mark', 'w-3.5 h-3.5')
+                            </button>
+                        @endif
+                    </div>
+                    <div class="flex items-center gap-1 mt-1 flex-wrap">
+                        <button type="button" wire:click="$set('event.follow_up_date', '{{ now()->toDateString() }}')"
+                                class="text-[0.58rem] px-2 py-0.5 rounded border border-[var(--ui-border)] bg-white hover:bg-slate-50 text-slate-600">heute</button>
+                        <button type="button" wire:click="$set('event.follow_up_date', '{{ now()->addDays(7)->toDateString() }}')"
+                                class="text-[0.58rem] px-2 py-0.5 rounded border border-[var(--ui-border)] bg-white hover:bg-slate-50 text-slate-600">+1 Woche</button>
+                        <button type="button" wire:click="$set('event.follow_up_date', '{{ now()->addDays(14)->toDateString() }}')"
+                                class="text-[0.58rem] px-2 py-0.5 rounded border border-[var(--ui-border)] bg-white hover:bg-slate-50 text-slate-600">+2 Wochen</button>
+                        <button type="button" wire:click="$set('event.follow_up_date', '{{ now()->addMonth()->toDateString() }}')"
+                                class="text-[0.58rem] px-2 py-0.5 rounded border border-[var(--ui-border)] bg-white hover:bg-slate-50 text-slate-600">+1 Monat</button>
+                    </div>
                 </div>
                 <div>
                     <label class="{{ $lbl }}">Bemerkung</label>
-                    <textarea wire:model.blur="event.follow_up_note" rows="2" class="{{ $in }}"></textarea>
+                    <textarea wire:model.blur="event.follow_up_note" rows="4" placeholder="Was ist offen? Wer macht was?" class="{{ $in }}"></textarea>
                 </div>
             </div>
         </x-ui-panel>

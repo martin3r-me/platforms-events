@@ -43,7 +43,7 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
             . '[Besteller] orderer_company, orderer_contact, orderer_via, orderer_crm_company_id, orderer_crm_contact_id; '
             . '[Rechnung] invoice_to, invoice_contact, invoice_date_type (Default: erster Tag), invoice_crm_company_id, invoice_crm_contact_id; '
             . '[Zustaendigkeit] responsible, responsible_onsite, cost_center, cost_carrier, quote_price_mode (netto|brutto), sign_left, sign_right; '
-            . '[Wiedervorlage] follow_up_date, follow_up_note; '
+            . '[Follow-Up] follow_up_date, follow_up_note; '
             . '[Lieferung] delivery_address (Freitext), delivery_address_crm_company_id (CRM-Firma), delivery_location_id (eigene Location), delivery_note – '
             . 'genau eine der drei Quellen befuellen, abhaengig vom Lieferadress-Typ; '
             . '[Eingang] inquiry_date, inquiry_time, potential; '
@@ -105,9 +105,9 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 // [Management Report]
                 'mr_data' => ['type' => 'object', 'description' => '[Management Report] Werte als Key/Value-Map.'],
 
-                // [Wiedervorlage]
-                'follow_up_date' => ['type' => 'string', 'description' => '[Wiedervorlage] YYYY-MM-DD.'],
-                'follow_up_note' => ['type' => 'string', 'description' => '[Wiedervorlage] Bemerkung.'],
+                // [Follow-Up]
+                'follow_up_date' => ['type' => 'string', 'description' => '[Follow-Up] YYYY-MM-DD.'],
+                'follow_up_note' => ['type' => 'string', 'description' => '[Follow-Up] Bemerkung.'],
 
                 // [Lieferung] – exakt EINE der drei Quellen befuellen
                 'delivery_address'                => ['type' => 'string',  'description' => '[Lieferung] Freitext-Adresse, wenn weder CRM-Firma noch eigene Location passt.'],
