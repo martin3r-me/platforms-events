@@ -7,11 +7,13 @@ use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\ScheduleItem;
+use Platform\Events\Tools\Concerns\NormalizesTimeFields;
 use Platform\Events\Tools\Concerns\ResolvesEvent;
 
 class CreateScheduleItemTool implements ToolContract, ToolMetadataContract
 {
     use ResolvesEvent;
+    use NormalizesTimeFields;
 
     public function getName(): string
     {
@@ -58,6 +60,16 @@ class CreateScheduleItemTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('VALIDATION_ERROR', 'beschreibung ist erforderlich.');
             }
 
+            // Aliases zwischen Tag/Buchung/Englisch normalisieren.
+            $aliasesApplied = $this->normalizeTimeFields($arguments, ['start' => 'von', 'end' => 'bis']);
+
+            $known = [
+                'event_id', 'event_uuid', 'event_number',
+                'beschreibung', 'datum', 'von', 'bis', 'raum', 'bemerkung', 'linked',
+                'beginn', 'ende', 'start_time', 'end_time', 'start', 'end',
+            ];
+            $ignored = array_values(array_diff(array_keys($arguments), $known));
+
             $maxSort = (int) ScheduleItem::where('event_id', $event->id)->max('sort_order');
 
             $item = ScheduleItem::create([
@@ -75,12 +87,20 @@ class CreateScheduleItemTool implements ToolContract, ToolMetadataContract
             ]);
 
             return ToolResult::success([
-                'id'           => $item->id,
-                'uuid'         => $item->uuid,
-                'event_id'     => $event->id,
-                'beschreibung' => $item->beschreibung,
-                'sort_order'   => $item->sort_order,
-                'message'      => "Ablauf-Eintrag zu Event #{$event->event_number} hinzugefügt.",
+                'id'             => $item->id,
+                'uuid'           => $item->uuid,
+                'event_id'       => $event->id,
+                'datum'          => $item->datum,
+                'von'            => $item->von,
+                'bis'            => $item->bis,
+                'beschreibung'   => $item->beschreibung,
+                'raum'           => $item->raum,
+                'bemerkung'      => $item->bemerkung,
+                'linked'         => (bool) $item->linked,
+                'sort_order'     => $item->sort_order,
+                'aliases_applied'=> $aliasesApplied,
+                'ignored_fields' => $ignored,
+                'message'        => "Ablauf-Eintrag zu Event #{$event->event_number} hinzugefügt.",
             ]);
         } catch (\Throwable $e) {
             return ToolResult::error('EXECUTION_ERROR', 'Fehler beim Anlegen: ' . $e->getMessage());

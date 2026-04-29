@@ -152,6 +152,18 @@ class GetEventTool implements ToolContract, ToolMetadataContract
             // Hydratisierte Refs ({id, name, ...} statt nur ID).
             $payload = array_merge($payload, $this->hydrateEventReferences($event));
 
+            // Abgeleitete primary_location: erste Buchung mit location_id (sortiert).
+            $primaryBooking = $event->bookings()->whereNotNull('location_id')
+                ->with('location')
+                ->orderBy('sort_order')->orderBy('datum')
+                ->first();
+            $payload['primary_location'] = $primaryBooking?->location ? [
+                'id'      => $primaryBooking->location->id,
+                'name'    => $primaryBooking->location->name,
+                'kuerzel' => $primaryBooking->location->kuerzel,
+                'gruppe'  => $primaryBooking->location->gruppe,
+            ] : null;
+
             if (!empty($arguments['include_days'])) {
                 $payload['days'] = $event->days()->orderBy('sort_order')->get()
                     ->map(fn($d) => [
@@ -176,7 +188,9 @@ class GetEventTool implements ToolContract, ToolMetadataContract
                         ] : null,
                         'raum' => $b->raum,
                         'datum' => $b->datum, 'beginn' => $b->beginn, 'ende' => $b->ende,
-                        'pers' => $b->pers, 'bestuhlung' => $b->bestuhlung,
+                        'pers' => $b->pers,
+                        'pers_numeric' => is_numeric($b->pers) ? (int) $b->pers : null,
+                        'bestuhlung' => $b->bestuhlung,
                         'optionsrang' => $b->optionsrang, 'absprache' => $b->absprache,
                         'sort_order' => $b->sort_order,
                     ])->all();

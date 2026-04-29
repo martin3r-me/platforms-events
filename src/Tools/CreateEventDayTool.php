@@ -9,12 +9,14 @@ use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\EventDay;
 use Platform\Events\Tools\Concerns\CollectsValidationErrors;
+use Platform\Events\Tools\Concerns\NormalizesTimeFields;
 use Platform\Events\Tools\Concerns\ResolvesEvent;
 
 class CreateEventDayTool implements ToolContract, ToolMetadataContract
 {
     use ResolvesEvent;
     use CollectsValidationErrors;
+    use NormalizesTimeFields;
 
     public function getName(): string
     {
@@ -60,6 +62,23 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
                 return $event;
             }
 
+            // Aliases zwischen Tag/Buchung/Englisch normalisieren.
+            $aliasesApplied = $this->normalizeTimeFields($arguments, ['start' => 'von', 'end' => 'bis']);
+            // Pax-Single-Wert auf pers_von/pers_bis spiegeln.
+            foreach (['pers', 'pax', 'persons'] as $alias) {
+                if (!empty($arguments[$alias])) {
+                    if (empty($arguments['pers_von'])) {
+                        $arguments['pers_von'] = $arguments[$alias];
+                        $aliasesApplied[] = "{$alias}→pers_von";
+                    }
+                    if (empty($arguments['pers_bis'])) {
+                        $arguments['pers_bis'] = $arguments[$alias];
+                        $aliasesApplied[] = "{$alias}→pers_bis";
+                    }
+                    break;
+                }
+            }
+
             $errors = [];
             if (empty($arguments['label'])) {
                 $errors[] = $this->validationError('label', 'label ist erforderlich (z.B. "Tag 1" oder "20.03.2026").');
@@ -70,6 +89,17 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
             if (!empty($errors)) {
                 return $this->validationFailure($errors);
             }
+
+            $known = [
+                'event_id', 'event_uuid', 'event_number',
+                'label', 'day_type', 'datum', 'day_of_week',
+                'von', 'bis', 'pers_von', 'pers_bis',
+                'day_status', 'color', 'sort_order',
+                // Aliase
+                'beginn', 'ende', 'start_time', 'end_time', 'start', 'end',
+                'pers', 'pax', 'persons',
+            ];
+            $ignored = array_values(array_diff(array_keys($arguments), $known));
 
             $weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
             $dow = $arguments['day_of_week'] ?? null;
@@ -101,13 +131,23 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
             ]);
 
             return ToolResult::success([
-                'id'         => $day->id,
-                'uuid'       => $day->uuid,
-                'event_id'   => $event->id,
-                'label'      => $day->label,
-                'datum'      => $day->datum?->toDateString(),
-                'sort_order' => $day->sort_order,
-                'message'    => "Tag '{$day->label}' zu Event #{$event->event_number} hinzugefügt.",
+                'id'             => $day->id,
+                'uuid'           => $day->uuid,
+                'event_id'       => $event->id,
+                'label'          => $day->label,
+                'day_type'       => $day->day_type,
+                'datum'          => $day->datum?->toDateString(),
+                'day_of_week'    => $day->day_of_week,
+                'von'            => $day->von,
+                'bis'            => $day->bis,
+                'pers_von'       => $day->pers_von,
+                'pers_bis'       => $day->pers_bis,
+                'day_status'     => $day->day_status,
+                'color'          => $day->color,
+                'sort_order'     => $day->sort_order,
+                'aliases_applied'=> $aliasesApplied,
+                'ignored_fields' => $ignored,
+                'message'        => "Tag '{$day->label}' zu Event #{$event->event_number} hinzugefügt.",
             ]);
         } catch (\Throwable $e) {
             return ToolResult::error('EXECUTION_ERROR', 'Fehler beim Anlegen des Tages: ' . $e->getMessage());

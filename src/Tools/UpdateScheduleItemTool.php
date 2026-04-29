@@ -7,9 +7,12 @@ use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\ScheduleItem;
+use Platform\Events\Tools\Concerns\NormalizesTimeFields;
 
 class UpdateScheduleItemTool implements ToolContract, ToolMetadataContract
 {
+    use NormalizesTimeFields;
+
     protected const STRING_FIELDS = ['datum', 'von', 'bis', 'beschreibung', 'raum', 'bemerkung'];
 
     public function getName(): string
@@ -67,6 +70,9 @@ class UpdateScheduleItemTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('ACCESS_DENIED', 'Kein Zugriff.');
             }
 
+            // Aliases zwischen Tag/Buchung/Englisch normalisieren.
+            $aliasesApplied = $this->normalizeTimeFields($arguments, ['start' => 'von', 'end' => 'bis']);
+
             $update = [];
             foreach (self::STRING_FIELDS as $f) {
                 if (array_key_exists($f, $arguments)) {
@@ -84,13 +90,26 @@ class UpdateScheduleItemTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('VALIDATION_ERROR', 'Keine Felder zum Aktualisieren übergeben.');
             }
 
+            $known = array_merge(['schedule_id', 'uuid', 'linked', 'sort_order'], self::STRING_FIELDS, $this->timeFieldAliases());
+            $ignored = array_values(array_diff(array_keys($arguments), $known));
+
             $item->update($update);
 
             return ToolResult::success([
-                'id'           => $item->id,
-                'uuid'         => $item->uuid,
-                'beschreibung' => $item->beschreibung,
-                'message'      => 'Ablauf-Eintrag aktualisiert.',
+                'id'             => $item->id,
+                'uuid'           => $item->uuid,
+                'event_id'       => $item->event_id,
+                'datum'          => $item->datum,
+                'von'            => $item->von,
+                'bis'            => $item->bis,
+                'beschreibung'   => $item->beschreibung,
+                'raum'           => $item->raum,
+                'bemerkung'      => $item->bemerkung,
+                'linked'         => (bool) $item->linked,
+                'sort_order'     => $item->sort_order,
+                'aliases_applied'=> $aliasesApplied,
+                'ignored_fields' => $ignored,
+                'message'        => 'Ablauf-Eintrag aktualisiert.',
             ]);
         } catch (\Throwable $e) {
             return ToolResult::error('EXECUTION_ERROR', 'Fehler beim Aktualisieren: ' . $e->getMessage());

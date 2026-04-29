@@ -135,18 +135,28 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('VALIDATION_ERROR', 'Keine Felder zum Aktualisieren übergeben.');
             }
 
+            $known = array_merge(
+                ['event_id', 'uuid', 'event_number', 'mr_data', 'forwarded'],
+                self::UPDATABLE_STRING_FIELDS,
+                self::UPDATABLE_DATE_FIELDS,
+                self::UPDATABLE_FK_FIELDS,
+            );
+            $ignored = array_values(array_diff(array_keys($arguments), $known));
+
             $event->update($update);
 
             return ToolResult::success([
-                'id'           => $event->id,
-                'uuid'         => $event->uuid,
-                'slug'         => $event->slug,
-                'event_number' => $event->event_number,
-                'name'         => $event->name,
-                'status'       => $event->status,
-                'team_id'      => $event->team_id,
-                'updated_at'   => $event->updated_at?->toIso8601String(),
-                'message'      => "Event '{$event->name}' erfolgreich aktualisiert.",
+                'id'             => $event->id,
+                'uuid'           => $event->uuid,
+                'slug'           => $event->slug,
+                'event_number'   => $event->event_number,
+                'name'           => $event->name,
+                'status'         => $event->status,
+                'team_id'        => $event->team_id,
+                'updated_at'     => $event->updated_at?->toIso8601String(),
+                'updated_fields' => array_keys($update),
+                'ignored_fields' => $ignored,
+                'message'        => "Event '{$event->name}' erfolgreich aktualisiert.",
             ]);
         } catch (\Throwable $e) {
             return ToolResult::error('EXECUTION_ERROR', 'Fehler beim Aktualisieren des Events: ' . $e->getMessage());

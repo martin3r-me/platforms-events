@@ -74,6 +74,7 @@ class GetBookingTool implements ToolContract, ToolMetadataContract
                 'beginn'           => $b->beginn,
                 'ende'             => $b->ende,
                 'pers'             => $b->pers,
+                'pers_numeric'     => is_numeric($b->pers) ? (int) $b->pers : null,
                 'bestuhlung'       => $b->bestuhlung,
                 'optionsrang'      => $b->optionsrang,
                 'absprache'        => $b->absprache,

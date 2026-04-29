@@ -7,9 +7,12 @@ use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\EventDay;
+use Platform\Events\Tools\Concerns\NormalizesTimeFields;
 
 class UpdateEventDayTool implements ToolContract, ToolMetadataContract
 {
+    use NormalizesTimeFields;
+
     protected const FIELDS = [
         'label', 'day_type', 'datum', 'day_of_week', 'von', 'bis',
         'pers_von', 'pers_bis', 'day_status', 'color',
@@ -72,6 +75,23 @@ class UpdateEventDayTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('ACCESS_DENIED', 'Du hast keinen Zugriff auf diesen Tag.');
             }
 
+            // Aliases zwischen Tag/Buchung/Englisch normalisieren.
+            $aliasesApplied = $this->normalizeTimeFields($arguments, ['start' => 'von', 'end' => 'bis']);
+            // pers/pax/persons → pers_von+pers_bis (gleicher Wert)
+            foreach (['pers', 'pax', 'persons'] as $alias) {
+                if (!empty($arguments[$alias])) {
+                    if (!array_key_exists('pers_von', $arguments) || $arguments['pers_von'] === null || $arguments['pers_von'] === '') {
+                        $arguments['pers_von'] = $arguments[$alias];
+                        $aliasesApplied[] = "{$alias}→pers_von";
+                    }
+                    if (!array_key_exists('pers_bis', $arguments) || $arguments['pers_bis'] === null || $arguments['pers_bis'] === '') {
+                        $arguments['pers_bis'] = $arguments[$alias];
+                        $aliasesApplied[] = "{$alias}→pers_bis";
+                    }
+                    break;
+                }
+            }
+
             $update = [];
             foreach (self::FIELDS as $f) {
                 if (array_key_exists($f, $arguments)) {
@@ -86,14 +106,29 @@ class UpdateEventDayTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('VALIDATION_ERROR', 'Keine Felder zum Aktualisieren übergeben.');
             }
 
+            $known = array_merge(['day_id', 'uuid', 'sort_order'], self::FIELDS, $this->timeFieldAliases());
+            $ignored = array_values(array_diff(array_keys($arguments), $known));
+
             $day->update($update);
 
             return ToolResult::success([
-                'id'      => $day->id,
-                'uuid'    => $day->uuid,
-                'label'   => $day->label,
-                'datum'   => $day->datum?->toDateString(),
-                'message' => "Tag '{$day->label}' aktualisiert.",
+                'id'             => $day->id,
+                'uuid'           => $day->uuid,
+                'event_id'       => $day->event_id,
+                'label'          => $day->label,
+                'day_type'       => $day->day_type,
+                'datum'          => $day->datum?->toDateString(),
+                'day_of_week'    => $day->day_of_week,
+                'von'            => $day->von,
+                'bis'            => $day->bis,
+                'pers_von'       => $day->pers_von,
+                'pers_bis'       => $day->pers_bis,
+                'day_status'     => $day->day_status,
+                'color'          => $day->color,
+                'sort_order'     => $day->sort_order,
+                'aliases_applied'=> $aliasesApplied,
+                'ignored_fields' => $ignored,
+                'message'        => "Tag '{$day->label}' aktualisiert.",
             ]);
         } catch (\Throwable $e) {
             return ToolResult::error('EXECUTION_ERROR', 'Fehler beim Aktualisieren des Tages: ' . $e->getMessage());

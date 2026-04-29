@@ -120,14 +120,32 @@ class UpdateBookingTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('VALIDATION_ERROR', 'Keine Felder zum Aktualisieren übergeben.');
             }
 
+            $known = array_merge(
+                ['booking_id', 'uuid', 'location_id', 'sort_order'],
+                self::STRING_FIELDS,
+                ['von', 'bis', 'pers_von', 'pers_bis', 'start_time', 'end_time', 'pax'],
+            );
+            $ignored = array_values(array_diff(array_keys($arguments), $known));
+
             $booking->update($update);
 
             return ToolResult::success([
-                'id'          => $booking->id,
-                'uuid'        => $booking->uuid,
-                'event_id'    => $booking->event_id,
-                'location_id' => $booking->location_id,
-                'message'     => 'Buchung aktualisiert.',
+                'id'             => $booking->id,
+                'uuid'           => $booking->uuid,
+                'event_id'       => $booking->event_id,
+                'location_id'    => $booking->location_id,
+                'datum'          => $booking->datum,
+                'beginn'         => $booking->beginn,
+                'ende'           => $booking->ende,
+                'pers'           => $booking->pers,
+                'pers_numeric'   => is_numeric($booking->pers) ? (int) $booking->pers : null,
+                'bestuhlung'     => $booking->bestuhlung,
+                'optionsrang'    => $booking->optionsrang,
+                'absprache'      => $booking->absprache,
+                'sort_order'     => $booking->sort_order,
+                'updated_fields' => array_keys($update),
+                'ignored_fields' => $ignored,
+                'message'        => 'Buchung aktualisiert.',
             ]);
         } catch (\Throwable $e) {
             return ToolResult::error('EXECUTION_ERROR', 'Fehler beim Aktualisieren der Buchung: ' . $e->getMessage());

@@ -9,6 +9,7 @@ use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\Booking;
 use Platform\Events\Models\EventDay;
 use Platform\Events\Tools\Concerns\CollectsValidationErrors;
+use Platform\Events\Tools\Concerns\NormalizesTimeFields;
 use Platform\Events\Tools\Concerns\ResolvesEvent;
 use Platform\Locations\Models\Location;
 
@@ -23,6 +24,7 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
 {
     use ResolvesEvent;
     use CollectsValidationErrors;
+    use NormalizesTimeFields;
 
     public function getName(): string
     {
@@ -84,35 +86,15 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
                 return $event;
             }
 
-            // Aliase aus Tag-Feldnamen mappen, damit beginn/ende/pers gefuellt werden,
-            // wenn der Aufrufer von/bis/pers_von/pers_bis schickt (Inkonsistenz mit
-            // events_event_days; bewusst tolerant gemacht).
-            $aliases = [];
-            if (!isset($arguments['beginn']) && !empty($arguments['von'])) {
-                $arguments['beginn'] = $arguments['von'];
-                $aliases[] = 'von→beginn';
-            }
-            if (!isset($arguments['ende']) && !empty($arguments['bis'])) {
-                $arguments['ende'] = $arguments['bis'];
-                $aliases[] = 'bis→ende';
-            }
-            if (!isset($arguments['pers']) || $arguments['pers'] === '' || $arguments['pers'] === null) {
-                if (!empty($arguments['pers_von'])) {
-                    $arguments['pers'] = $arguments['pers_von'];
-                    $aliases[] = 'pers_von→pers';
-                } elseif (!empty($arguments['pers_bis'])) {
-                    $arguments['pers'] = $arguments['pers_bis'];
-                    $aliases[] = 'pers_bis→pers';
-                }
-            }
+            // Aliases (von/bis/start_time/end_time → beginn/ende; pers_von/pers_bis/pax → pers).
+            $aliases = $this->normalizeTimeFields($arguments, ['start' => 'beginn', 'end' => 'ende', 'pers' => 'pers']);
 
             // Bekannte Felder zur Erkennung von ignored_fields
-            $known = [
+            $known = array_merge([
                 'event_id', 'event_uuid', 'event_number',
                 'location_id', 'raum', 'datum', 'beginn', 'ende', 'pers', 'bestuhlung', 'optionsrang', 'absprache',
-                'von', 'bis', 'pers_von', 'pers_bis',
                 'apply_to_all_days', 'day_ids',
-            ];
+            ], $this->timeFieldAliases());
             $ignored = array_values(array_diff(array_keys($arguments), $known));
 
             $errors = [];
@@ -177,18 +159,32 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
             $created = [];
 
             if ($targetDays->isNotEmpty()) {
-                // Bulk-Modus: pro Tag eine Buchung mit datum=Tag
+                // Bulk-Modus: pro Tag eine Buchung mit datum=Tag.
+                // Tag-Defaults greifen, wenn beginn/ende/pers im POST nicht gesetzt waren –
+                // dann wird pro Tag aus von/bis/pers_von das Tag-spezifische Default uebernommen.
+                $bulkDefaultFromDay = empty($base['beginn']) && empty($base['ende']) && empty($base['pers']);
                 foreach ($targetDays as $day) {
                     $maxSort++;
-                    $booking = Booking::create(array_merge($base, [
+                    $row = array_merge($base, [
                         'datum'      => $day->datum?->format('Y-m-d') ?? $day->datum,
                         'sort_order' => $maxSort,
-                    ]));
+                    ]);
+                    if ($bulkDefaultFromDay) {
+                        $row['beginn'] = $day->von ?: $row['beginn'];
+                        $row['ende']   = $day->bis ?: $row['ende'];
+                        $row['pers']   = $day->pers_von ?: ($day->pers_bis ?: $row['pers']);
+                    }
+                    $booking = Booking::create($row);
                     $created[] = [
-                        'id'          => $booking->id,
-                        'uuid'        => $booking->uuid,
-                        'event_day_id'=> $day->id,
-                        'datum'       => $booking->datum,
+                        'id'           => $booking->id,
+                        'uuid'         => $booking->uuid,
+                        'event_day_id' => $day->id,
+                        'datum'        => $booking->datum,
+                        'beginn'       => $booking->beginn,
+                        'ende'         => $booking->ende,
+                        'pers'         => $booking->pers,
+                        'pers_numeric' => is_numeric($booking->pers) ? (int) $booking->pers : null,
+                        'source'       => $bulkDefaultFromDay ? 'day_defaults' : 'request',
                     ];
                 }
             } else {
@@ -199,9 +195,13 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
                     'sort_order' => $maxSort,
                 ]));
                 $created[] = [
-                    'id'    => $booking->id,
-                    'uuid'  => $booking->uuid,
-                    'datum' => $booking->datum,
+                    'id'           => $booking->id,
+                    'uuid'         => $booking->uuid,
+                    'datum'        => $booking->datum,
+                    'beginn'       => $booking->beginn,
+                    'ende'         => $booking->ende,
+                    'pers'         => $booking->pers,
+                    'pers_numeric' => is_numeric($booking->pers) ? (int) $booking->pers : null,
                 ];
             }
 
