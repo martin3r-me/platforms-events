@@ -3,6 +3,7 @@
 namespace Platform\Events\Tools\Concerns;
 
 use Platform\Events\Models\Event;
+use Platform\Events\Services\SettingsService;
 
 /**
  * Liefert eine Map "Feldname => Erklaerung" fuer empfohlene, aber noch leere
@@ -64,5 +65,68 @@ trait RecommendsMissingFields
         }
 
         return $missing;
+    }
+
+    /**
+     * Liefert pro relevantem Enum-/Pickliste-Feld die aktuell waehlbaren Werte
+     * – inklusive Quelle (hardcoded vs. Settings) und Hinweis, ob die Liste in
+     * den Einstellungen erweitert werden kann.
+     *
+     * @return array<string, array{values: array<int,string>, strict: bool, note: string}>
+     */
+    protected function recommendedFieldOptions(?int $teamId = null): array
+    {
+        $teamId = $teamId ?? null;
+        $opts = [];
+
+        // potential – strikt, hardcoded
+        $opts['potential'] = [
+            'values' => [
+                '10% (unwahrscheinlich)',
+                '30% (unverbindliche Anfrage)',
+                '50% (Tendenz offen)',
+                '70% (deutliche Tendenz zur Buchung)',
+                '90% (ziemlich definitiv)',
+            ],
+            'strict' => true,
+            'note'   => 'Hardcoded Enum. Andere Werte werden im Tool mit VALIDATION_ERROR abgelehnt.',
+        ];
+
+        // status (Event-Status) – strikt, hardcoded
+        $opts['status'] = [
+            'values' => ['Option', 'Definitiv', 'Vertrag', 'Abgeschlossen', 'Storno', 'Warteliste', 'Tendenz'],
+            'strict' => true,
+            'note'   => 'Hardcoded Workflow-Status (UI: Manage::STATUS_OPTIONS).',
+        ];
+
+        // event_type – frei aus Settings
+        $opts['event_type'] = [
+            'values' => SettingsService::eventTypes($teamId),
+            'strict' => false,
+            'note'   => 'Vorgeschlagene Werte. Liste ist in Einstellungen → Anlass-Typen frei erweiterbar; abweichende Freitext-Werte werden akzeptiert.',
+        ];
+
+        // cost_center – frei aus Settings (oft leer)
+        $opts['cost_center'] = [
+            'values' => SettingsService::costCenters($teamId),
+            'strict' => false,
+            'note'   => 'Vorgeschlagene Werte. Liste ist in Einstellungen → Kostenstellen frei erweiterbar; abweichende Freitext-Werte werden akzeptiert.',
+        ];
+
+        // cost_carrier – frei aus Settings
+        $opts['cost_carrier'] = [
+            'values' => SettingsService::costCarriers($teamId),
+            'strict' => false,
+            'note'   => 'Vorgeschlagene Werte. Liste ist in Einstellungen → Kostentraeger frei erweiterbar; abweichende Freitext-Werte werden akzeptiert.',
+        ];
+
+        // quote_price_mode – fix
+        $opts['quote_price_mode'] = [
+            'values' => ['netto', 'brutto'],
+            'strict' => true,
+            'note'   => 'Hardcoded.',
+        ];
+
+        return $opts;
     }
 }

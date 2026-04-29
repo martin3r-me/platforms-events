@@ -239,7 +239,8 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 'end_date'       => $event->end_date?->toDateString(),
                 'team_id'        => $event->team_id,
                 'days_created'   => $event->days->count(),
-                'empty_recommended_fields' => $this->emptyRecommendedFields($event),
+                'empty_recommended_fields'         => $this->emptyRecommendedFields($event),
+                'empty_recommended_field_options'  => $this->recommendedFieldOptions($event->team_id),
                 'message'        => "Event '{$event->name}' erfolgreich erstellt (#{$event->event_number}).",
             ]);
         } catch (\Throwable $e) {

@@ -170,7 +170,8 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
                 'updated_at'     => $event->updated_at?->toIso8601String(),
                 'updated_fields' => array_keys($update),
                 'ignored_fields' => $ignored,
-                'empty_recommended_fields' => $this->emptyRecommendedFields($event),
+                'empty_recommended_fields'        => $this->emptyRecommendedFields($event),
+                'empty_recommended_field_options' => $this->recommendedFieldOptions($event->team_id),
                 'message'        => "Event '{$event->name}' erfolgreich aktualisiert.",
             ]);
         } catch (\Throwable $e) {

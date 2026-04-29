@@ -192,6 +192,7 @@ class GetEventTool implements ToolContract, ToolMetadataContract
             // Aufrufer sollten die genannten Ersatz-Felder bevorzugen.
             // Empfohlene, aber leere Felder (Self-Documentation fuer den Aufrufer).
             $payload['empty_recommended_fields'] = $this->emptyRecommendedFields($event);
+            $payload['empty_recommended_field_options'] = $this->recommendedFieldOptions($event->team_id);
 
             $payload['_deprecated'] = [
                 'customer'        => 'Legacy-Freitext. Bevorzugt: crm_company_id + customer_company.',
