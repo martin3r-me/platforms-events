@@ -7,6 +7,7 @@ use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\EventDay;
+use Platform\Events\Services\SettingsService;
 use Platform\Events\Tools\Concerns\NormalizesTimeFields;
 
 class UpdateEventDayTool implements ToolContract, ToolMetadataContract
@@ -28,7 +29,8 @@ class UpdateEventDayTool implements ToolContract, ToolMetadataContract
         return 'PATCH /events/days/{id} - Aktualisiert einen Event-Tag. Identifikation: day_id ODER uuid. '
             . 'Felder (alle optional): '
             . 'label (string, z.B. "Tag 1"), '
-            . 'day_type ("Veranstaltungstag" | "Aufbautag" | "Abbautag" | "Ruesttag"; weitere via Settings), '
+            . 'day_type (STRICT gegen Settings → Tages-Typen; Tippfehler werden abgelehnt; Liste in '
+            . 'empty_recommended_field_options.day_type.values), '
             . 'datum (YYYY-MM-DD), day_of_week (So..Sa, sonst aus datum), '
             . 'von (HH:MM, Beginn), bis (HH:MM, Ende), '
             . 'pers_von (Personenzahl ab), pers_bis (Personenzahl bis), '
@@ -73,6 +75,19 @@ class UpdateEventDayTool implements ToolContract, ToolMetadataContract
             $hasAccess = $context->user->teams()->where('teams.id', $day->team_id)->exists();
             if (!$hasAccess) {
                 return ToolResult::error('ACCESS_DENIED', 'Du hast keinen Zugriff auf diesen Tag.');
+            }
+
+            // day_type STRIKT gegen Settings → Tages-Typen.
+            $allowedDayTypes = SettingsService::dayTypes($day->team_id);
+            if (array_key_exists('day_type', $arguments) && $arguments['day_type'] !== null && $arguments['day_type'] !== '') {
+                if (!in_array($arguments['day_type'], $allowedDayTypes, true)) {
+                    return ToolResult::error(
+                        'VALIDATION_ERROR',
+                        'day_type "' . $arguments['day_type'] . '" ist nicht erlaubt. Erlaubt: '
+                        . implode(' | ', array_map(fn ($v) => '"' . $v . '"', $allowedDayTypes))
+                        . '. Erweiterbar in Einstellungen → Tages-Typen.'
+                    );
+                }
             }
 
             // Aliases zwischen Tag/Buchung/Englisch normalisieren.
@@ -128,6 +143,16 @@ class UpdateEventDayTool implements ToolContract, ToolMetadataContract
                 'sort_order'     => $day->sort_order,
                 'aliases_applied'=> $aliasesApplied,
                 'ignored_fields' => $ignored,
+                'empty_recommended_field_options' => [
+                    'day_type' => [
+                        'values' => $allowedDayTypes,
+                        'strict' => true,
+                        'note'   => 'Strict gegen Settings. Erweiterbar in Einstellungen → Tages-Typen. Tippfehler werden abgelehnt.',
+                    ],
+                ],
+                '_field_hints' => [
+                    'day_type' => 'Wird beim Apply von Location-Pricings als day_type_label gematcht (Pricing → Tag). Konsistente Werte sind hier wichtig fuer Auto-Suggest.',
+                ],
                 'message'        => "Tag '{$day->label}' aktualisiert.",
             ]);
         } catch (\Throwable $e) {

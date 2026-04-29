@@ -8,6 +8,7 @@ use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\EventDay;
+use Platform\Events\Services\SettingsService;
 use Platform\Events\Tools\Concerns\CollectsValidationErrors;
 use Platform\Events\Tools\Concerns\NormalizesTimeFields;
 use Platform\Events\Tools\Concerns\ResolvesEvent;
@@ -27,7 +28,9 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
     {
         return 'POST /events/{event}/days - Legt einen Event-Tag an. '
             . 'Pflicht: event-Selector + label + datum (YYYY-MM-DD). '
-            . 'Optional: day_type ("Veranstaltungstag" [Default] | "Aufbautag" | "Abbautag" | "Ruesttag"; weitere via Settings → Tages-Typen), '
+            . 'Optional: day_type (STRICT gegen Settings → Tages-Typen; Default "Veranstaltungstag" wenn nicht gesetzt – '
+            . 'erlaubte Werte werden im Response unter empty_recommended_field_options.day_type.values gespiegelt; '
+            . 'Tippfehler werden mit VALIDATION_ERROR abgelehnt; Liste in Einstellungen → Tages-Typen erweiterbar), '
             . 'von/bis (HH:MM), pers_von/pers_bis (Personenzahlen), '
             . 'day_status ("Option" [Default] | "Definitiv" | "Vertrag" ...), color (#RRGGBB, Default #6366f1). '
             . 'day_of_week wird aus datum abgeleitet, wenn nicht uebergeben (So..Sa). '
@@ -86,6 +89,20 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
             if (empty($arguments['datum'])) {
                 $errors[] = $this->validationError('datum', 'datum ist erforderlich (YYYY-MM-DD).');
             }
+
+            // day_type STRIKT gegen Settings → Tages-Typen.
+            $allowedDayTypes = SettingsService::dayTypes($event->team_id);
+            if (array_key_exists('day_type', $arguments) && $arguments['day_type'] !== null && $arguments['day_type'] !== '') {
+                if (!in_array($arguments['day_type'], $allowedDayTypes, true)) {
+                    $errors[] = $this->validationError(
+                        'day_type',
+                        'day_type "' . $arguments['day_type'] . '" ist nicht erlaubt. Erlaubt: '
+                        . implode(' | ', array_map(fn ($v) => '"' . $v . '"', $allowedDayTypes))
+                        . '. Erweiterbar in Einstellungen → Tages-Typen.'
+                    );
+                }
+            }
+
             if (!empty($errors)) {
                 return $this->validationFailure($errors);
             }
@@ -147,6 +164,16 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
                 'sort_order'     => $day->sort_order,
                 'aliases_applied'=> $aliasesApplied,
                 'ignored_fields' => $ignored,
+                'empty_recommended_field_options' => [
+                    'day_type' => [
+                        'values' => $allowedDayTypes,
+                        'strict' => true,
+                        'note'   => 'Strict gegen Settings. Erweiterbar in Einstellungen → Tages-Typen. Tippfehler werden abgelehnt.',
+                    ],
+                ],
+                '_field_hints' => [
+                    'day_type' => 'Wird beim Apply von Location-Pricings als day_type_label gematcht (Pricing → Tag). Konsistente Werte sind hier wichtig fuer Auto-Suggest.',
+                ],
                 'message'        => "Tag '{$day->label}' zu Event #{$event->event_number} hinzugefügt.",
             ]);
         } catch (\Throwable $e) {
