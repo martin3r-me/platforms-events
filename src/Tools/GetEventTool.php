@@ -8,6 +8,7 @@ use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\Event;
 use Platform\Events\Tools\Concerns\HydratesEventReferences;
+use Platform\Events\Tools\Concerns\RecommendsMissingFields;
 
 /**
  * Liefert Details zu einem Event, optional inkl. Tage/Buchungen/Ablauf/Notizen.
@@ -17,6 +18,7 @@ use Platform\Events\Tools\Concerns\HydratesEventReferences;
 class GetEventTool implements ToolContract, ToolMetadataContract
 {
     use HydratesEventReferences;
+    use RecommendsMissingFields;
 
     public function getName(): string
     {
@@ -189,6 +191,9 @@ class GetEventTool implements ToolContract, ToolMetadataContract
 
             // Hinweis-Block: Legacy-Felder, die parallel weiterhin im Result stehen.
             // Aufrufer sollten die genannten Ersatz-Felder bevorzugen.
+            // Empfohlene, aber leere Felder (Self-Documentation fuer den Aufrufer).
+            $payload['empty_recommended_fields'] = $this->emptyRecommendedFields($event);
+
             $payload['_deprecated'] = [
                 'customer'        => 'Legacy-Freitext. Bevorzugt: crm_company_id + customer_company.',
                 'location'        => 'Legacy-Freitext (Veranstaltungsort). Lieferadresse via delivery_*; Buchungs-Raeume ueber bookings/primary_location.',

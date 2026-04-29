@@ -7,12 +7,15 @@ use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\Event;
+use Platform\Events\Tools\Concerns\RecommendsMissingFields;
 
 /**
  * Aktualisiert ein Event. Nur übergebene Felder werden geändert.
  */
 class UpdateEventTool implements ToolContract, ToolMetadataContract
 {
+    use RecommendsMissingFields;
+
     protected const UPDATABLE_STRING_FIELDS = [
         'name', 'customer', 'group', 'location', 'status', 'event_type',
         'organizer_contact', 'organizer_contact_onsite', 'organizer_for_whom',
@@ -156,6 +159,7 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
                 'updated_at'     => $event->updated_at?->toIso8601String(),
                 'updated_fields' => array_keys($update),
                 'ignored_fields' => $ignored,
+                'empty_recommended_fields' => $this->emptyRecommendedFields($event),
                 'message'        => "Event '{$event->name}' erfolgreich aktualisiert.",
             ]);
         } catch (\Throwable $e) {

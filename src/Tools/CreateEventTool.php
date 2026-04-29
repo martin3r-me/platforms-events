@@ -7,6 +7,7 @@ use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Services\EventFactory;
+use Platform\Events\Tools\Concerns\RecommendsMissingFields;
 
 /**
  * Erstellt ein neues Event. Pflicht: name. Empfohlen: start_date + end_date.
@@ -16,6 +17,8 @@ use Platform\Events\Services\EventFactory;
  */
 class CreateEventTool implements ToolContract, ToolMetadataContract
 {
+    use RecommendsMissingFields;
+
     public function getName(): string
     {
         return 'events.events.POST';
@@ -208,17 +211,18 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
             $event->refresh()->load('days');
 
             return ToolResult::success([
-                'id'           => $event->id,
-                'uuid'         => $event->uuid,
-                'slug'         => $event->slug,
-                'event_number' => $event->event_number,
-                'name'         => $event->name,
-                'status'       => $event->status,
-                'start_date'   => $event->start_date?->toDateString(),
-                'end_date'     => $event->end_date?->toDateString(),
-                'team_id'      => $event->team_id,
-                'days_created' => $event->days->count(),
-                'message'      => "Event '{$event->name}' erfolgreich erstellt (#{$event->event_number}).",
+                'id'             => $event->id,
+                'uuid'           => $event->uuid,
+                'slug'           => $event->slug,
+                'event_number'   => $event->event_number,
+                'name'           => $event->name,
+                'status'         => $event->status,
+                'start_date'     => $event->start_date?->toDateString(),
+                'end_date'       => $event->end_date?->toDateString(),
+                'team_id'        => $event->team_id,
+                'days_created'   => $event->days->count(),
+                'empty_recommended_fields' => $this->emptyRecommendedFields($event),
+                'message'        => "Event '{$event->name}' erfolgreich erstellt (#{$event->event_number}).",
             ]);
         } catch (\Throwable $e) {
             return ToolResult::error('EXECUTION_ERROR', 'Fehler beim Erstellen des Events: ' . $e->getMessage());
