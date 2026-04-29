@@ -7,11 +7,13 @@ use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\EventNote;
+use Platform\Events\Tools\Concerns\CollectsValidationErrors;
 use Platform\Events\Tools\Concerns\ResolvesEvent;
 
 class CreateEventNoteTool implements ToolContract, ToolMetadataContract
 {
     use ResolvesEvent;
+    use CollectsValidationErrors;
 
     protected const VALID_TYPES = ['liefertext', 'absprache', 'vereinbarung'];
 
@@ -22,7 +24,10 @@ class CreateEventNoteTool implements ToolContract, ToolMetadataContract
 
     public function getDescription(): string
     {
-        return 'POST /events/{event}/notes - Legt eine Notiz an. Pflicht: event-Selector, type (liefertext|absprache|vereinbarung), text. Optional: user_name (Default: aktueller User).';
+        return 'POST /events/{event}/notes - Legt eine Notiz an einem Event an. '
+            . 'Pflicht: event-Selector + type ("liefertext" | "absprache" | "vereinbarung") + text (Markdown erlaubt). '
+            . 'Optional: user_name (Default: aktueller User-Name; manuell ueberschreibbar fuer Importe). '
+            . 'Notizen sind chronologisch und unveraenderlich (Audit-Spur). Update via events.notes.PATCH.';
     }
 
     public function getSchema(): array
@@ -30,9 +35,9 @@ class CreateEventNoteTool implements ToolContract, ToolMetadataContract
         return [
             'type' => 'object',
             'properties' => array_merge($this->eventSelectorSchema(), [
-                'type'      => ['type' => 'string', 'enum' => self::VALID_TYPES],
-                'text'      => ['type' => 'string'],
-                'user_name' => ['type' => 'string'],
+                'type'      => ['type' => 'string', 'enum' => self::VALID_TYPES, 'description' => 'Notiz-Kategorie. liefertext = Hinweis fuer Lieferung; absprache = Kunden-Absprache; vereinbarung = formaler Vermerk.'],
+                'text'      => ['type' => 'string', 'description' => 'Inhalt der Notiz (Markdown erlaubt).'],
+                'user_name' => ['type' => 'string', 'description' => 'Default: Name des aktuellen Users.'],
             ]),
             'required' => ['type', 'text'],
         ];
@@ -45,11 +50,18 @@ class CreateEventNoteTool implements ToolContract, ToolMetadataContract
             if ($event instanceof ToolResult) {
                 return $event;
             }
-            if (empty($arguments['type']) || !in_array($arguments['type'], self::VALID_TYPES, true)) {
-                return ToolResult::error('VALIDATION_ERROR', 'type muss einer von: ' . implode(', ', self::VALID_TYPES));
+
+            $errors = [];
+            if (empty($arguments['type'])) {
+                $errors[] = $this->validationError('type', 'type ist erforderlich (' . implode('|', self::VALID_TYPES) . ').');
+            } elseif (!in_array($arguments['type'], self::VALID_TYPES, true)) {
+                $errors[] = $this->validationError('type', 'type muss einer von: ' . implode(', ', self::VALID_TYPES));
             }
             if (empty($arguments['text'])) {
-                return ToolResult::error('VALIDATION_ERROR', 'text ist erforderlich.');
+                $errors[] = $this->validationError('text', 'text ist erforderlich.');
+            }
+            if (!empty($errors)) {
+                return $this->validationFailure($errors);
             }
 
             $note = EventNote::create([

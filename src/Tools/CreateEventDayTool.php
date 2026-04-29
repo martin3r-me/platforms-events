@@ -8,11 +8,13 @@ use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\EventDay;
+use Platform\Events\Tools\Concerns\CollectsValidationErrors;
 use Platform\Events\Tools\Concerns\ResolvesEvent;
 
 class CreateEventDayTool implements ToolContract, ToolMetadataContract
 {
     use ResolvesEvent;
+    use CollectsValidationErrors;
 
     public function getName(): string
     {
@@ -21,8 +23,13 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
 
     public function getDescription(): string
     {
-        return 'POST /events/{event}/days - Legt einen Event-Tag an. Pflicht: event_selector (event_id|event_uuid|event_number), label, datum. '
-            . 'Optional: day_type (Veranstaltungstag|Aufbautag|Abbautag|Rüsttag), von, bis, pers_von, pers_bis, day_status, color. day_of_week wird aus datum abgeleitet wenn leer.';
+        return 'POST /events/{event}/days - Legt einen Event-Tag an. '
+            . 'Pflicht: event-Selector + label + datum (YYYY-MM-DD). '
+            . 'Optional: day_type ("Veranstaltungstag" [Default] | "Aufbautag" | "Abbautag" | "Ruesttag"; weitere via Settings → Tages-Typen), '
+            . 'von/bis (HH:MM), pers_von/pers_bis (Personenzahlen), '
+            . 'day_status ("Option" [Default] | "Definitiv" | "Vertrag" ...), color (#RRGGBB, Default #6366f1). '
+            . 'day_of_week wird aus datum abgeleitet, wenn nicht uebergeben (So..Sa). '
+            . 'sort_order wird automatisch (max+1) gesetzt.';
     }
 
     public function getSchema(): array
@@ -52,11 +59,16 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
             if ($event instanceof ToolResult) {
                 return $event;
             }
+
+            $errors = [];
             if (empty($arguments['label'])) {
-                return ToolResult::error('VALIDATION_ERROR', 'label ist erforderlich.');
+                $errors[] = $this->validationError('label', 'label ist erforderlich (z.B. "Tag 1" oder "20.03.2026").');
             }
             if (empty($arguments['datum'])) {
-                return ToolResult::error('VALIDATION_ERROR', 'datum ist erforderlich.');
+                $errors[] = $this->validationError('datum', 'datum ist erforderlich (YYYY-MM-DD).');
+            }
+            if (!empty($errors)) {
+                return $this->validationFailure($errors);
             }
 
             $weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];

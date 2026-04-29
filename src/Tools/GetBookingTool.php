@@ -62,8 +62,13 @@ class GetBookingTool implements ToolContract, ToolMetadataContract
                 'uuid'             => $b->uuid,
                 'event_id'         => $b->event_id,
                 'location_id'      => $b->location_id,
-                'location_kuerzel' => $b->location?->kuerzel,
-                'location_name'    => $b->location?->name,
+                // Hydratisierte Location ({id, name, kuerzel, gruppe}) statt nur ID/Kuerzel.
+                'location'         => $b->location ? [
+                    'id'      => $b->location->id,
+                    'name'    => $b->location->name,
+                    'kuerzel' => $b->location->kuerzel,
+                    'gruppe'  => $b->location->gruppe,
+                ] : null,
                 'raum'             => $b->raum,
                 'datum'            => $b->datum,
                 'beginn'           => $b->beginn,

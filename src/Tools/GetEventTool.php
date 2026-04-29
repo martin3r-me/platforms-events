@@ -7,12 +7,17 @@ use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\Event;
+use Platform\Events\Tools\Concerns\HydratesEventReferences;
 
 /**
  * Liefert Details zu einem Event, optional inkl. Tage/Buchungen/Ablauf/Notizen.
+ * Foreign-Keys (CRM-Firmen, Lieferadresse, Locations) werden automatisch
+ * hydratisiert – z. B. customer_company: {id, name} statt nackter ID.
  */
 class GetEventTool implements ToolContract, ToolMetadataContract
 {
+    use HydratesEventReferences;
+
     public function getName(): string
     {
         return 'events.event.GET';
@@ -127,7 +132,21 @@ class GetEventTool implements ToolContract, ToolMetadataContract
                 'user_id'    => $event->user_id,
                 'created_at' => $event->created_at?->toIso8601String(),
                 'updated_at' => $event->updated_at?->toIso8601String(),
+
+                // Roh-FKs (fuer Updates / Tool-Calls)
+                'crm_company_id'                  => $event->crm_company_id,
+                'orderer_crm_company_id'          => $event->orderer_crm_company_id,
+                'orderer_crm_contact_id'          => $event->orderer_crm_contact_id,
+                'invoice_crm_company_id'          => $event->invoice_crm_company_id,
+                'invoice_crm_contact_id'          => $event->invoice_crm_contact_id,
+                'organizer_crm_contact_id'        => $event->organizer_crm_contact_id,
+                'organizer_onsite_crm_contact_id' => $event->organizer_onsite_crm_contact_id,
+                'delivery_address_crm_company_id' => $event->delivery_address_crm_company_id,
+                'delivery_location_id'            => $event->delivery_location_id,
             ];
+
+            // Hydratisierte Refs ({id, name, ...} statt nur ID).
+            $payload = array_merge($payload, $this->hydrateEventReferences($event));
 
             if (!empty($arguments['include_days'])) {
                 $payload['days'] = $event->days()->orderBy('sort_order')->get()
@@ -144,8 +163,13 @@ class GetEventTool implements ToolContract, ToolMetadataContract
                 $payload['bookings'] = $event->bookings()->with('location')->orderBy('sort_order')->get()
                     ->map(fn($b) => [
                         'id' => $b->id, 'uuid' => $b->uuid,
-                        'location_id' => $b->location_id,
-                        'location_kuerzel' => $b->location?->kuerzel,
+                        'location_id'      => $b->location_id,
+                        'location'         => $b->location ? [
+                            'id'      => $b->location->id,
+                            'name'    => $b->location->name,
+                            'kuerzel' => $b->location->kuerzel,
+                            'gruppe'  => $b->location->gruppe,
+                        ] : null,
                         'raum' => $b->raum,
                         'datum' => $b->datum, 'beginn' => $b->beginn, 'ende' => $b->ende,
                         'pers' => $b->pers, 'bestuhlung' => $b->bestuhlung,

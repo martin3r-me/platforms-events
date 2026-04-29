@@ -124,9 +124,11 @@ class ListEventsTool implements ToolContract, ToolMetadataContract
         }
     }
 
+    use \Platform\Events\Tools\Concerns\HydratesEventReferences;
+
     protected function serialize(Event $e): array
     {
-        return [
+        $row = [
             'id'                => $e->id,
             'uuid'              => $e->uuid,
             'slug'              => $e->slug,
@@ -134,7 +136,7 @@ class ListEventsTool implements ToolContract, ToolMetadataContract
             'name'              => $e->name,
             'customer'          => $e->customer,
             'group'             => $e->group,
-            'location'          => $e->location,
+            'location'          => $e->location, // Legacy-Freitext
             'start_date'        => $e->start_date?->toDateString(),
             'end_date'          => $e->end_date?->toDateString(),
             'status'            => $e->status,
@@ -143,7 +145,11 @@ class ListEventsTool implements ToolContract, ToolMetadataContract
             'event_type'        => $e->event_type,
             'team_id'           => $e->team_id,
             'created_at'        => $e->created_at?->toIso8601String(),
+            // Roh-FK (fuer Updates) + hydratisierte Customer-Company.
+            'crm_company_id'    => $e->crm_company_id,
+            'customer_company'  => $this->hydrateCrmCompany($e->crm_company_id),
         ];
+        return $row;
     }
 
     public function getMetadata(): array
