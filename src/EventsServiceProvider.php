@@ -118,6 +118,17 @@ class EventsServiceProvider extends ServiceProvider
             $registry->register(new \Platform\Events\Tools\DeleteEventNoteTool());
 
             // --- Angebote (Quotes) ---
+            $registry->register(new \Platform\Events\Tools\ListQuotesTool());
+            $registry->register(new \Platform\Events\Tools\GetQuoteTool());
+            $registry->register(new \Platform\Events\Tools\CreateQuoteTool());
+            $registry->register(new \Platform\Events\Tools\UpdateQuoteTool());
+            $registry->register(new \Platform\Events\Tools\DeleteQuoteTool());
+            // Approval-Workflow
+            $registry->register(new \Platform\Events\Tools\RequestQuoteApprovalTool());
+            $registry->register(new \Platform\Events\Tools\CancelQuoteApprovalRequestTool());
+            $registry->register(new \Platform\Events\Tools\ApproveQuoteTool());
+            $registry->register(new \Platform\Events\Tools\RejectQuoteTool());
+            // Items + Positions
             $registry->register(new \Platform\Events\Tools\ListQuoteItemsTool());
             $registry->register(new \Platform\Events\Tools\CreateQuoteItemTool());
             $registry->register(new \Platform\Events\Tools\ListQuotePositionsTool());
