@@ -381,39 +381,12 @@ class Detail extends Component
 
     public function duplicate(): void
     {
-        $user = Auth::user();
-        $team = $user->currentTeam;
-
-        $prefix = 'VA#' . now()->year . '-' . now()->format('m');
-        $last = Event::where('team_id', $team->id)
-            ->where('event_number', 'like', $prefix . '%')
-            ->orderByRaw('LENGTH(event_number) DESC, event_number DESC')
-            ->value('event_number');
-        $next = $last ? ((int) substr($last, strlen($prefix))) + 1 : 1;
-
-        $copy = $this->event->replicate(['uuid', 'event_number', 'status_changed_at']);
-        $copy->event_number      = $prefix . $next;
-        $copy->name              = $this->event->name . ' (Kopie)';
-        $copy->status            = 'Option';
-        $copy->status_changed_at = now();
-        $copy->user_id           = $user->id;
-        $copy->save();
-
-        foreach ($this->event->days as $day) {
-            $dayCopy = $day->replicate(['uuid']);
-            $dayCopy->event_id = $copy->id;
-            $dayCopy->save();
-        }
-        foreach ($this->event->bookings as $booking) {
-            $bookingCopy = $booking->replicate(['uuid']);
-            $bookingCopy->event_id = $copy->id;
-            $bookingCopy->save();
-        }
-        foreach ($this->event->scheduleItems as $item) {
-            $itemCopy = $item->replicate(['uuid']);
-            $itemCopy->event_id = $copy->id;
-            $itemCopy->save();
-        }
+        $copy = \Platform\Events\Services\EventCloner::clone(
+            $this->event,
+            Auth::user(),
+            [], // keine Overrides – UI-Default ("(Kopie)" + Status Option)
+            // include defaults: days/bookings/schedule_items=true, notes=false
+        );
 
         $this->redirectRoute('events.show', ['slug' => $copy->slug], navigate: true);
     }

@@ -87,6 +87,7 @@ class EventsServiceProvider extends ServiceProvider
             $registry->register(new \Platform\Events\Tools\BulkCreateEventsTool());
             $registry->register(new \Platform\Events\Tools\BulkUpdateEventsTool());
             $registry->register(new \Platform\Events\Tools\BulkDeleteEventsTool());
+            $registry->register(new \Platform\Events\Tools\CloneEventTool());
 
             // --- EventDays (Single-CUD) ---
             $registry->register(new \Platform\Events\Tools\ListEventDaysTool());
