@@ -109,6 +109,7 @@ class EventsServiceProvider extends ServiceProvider
             $registry->register(new \Platform\Events\Tools\CreateScheduleItemTool());
             $registry->register(new \Platform\Events\Tools\UpdateScheduleItemTool());
             $registry->register(new \Platform\Events\Tools\DeleteScheduleItemTool());
+            $registry->register(new \Platform\Events\Tools\BulkUpdateScheduleItemsTool());
 
             // --- EventNotes (Single-CUD) ---
             $registry->register(new \Platform\Events\Tools\ListEventNotesTool());

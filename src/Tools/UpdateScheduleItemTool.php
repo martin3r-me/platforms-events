@@ -147,6 +147,7 @@ class UpdateScheduleItemTool implements ToolContract, ToolMetadataContract
                     'linked'               => 'UI-Block-Flag: optisch verbunden mit dem Eintrag DARUEBER (zwei Halb-Bloecke werden als ein Block dargestellt). NICHT die Tag-Zuordnung.',
                     'is_day_linked'        => 'Abgeleitet: true wenn datum mit einem EventDay matcht. Nutze stattdessen matched_event_day_id, um den konkreten Tag zu identifizieren.',
                     'matched_event_day_id' => 'EventDay-ID, dessen datum mit dem ScheduleItem-datum uebereinstimmt (logisch, kein FK).',
+                    'raum'                 => 'Freitext-Raumkuerzel. Sollte einem in den Buchungen des Events vorhandenen Raum entsprechen, sonst nicht im UI-Dropdown auswaehlbar.',
                 ],
                 'message'              => 'Ablauf-Eintrag aktualisiert.',
             ]);

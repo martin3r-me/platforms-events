@@ -6,6 +6,7 @@ use Platform\Core\Contracts\ToolContract;
 use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
+use Platform\Events\Models\Booking;
 use Platform\Events\Models\EventDay;
 use Platform\Events\Models\ScheduleItem;
 use Platform\Events\Tools\Concerns\NormalizesTimeFields;
@@ -92,6 +93,29 @@ class CreateScheduleItemTool implements ToolContract, ToolMetadataContract
 
             $maxSort = (int) ScheduleItem::where('event_id', $event->id)->max('sort_order');
 
+            // Auto-Default fuer raum: wenn der Tag genau EINE Buchung mit Raum hat,
+            // diesen als Default uebernehmen – analog zu day_defaults bei Bookings.
+            // Greift nur, wenn raum im POST nicht explizit gesetzt ist.
+            $raumValue = $arguments['raum'] ?? null;
+            $raumSource = ($raumValue === null || $raumValue === '') ? 'none' : 'request';
+            if (($raumValue === null || $raumValue === '') && !empty($arguments['datum'])) {
+                $bookingsForDay = Booking::where('event_id', $event->id)
+                    ->where('datum', $arguments['datum'])
+                    ->with('location')
+                    ->get();
+                $candidates = $bookingsForDay->map(function ($b) {
+                    if (!empty($b->raum)) return $b->raum;
+                    if ($b->location?->kuerzel) return $b->location->kuerzel;
+                    if ($b->location?->name) return $b->location->name;
+                    return null;
+                })->filter()->unique()->values();
+                if ($candidates->count() === 1) {
+                    $raumValue = $candidates->first();
+                    $raumSource = 'day_booking_default';
+                    $aliasesApplied[] = 'booking.raum→raum';
+                }
+            }
+
             $item = ScheduleItem::create([
                 'event_id'     => $event->id,
                 'team_id'      => $event->team_id,
@@ -100,7 +124,7 @@ class CreateScheduleItemTool implements ToolContract, ToolMetadataContract
                 'von'          => $arguments['von'] ?? null,
                 'bis'          => $arguments['bis'] ?? null,
                 'beschreibung' => $arguments['beschreibung'],
-                'raum'         => $arguments['raum'] ?? null,
+                'raum'         => $raumValue,
                 'bemerkung'    => $arguments['bemerkung'] ?? null,
                 'linked'       => (bool) ($arguments['linked'] ?? false),
                 'sort_order'   => $maxSort + 1,
@@ -131,12 +155,15 @@ class CreateScheduleItemTool implements ToolContract, ToolMetadataContract
                 'sort_order'            => $item->sort_order,
                 'matched_event_day_id'  => $matchedDayId,
                 'is_day_linked'         => $matchedDayId !== null,
+                'raum_source'           => $raumSource,
                 'aliases_applied'       => $aliasesApplied,
                 'ignored_fields'        => $ignored,
                 '_field_hints'          => [
                     'linked'               => 'UI-Block-Flag: optisch verbunden mit dem Eintrag DARUEBER (zwei Halb-Bloecke werden als ein Block dargestellt). NICHT die Tag-Zuordnung.',
                     'is_day_linked'        => 'Abgeleitet: true wenn datum mit einem EventDay matcht. Nutze stattdessen matched_event_day_id, um den konkreten Tag zu identifizieren.',
                     'matched_event_day_id' => 'EventDay-ID, dessen datum mit dem ScheduleItem-datum uebereinstimmt (logisch, kein FK).',
+                    'raum'                 => 'Freitext-Raumkuerzel. Sollte einem in den Buchungen des Events vorhandenen Raum entsprechen, sonst nicht im UI-Dropdown auswaehlbar.',
+                    'raum_source'          => '"request" (vom Aufrufer), "day_booking_default" (autom. uebernommen aus der einzigen Buchung des Tages) oder "none".',
                 ],
                 'message'               => "Ablauf-Eintrag zu Event #{$event->event_number} hinzugefügt.",
             ]);
