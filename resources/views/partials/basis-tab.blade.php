@@ -470,13 +470,25 @@
                         </div>
                         <span class="text-[0.7rem] font-bold font-mono min-w-[2.5rem] text-right" :style="'color:' + txt()" x-text="pct ? pct + '%' : '—'"></span>
                     </div>
+                    @php
+                        $potentialOptions = [
+                            '10% (unwahrscheinlich)',
+                            '30% (unverbindliche Anfrage)',
+                            '50% (Tendenz offen)',
+                            '70% (deutliche Tendenz zur Buchung)',
+                            '90% (ziemlich definitiv)',
+                        ];
+                        $currentPotential = (string) ($event->potential ?? '');
+                        $isCustomPotential = $currentPotential !== '' && !in_array($currentPotential, $potentialOptions, true);
+                    @endphp
                     <select wire:model.blur="event.potential" @change="pct = parseInt($event.target.value) || 0" class="{{ $in }}">
                         <option value="">— bitte wählen —</option>
-                        <option value="10% (unwahrscheinlich)">10% (unwahrscheinlich)</option>
-                        <option value="30% (unverbindliche Anfrage)">30% (unverbindliche Anfrage)</option>
-                        <option value="50% (Tendenz offen)">50% (Tendenz offen)</option>
-                        <option value="70% (deutliche Tendenz zur Buchung)">70% (deutliche Tendenz zur Buchung)</option>
-                        <option value="90% (ziemlich definitiv)">90% (ziemlich definitiv)</option>
+                        @if($isCustomPotential)
+                            <option value="{{ $currentPotential }}">{{ $currentPotential }} (extern gesetzt)</option>
+                        @endif
+                        @foreach($potentialOptions as $opt)
+                            <option value="{{ $opt }}">{{ $opt }}</option>
+                        @endforeach
                     </select>
                 </div>
             </div>

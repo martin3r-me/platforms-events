@@ -109,7 +109,7 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 // [Eingang]
                 'inquiry_date' => ['type' => 'string', 'description' => '[Eingang] YYYY-MM-DD (Default: heute).'],
                 'inquiry_time' => ['type' => 'string', 'description' => '[Eingang] HH:MM (Default: jetzt).'],
-                'potential'    => ['type' => 'string', 'description' => '[Eingang] Wahrscheinlichkeitstext, z.B. "70% (deutliche Tendenz zur Buchung)".'],
+                'potential'    => ['type' => 'string', 'description' => '[Eingang] Wahrscheinlichkeitstext. Vordefinierte Werte (im UI-Dropdown direkt waehlbar): "10% (unwahrscheinlich)" | "30% (unverbindliche Anfrage)" | "50% (Tendenz offen)" | "70% (deutliche Tendenz zur Buchung)" | "90% (ziemlich definitiv)". Andere Werte werden gespeichert und im UI als "(extern gesetzt)" markiert.'],
 
                 // [Weiterleitung]
                 'forwarded'       => ['type' => 'boolean', 'description' => '[Weiterleitung] Wurde die Anfrage weitergeleitet?'],
