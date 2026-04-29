@@ -148,6 +148,24 @@ class EventsServiceProvider extends ServiceProvider
             $registry->register(new \Platform\Events\Tools\ListOrderPositionsTool());
             $registry->register(new \Platform\Events\Tools\CreateOrderPositionTool());
 
+            // --- Articles (Stammdaten) – wird perspektivisch in eigenes Modul ausgelagert ---
+            $registry->register(new \Platform\Events\Tools\ListArticlesTool());
+            $registry->register(new \Platform\Events\Tools\GetArticleTool());
+            $registry->register(new \Platform\Events\Tools\CreateArticleTool());
+            $registry->register(new \Platform\Events\Tools\UpdateArticleTool());
+            $registry->register(new \Platform\Events\Tools\DeleteArticleTool());
+            $registry->register(new \Platform\Events\Tools\ListArticleGroupsTool());
+            $registry->register(new \Platform\Events\Tools\CreateArticleGroupTool());
+            $registry->register(new \Platform\Events\Tools\UpdateArticleGroupTool());
+            $registry->register(new \Platform\Events\Tools\DeleteArticleGroupTool());
+            $registry->register(new \Platform\Events\Tools\ListArticlePackagesTool());
+            $registry->register(new \Platform\Events\Tools\CreateArticlePackageTool());
+            $registry->register(new \Platform\Events\Tools\UpdateArticlePackageTool());
+            $registry->register(new \Platform\Events\Tools\DeleteArticlePackageTool());
+            $registry->register(new \Platform\Events\Tools\CreateArticlePackageItemTool());
+            $registry->register(new \Platform\Events\Tools\UpdateArticlePackageItemTool());
+            $registry->register(new \Platform\Events\Tools\DeleteArticlePackageItemTool());
+
             // --- Read-Tools für weitere Entitäten ---
             $registry->register(new \Platform\Events\Tools\ListContractsTool());
             $registry->register(new \Platform\Events\Tools\ListInvoicesTool());
