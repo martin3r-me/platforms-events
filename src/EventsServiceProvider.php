@@ -134,6 +134,9 @@ class EventsServiceProvider extends ServiceProvider
             $registry->register(new \Platform\Events\Tools\CreateQuoteItemTool());
             $registry->register(new \Platform\Events\Tools\ListQuotePositionsTool());
             $registry->register(new \Platform\Events\Tools\CreateQuotePositionTool());
+            $registry->register(new \Platform\Events\Tools\UpdateQuotePositionTool());
+            $registry->register(new \Platform\Events\Tools\DeleteQuotePositionTool());
+            $registry->register(new \Platform\Events\Tools\BulkUpdateQuotePositionsTool());
             // Quote-Actions (Versionen, Vorlagen, Pauschalen, Location-Preise, Order-Konversion)
             $registry->register(new \Platform\Events\Tools\CreateQuoteVersionTool());
             $registry->register(new \Platform\Events\Tools\ApplyArticlePackageTool());
