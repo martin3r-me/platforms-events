@@ -17,7 +17,8 @@ class GetScheduleItemTool implements ToolContract, ToolMetadataContract
 
     public function getDescription(): string
     {
-        return 'GET /events/schedule/{id} - Details zu einem Ablaufplan-Eintrag. Identifikation: schedule_id ODER uuid.';
+        return 'GET /events/schedule/{id} - Details zu einem Ablaufplan-Eintrag. '
+            . 'Identifikation: schedule_id (Alias schedule_item_id) ODER uuid.';
     }
 
     public function getSchema(): array
@@ -25,8 +26,9 @@ class GetScheduleItemTool implements ToolContract, ToolMetadataContract
         return [
             'type' => 'object',
             'properties' => [
-                'schedule_id' => ['type' => 'integer'],
-                'uuid'        => ['type' => 'string'],
+                'schedule_id'      => ['type' => 'integer'],
+                'schedule_item_id' => ['type' => 'integer', 'description' => 'Alias fuer schedule_id.'],
+                'uuid'             => ['type' => 'string'],
             ],
         ];
     }
@@ -39,12 +41,13 @@ class GetScheduleItemTool implements ToolContract, ToolMetadataContract
             }
 
             $query = ScheduleItem::query();
-            if (!empty($arguments['schedule_id'])) {
-                $query->where('id', (int) $arguments['schedule_id']);
+            $idAlias = $arguments['schedule_id'] ?? ($arguments['schedule_item_id'] ?? null);
+            if (!empty($idAlias)) {
+                $query->where('id', (int) $idAlias);
             } elseif (!empty($arguments['uuid'])) {
                 $query->where('uuid', $arguments['uuid']);
             } else {
-                return ToolResult::error('VALIDATION_ERROR', 'schedule_id oder uuid ist erforderlich.');
+                return ToolResult::error('VALIDATION_ERROR', 'schedule_id (oder schedule_item_id) oder uuid ist erforderlich.');
             }
 
             $s = $query->first();
