@@ -6,10 +6,12 @@ use Platform\Core\Contracts\ToolContract;
 use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
+use Platform\Events\Models\Quote;
 use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\QuotePosition;
 use Platform\Events\Tools\Concerns\CollectsValidationErrors;
 use Platform\Events\Tools\Concerns\RecalculatesQuoteItem;
+use Platform\Events\Tools\Concerns\ResolvesEvent;
 
 /**
  * Massen-Update mehrerer Angebots-Positionen innerhalb eines QuoteItems.
@@ -20,6 +22,7 @@ class BulkUpdateQuotePositionsTool implements ToolContract, ToolMetadataContract
 {
     use CollectsValidationErrors;
     use RecalculatesQuoteItem;
+    use ResolvesEvent;
 
     protected const SETTABLE_STRING_FIELDS = [
         'gruppe', 'mwst', 'gebinde', 'bemerkung', 'inhalt', 'beverage_mode', 'procurement_type',
@@ -42,14 +45,17 @@ class BulkUpdateQuotePositionsTool implements ToolContract, ToolMetadataContract
 
     public function getDescription(): string
     {
-        return 'POST /events/quote-items/{item}/positions/bulk - Massen-Update von Angebots-Positionen innerhalb eines QuoteItems. '
-            . 'Pflicht: quote_item_id|quote_item_uuid + mind. ein Filter ODER confirm_item_wide=true. '
-            . 'Filter: position_ids[] (Whitelist), gruppe (exakt), gruppe_contains (substring, case-insensitive), '
-            . 'name_contains (substring im name-Feld). '
+        return 'POST /events/quote-positions/bulk - Massen-Update von Angebots-Positionen. '
+            . 'SCOPE (genau einer der drei): '
+            . '(1) quote_item_id|quote_item_uuid – nur Positionen dieses Vorgangs. '
+            . '(2) quote_id|quote_uuid|quote_token – alle Positionen aller Items dieses Angebots (cross-item). '
+            . '(3) event_id|event_uuid|event_number – alle Positionen aller Items aller Tage des Events. '
+            . 'INNERHALB des Scopes mind. ein Filter ODER confirm_scope_wide=true: '
+            . 'position_ids[], gruppe (exakt), gruppe_contains, name_contains. '
             . 'Setzwerte unter "set" (mind. einer): gruppe, mwst, gebinde, bemerkung, inhalt, '
             . 'beverage_mode, procurement_type, ek, preis (Aliases: price_net|price|vk), gesamt, sort_order. '
             . 'Aliases werden in set akzeptiert (price_net→preis usw.). '
-            . 'Recalc des QuoteItems am Ende automatisch.';
+            . 'Recalc aller betroffenen QuoteItems am Ende automatisch.';
     }
 
     public function getSchema(): array
@@ -66,21 +72,26 @@ class BulkUpdateQuotePositionsTool implements ToolContract, ToolMetadataContract
 
         return [
             'type' => 'object',
-            'properties' => [
-                'quote_item_id'      => ['type' => 'integer'],
+            'properties' => array_merge($this->eventSelectorSchema(), [
+                // Scope-Optionen (genau einer)
+                'quote_item_id'      => ['type' => 'integer', 'description' => 'Scope: nur Positionen dieses Vorgangs.'],
                 'quote_item_uuid'    => ['type' => 'string'],
-                // Filter
+                'quote_id'           => ['type' => 'integer', 'description' => 'Scope: alle Positionen aller Items dieses Angebots.'],
+                'quote_uuid'         => ['type' => 'string'],
+                'quote_token'        => ['type' => 'string', 'description' => 'Public-Token des Angebots (48 Zeichen).'],
+                // Filter innerhalb des Scopes
                 'position_ids'       => ['type' => 'array', 'items' => ['type' => 'integer']],
                 'gruppe'             => ['type' => 'string', 'description' => 'Filter: exakte Gruppe.'],
                 'gruppe_contains'    => ['type' => 'string', 'description' => 'Filter: Substring in gruppe (case-insensitive).'],
                 'name_contains'      => ['type' => 'string', 'description' => 'Filter: Substring in name (case-insensitive).'],
-                'confirm_item_wide'  => ['type' => 'boolean', 'description' => 'true = ALLE Positionen des QuoteItems aendern, wenn kein Filter gesetzt ist.'],
+                'confirm_scope_wide' => ['type' => 'boolean', 'description' => 'true = ALLE Positionen im Scope aendern, wenn kein zusaetzlicher Filter gesetzt ist.'],
+                'confirm_item_wide'  => ['type' => 'boolean', 'description' => 'Alias fuer confirm_scope_wide (Backwards-Kompat).'],
                 'set' => [
                     'type'        => 'object',
                     'description' => 'Werte, die in alle gefilterten Positionen geschrieben werden.',
                     'properties'  => $setProps,
                 ],
-            ],
+            ]),
             'required' => ['set'],
         ];
     }
@@ -92,21 +103,45 @@ class BulkUpdateQuotePositionsTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('AUTH_ERROR', 'Kein User im Kontext.');
             }
 
-            // QuoteItem aufloesen
-            $quoteItem = null;
-            if (!empty($arguments['quote_item_id'])) {
-                $quoteItem = QuoteItem::find((int) $arguments['quote_item_id']);
-            } elseif (!empty($arguments['quote_item_uuid'])) {
-                $quoteItem = QuoteItem::where('uuid', $arguments['quote_item_uuid'])->first();
+            // ----- Scope aufloesen (genau einer der drei) -----
+            $scope = null; // 'item' | 'quote' | 'event'
+            $scopeRef = null;
+            $eventForAccess = null;
+
+            if (!empty($arguments['quote_item_id']) || !empty($arguments['quote_item_uuid'])) {
+                $scope = 'item';
+                $scopeRef = !empty($arguments['quote_item_id'])
+                    ? QuoteItem::find((int) $arguments['quote_item_id'])
+                    : QuoteItem::where('uuid', $arguments['quote_item_uuid'])->first();
+                if (!$scopeRef) {
+                    return ToolResult::error('QUOTE_ITEM_NOT_FOUND', 'Vorgang nicht gefunden.');
+                }
+                $eventForAccess = $scopeRef->eventDay?->event;
+            } elseif (!empty($arguments['quote_id']) || !empty($arguments['quote_uuid']) || !empty($arguments['quote_token'])) {
+                $scope = 'quote';
+                $q = Quote::query();
+                if (!empty($arguments['quote_id']))    $q->where('id', (int) $arguments['quote_id']);
+                if (!empty($arguments['quote_uuid']))  $q->where('uuid', $arguments['quote_uuid']);
+                if (!empty($arguments['quote_token'])) $q->where('token', $arguments['quote_token']);
+                $scopeRef = $q->first();
+                if (!$scopeRef) {
+                    return ToolResult::error('QUOTE_NOT_FOUND', 'Angebot nicht gefunden.');
+                }
+                $eventForAccess = $scopeRef->event;
+            } elseif (!empty($arguments['event_id']) || !empty($arguments['event_uuid']) || !empty($arguments['event_number'])) {
+                $resolved = $this->resolveEvent($arguments, $context);
+                if ($resolved instanceof ToolResult) {
+                    return $resolved;
+                }
+                $scope = 'event';
+                $scopeRef = $resolved;
+                $eventForAccess = $resolved;
             } else {
-                return ToolResult::error('VALIDATION_ERROR', 'quote_item_id oder quote_item_uuid ist erforderlich.');
+                return ToolResult::error('VALIDATION_ERROR', 'Scope erforderlich: quote_item_id|quote_item_uuid ODER quote_id|quote_uuid|quote_token ODER event_id|event_uuid|event_number.');
             }
-            if (!$quoteItem) {
-                return ToolResult::error('QUOTE_ITEM_NOT_FOUND', 'Vorgang nicht gefunden.');
-            }
-            $event = $quoteItem->eventDay?->event;
-            if (!$event || !$context->user->teams()->where('teams.id', $event->team_id)->exists()) {
-                return ToolResult::error('ACCESS_DENIED', 'Kein Zugriff auf den Vorgang.');
+
+            if (!$eventForAccess || !$context->user->teams()->where('teams.id', $eventForAccess->team_id)->exists()) {
+                return ToolResult::error('ACCESS_DENIED', 'Kein Zugriff auf den Scope.');
             }
 
             // Set-Werte einsammeln + Aliases mappen.
@@ -154,8 +189,30 @@ class BulkUpdateQuotePositionsTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('VALIDATION_ERROR', 'set: mindestens ein Setzwert ist erforderlich.');
             }
 
-            // Filter aufbauen
-            $query = QuotePosition::where('quote_item_id', $quoteItem->id);
+            // ----- QuoteItem-IDs im Scope sammeln -----
+            $itemIds = [];
+            if ($scope === 'item') {
+                $itemIds = [(int) $scopeRef->id];
+            } elseif ($scope === 'quote') {
+                // Alle QuoteItems des Events ueber Tage einsammeln. Da QuoteItem nicht direkt
+                // an Quote haengt, sind im "Quote-Scope" alle Items des zugehoerigen Events
+                // gemeint (Standard-Interpretation: ein Event hat genau EIN aktuelles Angebot).
+                $itemIds = QuoteItem::whereHas('eventDay', fn ($q) => $q->where('event_id', $scopeRef->event_id))->pluck('id')->all();
+            } elseif ($scope === 'event') {
+                $itemIds = QuoteItem::whereHas('eventDay', fn ($q) => $q->where('event_id', $scopeRef->id))->pluck('id')->all();
+            }
+            if (empty($itemIds)) {
+                return ToolResult::success([
+                    'scope'        => $scope,
+                    'count'        => 0,
+                    'affected_ids' => [],
+                    'set_fields'   => array_keys($update),
+                    'message'      => 'Keine QuoteItems im Scope.',
+                ]);
+            }
+
+            // ----- Filter -----
+            $query = QuotePosition::whereIn('quote_item_id', $itemIds);
             $hasFilter = false;
 
             $idList = $arguments['position_ids'] ?? [];
@@ -176,50 +233,60 @@ class BulkUpdateQuotePositionsTool implements ToolContract, ToolMetadataContract
                 $query->where('name', 'like', '%' . str_replace(['%', '_'], ['\\%', '\\_'], (string) $arguments['name_contains']) . '%');
                 $hasFilter = true;
             }
-            if (!$hasFilter && empty($arguments['confirm_item_wide'])) {
-                return ToolResult::error('VALIDATION_ERROR', 'Kein Filter angegeben. Setze position_ids[]/gruppe/gruppe_contains/name_contains ODER confirm_item_wide=true.');
+            $confirmWide = (bool) ($arguments['confirm_scope_wide'] ?? ($arguments['confirm_item_wide'] ?? false));
+            if (!$hasFilter && !$confirmWide) {
+                return ToolResult::error('VALIDATION_ERROR', 'Kein Filter angegeben. Setze position_ids[]/gruppe/gruppe_contains/name_contains ODER confirm_scope_wide=true (gilt im gesamten Scope).');
             }
 
             $positions = $query->get();
             if ($positions->isEmpty()) {
                 return ToolResult::success([
-                    'quote_item_id' => $quoteItem->id,
-                    'count'         => 0,
-                    'affected_ids'  => [],
-                    'set_fields'    => array_keys($update),
-                    'message'       => 'Keine Positionen entsprechen dem Filter.',
+                    'scope'        => $scope,
+                    'count'        => 0,
+                    'affected_ids' => [],
+                    'set_fields'   => array_keys($update),
+                    'message'      => 'Keine Positionen entsprechen dem Filter.',
                 ]);
             }
 
             $known = [
+                'event_id', 'event_uuid', 'event_number',
+                'quote_id', 'quote_uuid', 'quote_token',
                 'quote_item_id', 'quote_item_uuid',
                 'position_ids', 'gruppe', 'gruppe_contains', 'name_contains',
-                'confirm_item_wide', 'set',
+                'confirm_scope_wide', 'confirm_item_wide', 'set',
             ];
             $ignored = array_values(array_diff(array_keys($arguments), $known));
 
+            // ----- Update ausfuehren -----
             $affected = [];
+            $touchedItemIds = [];
             foreach ($positions as $pos) {
-                // Auto-Recompute gesamt wenn anz/preis nicht direkt im set, aber ek/preis geaendert.
                 $rowUpdate = $update;
                 if (!array_key_exists('gesamt', $rowUpdate) && array_key_exists('preis', $rowUpdate)) {
                     $rowUpdate['gesamt'] = (float) $pos->anz * (float) $rowUpdate['preis'];
                 }
                 $pos->update($rowUpdate);
                 $affected[] = $pos->id;
+                $touchedItemIds[$pos->quote_item_id] = true;
             }
 
-            // Recalc des QuoteItems am Ende.
-            $this->recalcQuoteItem($quoteItem);
+            // ----- Recalc aller betroffenen QuoteItems -----
+            $touchedItems = QuoteItem::whereIn('id', array_keys($touchedItemIds))->get();
+            foreach ($touchedItems as $ti) {
+                $this->recalcQuoteItem($ti);
+            }
 
             return ToolResult::success([
-                'quote_item_id'   => $quoteItem->id,
+                'scope'           => $scope,
+                'event_id'        => $eventForAccess->id,
                 'count'           => count($affected),
                 'affected_ids'    => $affected,
+                'recalculated_quote_items' => array_values(array_keys($touchedItemIds)),
                 'set_fields'      => array_keys($update),
                 'aliases_applied' => $aliasesApplied,
                 'ignored_fields'  => $ignored,
-                'message'         => count($affected) . ' Position(en) aktualisiert.',
+                'message'         => count($affected) . ' Position(en) im ' . $scope . '-Scope aktualisiert (Recalc fuer ' . count($touchedItemIds) . ' Vorgaenge).',
             ]);
         } catch (\Throwable $e) {
             return ToolResult::error('EXECUTION_ERROR', 'Fehler beim Bulk-Update: ' . $e->getMessage());
