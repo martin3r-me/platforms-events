@@ -55,6 +55,39 @@ class GetArticleTool implements ToolContract, ToolMetadataContract
             if (!$context->user->teams()->where('teams.id', $a->team_id)->exists()) {
                 return ToolResult::error('ACCESS_DENIED', 'Kein Zugriff auf den Artikel.');
             }
+            // Reverse-Lookup: Locations/Pricings, die diesen Artikel referenzieren.
+            // Verknuepfung erfolgt ueber LocationPricing.article_number (1:N).
+            $linkedPricings = [];
+            $linkedPricingIds = [];
+            $articleNumber = trim((string) $a->article_number);
+            if ($articleNumber !== '' && class_exists('\\Platform\\Locations\\Models\\LocationPricing')) {
+                try {
+                    $pricings = \Platform\Locations\Models\LocationPricing::query()
+                        ->where('article_number', $articleNumber)
+                        ->with('location:id,name,kuerzel,team_id')
+                        ->orderBy('day_type_label')
+                        ->get();
+                    foreach ($pricings as $p) {
+                        // Team-Match: nur Pricings, deren Location demselben Team gehoert.
+                        if ($p->location && (int) $p->location->team_id !== (int) $a->team_id) {
+                            continue;
+                        }
+                        $linkedPricingIds[] = (int) $p->id;
+                        $linkedPricings[] = [
+                            'id'             => (int) $p->id,
+                            'location_id'    => $p->location?->id,
+                            'location_name'  => $p->location?->name,
+                            'location_kuerzel' => $p->location?->kuerzel,
+                            'day_type_label' => $p->day_type_label,
+                            'label'          => $p->label,
+                            'price_net'      => isset($p->price_net) ? (float) $p->price_net : null,
+                        ];
+                    }
+                } catch (\Throwable $e) {
+                    // Soft-fail: Locations-Modul evtl. inkompatible Spalten – Liste bleibt leer.
+                }
+            }
+
             return ToolResult::success([
                 'id'                  => $a->id,
                 'uuid'                => $a->uuid,
@@ -78,6 +111,12 @@ class GetArticleTool implements ToolContract, ToolMetadataContract
                 'is_active'           => (bool) $a->is_active,
                 'sort_order'          => $a->sort_order,
                 'procurement_type'    => $a->procurement_type,
+                'linked_pricing_ids'  => $linkedPricingIds,
+                'linked_pricings'     => $linkedPricings,
+                '_field_hints'        => [
+                    'linked_pricings'    => 'Reverse-Lookup ueber LocationPricing.article_number = article_number. Soft-Dependency auf platforms-locations.',
+                    'linked_pricing_ids' => 'Kompaktes Array der Pricing-IDs (= linked_pricings[*].id).',
+                ],
             ]);
         } catch (\Throwable $e) {
             return ToolResult::error('EXECUTION_ERROR', 'Fehler beim Laden: ' . $e->getMessage());

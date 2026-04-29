@@ -26,7 +26,9 @@ class ListArticlesTool implements ToolContract, ToolMetadataContract
         return 'GET /events/articles - Listet Artikel-Stammdaten. '
             . 'Optional: search (string, Volltext über article_number/name/description), '
             . 'article_group_id (int, Filter), is_active (bool, Default true), '
-            . 'limit (int, Default 50, max 200), team_id (int, Default: aktuelles Team).';
+            . 'limit (int, Default 50, max 200), team_id (int, Default: aktuelles Team), '
+            . 'include_linked_pricings (bool, Default false – pro Artikel kompakte Liste linked_pricing_ids[] '
+            . 'aus platforms-locations via article_number-Match).';
     }
 
     public function getSchema(): array
@@ -39,6 +41,7 @@ class ListArticlesTool implements ToolContract, ToolMetadataContract
                 'article_group_id' => ['type' => 'integer', 'description' => 'Filter: nur Artikel dieser Gruppe.'],
                 'is_active'        => ['type' => 'boolean', 'description' => 'Default true.'],
                 'limit'            => ['type' => 'integer', 'description' => 'Default 50, max 200.'],
+                'include_linked_pricings' => ['type' => 'boolean', 'description' => 'Default false. true = pro Artikel linked_pricing_ids[] aus LocationPricing per article_number-Match.'],
             ],
         ];
     }
@@ -78,20 +81,46 @@ class ListArticlesTool implements ToolContract, ToolMetadataContract
                 $rows = $query->orderBy('sort_order')->orderBy('name')->limit($limit)->get();
             }
 
-            $items = $rows->map(fn (Article $a) => [
-                'id'              => $a->id,
-                'uuid'            => $a->uuid,
-                'article_number'  => $a->article_number,
-                'name'            => $a->name,
-                'description'    => $a->description,
-                'gebinde'         => $a->gebinde,
-                'ek'              => (float) $a->ek,
-                'vk'              => (float) $a->vk,
-                'mwst'            => $a->mwst,
-                'article_group_id'=> $a->article_group_id,
-                'procurement_type'=> $a->procurement_type,
-                'is_active'       => (bool) $a->is_active,
-            ])->all();
+            // Optionaler Reverse-Lookup: linked_pricing_ids[] pro Artikel.
+            $includeLinkedPricings = (bool) ($arguments['include_linked_pricings'] ?? false);
+            $linkedMap = []; // article_number => [pricing_id, ...]
+            if ($includeLinkedPricings && class_exists('\\Platform\\Locations\\Models\\LocationPricing')) {
+                $articleNumbers = $rows->pluck('article_number')->filter()->unique()->values()->all();
+                if (!empty($articleNumbers)) {
+                    try {
+                        $pricingsByNumber = \Platform\Locations\Models\LocationPricing::query()
+                            ->whereIn('article_number', $articleNumbers)
+                            ->whereHas('location', fn ($q) => $q->where('team_id', $teamId))
+                            ->get(['id', 'article_number']);
+                        foreach ($pricingsByNumber as $p) {
+                            $linkedMap[(string) $p->article_number][] = (int) $p->id;
+                        }
+                    } catch (\Throwable $e) {
+                        // Soft-fail – Map bleibt leer.
+                    }
+                }
+            }
+
+            $items = $rows->map(function (Article $a) use ($includeLinkedPricings, $linkedMap) {
+                $row = [
+                    'id'              => $a->id,
+                    'uuid'            => $a->uuid,
+                    'article_number'  => $a->article_number,
+                    'name'            => $a->name,
+                    'description'    => $a->description,
+                    'gebinde'         => $a->gebinde,
+                    'ek'              => (float) $a->ek,
+                    'vk'              => (float) $a->vk,
+                    'mwst'            => $a->mwst,
+                    'article_group_id'=> $a->article_group_id,
+                    'procurement_type'=> $a->procurement_type,
+                    'is_active'       => (bool) $a->is_active,
+                ];
+                if ($includeLinkedPricings) {
+                    $row['linked_pricing_ids'] = $linkedMap[(string) $a->article_number] ?? [];
+                }
+                return $row;
+            })->all();
 
             return ToolResult::success([
                 'team_id' => $teamId,
