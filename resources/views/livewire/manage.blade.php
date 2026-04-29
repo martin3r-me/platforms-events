@@ -168,16 +168,32 @@
                             $dateDay = $event->start_date?->format('d');
                             $dateMonth = $event->start_date ? $monthShort[(int) $event->start_date->format('m')] : '';
                             $dateYear  = $event->start_date?->format('Y');
+                            $endLabel = null;
+                            if ($event->end_date && $event->start_date && $event->end_date != $event->start_date) {
+                                $endDay = $event->end_date->format('d');
+                                $endMonthShort = $monthShort[(int) $event->end_date->format('m')] ?? '';
+                                $endYear = $event->end_date->format('Y');
+                                if ($endYear !== $dateYear) {
+                                    $endLabel = $endDay . '. ' . $endMonthShort . ' ' . $endYear;
+                                } elseif ($endMonthShort !== $dateMonth) {
+                                    $endLabel = $endDay . '. ' . $endMonthShort;
+                                } else {
+                                    $endLabel = $endDay . '. ' . $dateMonth;
+                                }
+                            }
                         @endphp
 
                         <div x-data="{ open: false }" class="bg-white border border-[var(--ui-border)] border-l-4 {{ $sBorder }} rounded-lg overflow-hidden hover:shadow-sm transition">
                             <div class="flex items-stretch">
                                 {{-- Datum-Block --}}
                                 <a href="{{ route('events.show', ['slug' => $event->slug]) }}" wire:navigate
-                                   class="flex flex-col items-center justify-center px-5 py-3 bg-slate-50/50 min-w-[82px] text-center hover:bg-slate-50 no-underline">
+                                   class="flex flex-col items-center justify-center px-5 py-3 bg-slate-50/50 min-w-[96px] text-center hover:bg-slate-50 no-underline">
                                     @if($dateDay)
                                         <span class="text-[1.5rem] font-bold text-[var(--ui-secondary)] leading-none">{{ $dateDay }}</span>
                                         <span class="text-[0.6rem] font-semibold text-[var(--ui-muted)] mt-0.5 uppercase tracking-wider">{{ $dateMonth }} {{ $dateYear }}</span>
+                                        @if($endLabel)
+                                            <span class="text-[0.6rem] text-[var(--ui-muted)] mt-0.5 whitespace-nowrap">→ {{ $endLabel }}</span>
+                                        @endif
                                     @else
                                         <span class="text-[0.65rem] text-[var(--ui-muted)] italic">kein Datum</span>
                                     @endif
@@ -211,12 +227,7 @@
                                                 {{ $event->location }}
                                             </span>
                                         @endif
-                                        @if($event->end_date && $event->end_date != $event->start_date)
-                                            <span class="flex items-center gap-1 font-mono">
-                                                @svg('heroicon-o-calendar-days', 'w-3 h-3')
-                                                bis {{ $event->end_date->format('d.m.Y') }}
-                                            </span>
-                                        @endif
+                                        {{-- Bis-Datum wird im Datums-Block links angezeigt (→ Tag. Monat). --}}
                                     </div>
                                 </div>
 
