@@ -114,6 +114,17 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('ACCESS_DENIED', 'Du hast keinen Zugriff auf dieses Event.');
             }
 
+            // potential ist ein Enum – nur vordefinierte Werte zulassen.
+            if (array_key_exists('potential', $arguments) && $arguments['potential'] !== null && $arguments['potential'] !== '') {
+                $allowed = CreateEventTool::POTENTIAL_OPTIONS;
+                if (!in_array($arguments['potential'], $allowed, true)) {
+                    return ToolResult::error(
+                        'VALIDATION_ERROR',
+                        'potential: nur folgende Werte sind erlaubt: "' . implode('" | "', $allowed) . '". Erhalten: "' . $arguments['potential'] . '".'
+                    );
+                }
+            }
+
             $update = [];
             foreach (array_merge(self::UPDATABLE_STRING_FIELDS, self::UPDATABLE_DATE_FIELDS) as $f) {
                 if (array_key_exists($f, $arguments)) {

@@ -19,6 +19,15 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
 {
     use RecommendsMissingFields;
 
+    /** Strikt erlaubte Werte fuer event.potential (LLM-Schutz vor Freitext). */
+    public const POTENTIAL_OPTIONS = [
+        '10% (unwahrscheinlich)',
+        '30% (unverbindliche Anfrage)',
+        '50% (Tendenz offen)',
+        '70% (deutliche Tendenz zur Buchung)',
+        '90% (ziemlich definitiv)',
+    ];
+
     public function getName(): string
     {
         return 'events.events.POST';
@@ -109,7 +118,7 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 // [Eingang]
                 'inquiry_date' => ['type' => 'string', 'description' => '[Eingang] YYYY-MM-DD (Default: heute).'],
                 'inquiry_time' => ['type' => 'string', 'description' => '[Eingang] HH:MM (Default: jetzt).'],
-                'potential'    => ['type' => 'string', 'description' => '[Eingang] Wahrscheinlichkeitstext. Vordefinierte Werte (im UI-Dropdown direkt waehlbar): "10% (unwahrscheinlich)" | "30% (unverbindliche Anfrage)" | "50% (Tendenz offen)" | "70% (deutliche Tendenz zur Buchung)" | "90% (ziemlich definitiv)". Andere Werte werden gespeichert und im UI als "(extern gesetzt)" markiert.'],
+                'potential'    => ['type' => 'string', 'enum' => self::POTENTIAL_OPTIONS, 'description' => '[Eingang] Wahrscheinlichkeit. STRIKT: nur die 5 vordefinierten Werte sind erlaubt – "10% (unwahrscheinlich)" | "30% (unverbindliche Anfrage)" | "50% (Tendenz offen)" | "70% (deutliche Tendenz zur Buchung)" | "90% (ziemlich definitiv)". Andere Werte (z.B. "60%") werden mit VALIDATION_ERROR abgelehnt.'],
 
                 // [Weiterleitung]
                 'forwarded'       => ['type' => 'boolean', 'description' => '[Weiterleitung] Wurde die Anfrage weitergeleitet?'],
@@ -149,6 +158,16 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
             $userHasAccess = $context->user->teams()->where('teams.id', $teamId)->exists();
             if (!$userHasAccess) {
                 return ToolResult::error('ACCESS_DENIED', "Du hast keinen Zugriff auf Team-ID {$teamId}.");
+            }
+
+            // potential ist ein Enum – nur vordefinierte Werte zulassen.
+            if (array_key_exists('potential', $arguments) && $arguments['potential'] !== null && $arguments['potential'] !== '') {
+                if (!in_array($arguments['potential'], self::POTENTIAL_OPTIONS, true)) {
+                    return ToolResult::error(
+                        'VALIDATION_ERROR',
+                        'potential: nur folgende Werte sind erlaubt: "' . implode('" | "', self::POTENTIAL_OPTIONS) . '". Erhalten: "' . $arguments['potential'] . '".'
+                    );
+                }
             }
 
             $data = [
