@@ -35,7 +35,8 @@ class CreateScheduleItemTool implements ToolContract, ToolMetadataContract
             . 'Verknuepfung erfolgt logisch ueber identische datum-Werte. '
             . 'WICHTIG: linked (boolean, default false) ist KEIN Tag-Link, sondern eine manuelle '
             . 'Block-Verbindung mit dem direkt darueber liegenden Eintrag (UI-Feature fuer optisch zusammengehoerige '
-            . 'Bloecke). Tag-Match wird im Result als matched_event_day_id zurueckgegeben.';
+            . 'Bloecke). Tag-Zuordnung steht im Response als matched_event_day_id (logischer Match per datum) und '
+            . 'is_day_linked (true wenn matched_event_day_id != null).';
     }
 
     public function getSchema(): array
@@ -124,9 +125,12 @@ class CreateScheduleItemTool implements ToolContract, ToolMetadataContract
                 'beschreibung'          => $item->beschreibung,
                 'raum'                  => $item->raum,
                 'bemerkung'             => $item->bemerkung,
+                // linked = manuelles UI-Block-Flag (mit dem Eintrag DARUEBER verbunden).
+                // Hat NICHTS mit Tag-Zuordnung zu tun – dafuer is_day_linked / matched_event_day_id.
                 'linked'                => (bool) $item->linked,
                 'sort_order'            => $item->sort_order,
                 'matched_event_day_id'  => $matchedDayId,
+                'is_day_linked'         => $matchedDayId !== null,
                 'aliases_applied'       => $aliasesApplied,
                 'ignored_fields'        => $ignored,
                 'message'               => "Ablauf-Eintrag zu Event #{$event->event_number} hinzugefügt.",

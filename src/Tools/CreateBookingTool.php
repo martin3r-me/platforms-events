@@ -205,6 +205,19 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
                 ];
             }
 
+            // primary_location nach Anlegen berechnen (erste Buchung mit location_id).
+            // Convenience: spart einen separaten events.event.GET nach dem Bulk-POST.
+            $primaryBooking = $event->bookings()->whereNotNull('location_id')
+                ->with('location')
+                ->orderBy('sort_order')->orderBy('datum')
+                ->first();
+            $primaryLocation = $primaryBooking?->location ? [
+                'id'      => $primaryBooking->location->id,
+                'name'    => $primaryBooking->location->name,
+                'kuerzel' => $primaryBooking->location->kuerzel,
+                'gruppe'  => $primaryBooking->location->gruppe,
+            ] : null;
+
             return ToolResult::success([
                 'event_id'      => $event->id,
                 'event_number'  => $event->event_number,
@@ -213,8 +226,9 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
                 'optionsrang'   => $base['optionsrang'],
                 'count'         => count($created),
                 'bookings'      => $created,
-                'aliases_applied' => $aliases,
-                'ignored_fields'  => $ignored,
+                'primary_location' => $primaryLocation,
+                'aliases_applied'  => $aliases,
+                'ignored_fields'   => $ignored,
                 'message'       => count($created) === 1
                     ? "Buchung fuer Event #{$event->event_number} angelegt."
                     : count($created) . " Buchungen fuer Event #{$event->event_number} angelegt.",

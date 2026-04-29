@@ -66,6 +66,13 @@ class CreateEventNoteTool implements ToolContract, ToolMetadataContract
 
             $known = array_merge(['type', 'text', 'user_name'], array_keys($this->eventSelectorSchema()));
             $ignored = array_values(array_diff(array_keys($arguments), $known));
+            // Hinweise pro ignored-Feld (z.B. title gibt es bewusst nicht – Markdown-Header in text nutzen).
+            $ignoredHints = [];
+            foreach ($ignored as $f) {
+                if ($f === 'title' || $f === 'titel') {
+                    $ignoredHints[$f] = 'Notizen haben kein dediziertes Titelfeld – nutze einen Markdown-Header (z.B. "## ...") am Anfang von text.';
+                }
+            }
 
             $note = EventNote::create([
                 'event_id'  => $event->id,
@@ -86,6 +93,7 @@ class CreateEventNoteTool implements ToolContract, ToolMetadataContract
                 'created_at'     => $note->created_at?->toIso8601String(),
                 'aliases_applied'=> [],
                 'ignored_fields' => $ignored,
+                'ignored_hints'  => $ignoredHints,
                 'message'        => "Notiz zu Event #{$event->event_number} angelegt.",
             ]);
         } catch (\Throwable $e) {

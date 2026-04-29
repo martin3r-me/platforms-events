@@ -136,9 +136,11 @@ class UpdateScheduleItemTool implements ToolContract, ToolMetadataContract
                 'beschreibung'         => $item->beschreibung,
                 'raum'                 => $item->raum,
                 'bemerkung'            => $item->bemerkung,
+                // linked = manuelles UI-Block-Flag, Tag-Zuordnung via is_day_linked / matched_event_day_id.
                 'linked'               => (bool) $item->linked,
                 'sort_order'           => $item->sort_order,
                 'matched_event_day_id' => $matchedDayId,
+                'is_day_linked'        => $matchedDayId !== null,
                 'aliases_applied'      => $aliasesApplied,
                 'ignored_fields'       => $ignored,
                 'message'              => 'Ablauf-Eintrag aktualisiert.',

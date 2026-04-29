@@ -86,6 +86,12 @@ class UpdateEventNoteTool implements ToolContract, ToolMetadataContract
 
             $known = ['note_id', 'uuid', 'type', 'text', 'user_name'];
             $ignored = array_values(array_diff(array_keys($arguments), $known));
+            $ignoredHints = [];
+            foreach ($ignored as $f) {
+                if ($f === 'title' || $f === 'titel') {
+                    $ignoredHints[$f] = 'Notizen haben kein dediziertes Titelfeld – nutze einen Markdown-Header (z.B. "## ...") am Anfang von text.';
+                }
+            }
 
             $note->update($update);
 
@@ -100,6 +106,7 @@ class UpdateEventNoteTool implements ToolContract, ToolMetadataContract
                 'updated_at'     => $note->updated_at?->toIso8601String(),
                 'updated_fields' => array_keys($update),
                 'ignored_fields' => $ignored,
+                'ignored_hints'  => $ignoredHints,
                 'message'        => 'Notiz aktualisiert.',
             ]);
         } catch (\Throwable $e) {
