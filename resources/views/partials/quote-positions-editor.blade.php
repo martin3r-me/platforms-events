@@ -1,4 +1,6 @@
 @php
+    use Platform\Events\Services\PositionAggregator;
+
     $fmt = $fmt ?? fn($v) => number_format((float)$v, 2, ',', '.');
     $bausteine = $bausteine ?? [];
 
@@ -21,36 +23,14 @@
         ];
     };
 
-    $totalArticles = $positions->filter(fn($p) => !$isBaustein((string) $p->gruppe))->count();
     $priceMode = (string) ($event->quote_price_mode ?? 'netto');
-    $isBrutto  = $priceMode === 'brutto';
-
-    // MwSt-Aufschluesselung pro Satz. Je nach Preis-Modus des Vorgangs wird
-    // der gespeicherte `gesamt`-Wert als Netto (Default) oder Brutto
-    // interpretiert; netto/brutto werden daraus abgeleitet.
-    $mwstBreakdown = $positions
-        ->filter(fn($p) => !$isBaustein((string) $p->gruppe))
-        ->groupBy(fn($p) => (string) ($p->mwst ?: '0%'))
-        ->map(function ($group, $rate) use ($isBrutto) {
-            $raw = (float) $group->sum('gesamt');
-            $pct = (float) filter_var($rate, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-            if ($isBrutto) {
-                $gross = $raw;
-                $net   = $pct > 0 ? round($gross / (1 + $pct / 100), 2) : $gross;
-                $tax   = round($gross - $net, 2);
-            } else {
-                $net   = $raw;
-                $tax   = round($net * ($pct / 100), 2);
-                $gross = round($net + $tax, 2);
-            }
-            return ['rate' => $rate, 'pct' => $pct, 'net' => $net, 'tax' => $tax, 'gross' => $gross];
-        })
-        ->sortBy('pct')
-        ->values();
-    $totalNet   = (float) $mwstBreakdown->sum('net');
-    $totalTax   = (float) $mwstBreakdown->sum('tax');
-    $totalGross = (float) $mwstBreakdown->sum('gross');
-    $totalGesamt = $isBrutto ? $totalGross : $totalNet;
+    $agg = PositionAggregator::aggregate($positions, $bausteine, $priceMode);
+    $totalArticles = $agg['total_articles'];
+    $mwstBreakdown = $agg['mwst_breakdown'];
+    $totalNet      = $agg['total_net'];
+    $totalGross    = $agg['total_gross'];
+    $isBrutto      = $agg['is_brutto'];
+    $totalGesamt   = $isBrutto ? $totalGross : $totalNet;
 @endphp
 <div id="positions-editor-{{ $activeItem->id }}"
      x-data
@@ -155,42 +135,7 @@
     {{-- Positions-Tabelle. table-fixed + colgroup: Name nimmt den Rest, andere Spalten haben feste schmale Breiten. --}}
     <div class="overflow-x-auto">
         <table class="w-full border-collapse text-[0.65rem] table-fixed" x-data="{ lastIdx: null }">
-            <colgroup>
-                <col style="width: 8px;">     {{-- Handle --}}
-                <col style="width: 110px;">   {{-- Gruppe --}}
-                <col>                          {{-- Name (flex) --}}
-                <col style="width: 50px;">    {{-- Anz --}}
-                <col style="width: 50px;">    {{-- Anz.2 --}}
-                <col style="width: 56px;">    {{-- Uhrzeit --}}
-                <col style="width: 56px;">    {{-- Bis --}}
-                <col style="width: 70px;">    {{-- Gebinde --}}
-                <col style="width: 64px;">    {{-- EK --}}
-                <col style="width: 80px;">    {{-- Preis --}}
-                <col style="width: 64px;">    {{-- MwSt --}}
-                <col style="width: 90px;">    {{-- Gesamt --}}
-                <col style="width: 100px;">   {{-- Modus --}}
-                <col style="width: 140px;">   {{-- Bemerkung --}}
-                <col style="width: 28px;">    {{-- Trash --}}
-            </colgroup>
-            <thead>
-                <tr class="bg-slate-50 border-b border-slate-200">
-                    <th class="px-0 py-1.5"></th>
-                    <th class="text-left py-1.5 px-2.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Gruppe</th>
-                    <th class="text-left py-1.5 px-2 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Name</th>
-                    <th class="text-right py-1.5 px-1 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Anz.</th>
-                    <th class="text-right py-1.5 px-1 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Anz.2</th>
-                    <th class="text-left py-1.5 px-1 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Uhrzeit</th>
-                    <th class="text-left py-1.5 px-1 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Bis</th>
-                    <th class="text-left py-1.5 px-1 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Gebinde</th>
-                    <th class="text-right py-1.5 px-1 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">EK €</th>
-                    <th class="text-right py-1.5 px-1 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Preis</th>
-                    <th class="text-center py-1.5 px-1 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">MwSt.</th>
-                    <th class="text-right py-1.5 px-1 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Gesamt €</th>
-                    <th class="text-left py-1.5 px-1 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider" title="Getränke-Modus (Override pro Position)">Modus</th>
-                    <th class="text-left py-1.5 px-1 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Bemerkung</th>
-                    <th></th>
-                </tr>
-            </thead>
+            @include('events::partials._position-table-columns', ['mode' => 'quote'])
             <tbody data-sortable-action="reorderQuotePositions">
                 @forelse($positions as $p)
                     @php

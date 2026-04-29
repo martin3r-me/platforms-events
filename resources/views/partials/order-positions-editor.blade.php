@@ -1,4 +1,6 @@
 @php
+    use Platform\Events\Services\PositionAggregator;
+
     $fmt = $fmt ?? fn($v) => number_format((float)$v, 2, ',', '.');
     $bausteine = $bausteine ?? [];
 
@@ -15,10 +17,12 @@
             'nameStyle' => 'color: ' . ($b['text'] ?? '#64748b') . '; font-weight: 700; font-style: italic;',
         ];
     };
-    $totalArticles = $positions->filter(fn($p) => !$isBaustein((string) $p->gruppe))->count();
-    $totalGesamt = (float) $positions->sum('gesamt');
-    $priceMode   = (string) ($activeItem->price_mode ?? 'netto');
-    $isBrutto    = $priceMode === 'brutto';
+
+    $priceMode = (string) ($activeItem->price_mode ?? 'netto');
+    $agg = PositionAggregator::aggregate($positions, $bausteine, $priceMode);
+    $totalArticles = $agg['total_articles'];
+    $isBrutto      = $agg['is_brutto'];
+    $totalGesamt   = $isBrutto ? $agg['total_gross'] : $agg['total_net'];
 @endphp
 <div id="order-positions-editor-{{ $activeItem->id }}"
      x-data
@@ -84,25 +88,8 @@
         labelPlural="Positionen" />
 
     <div class="overflow-x-auto">
-        <table class="w-full border-collapse text-[0.65rem]" x-data="{ lastIdx: null }">
-            <thead>
-                <tr class="bg-slate-50 border-b border-slate-200">
-                    <th class="px-0 py-1.5 w-[8px]"></th>
-                    <th class="text-left py-1.5 px-2.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Gruppe</th>
-                    <th class="text-left py-1.5 px-2 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Name</th>
-                    <th class="text-right py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Anz.</th>
-                    <th class="text-right py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Anz.2</th>
-                    <th class="text-left py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Uhrzeit</th>
-                    <th class="text-left py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Bis</th>
-                    <th class="text-left py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Gebinde</th>
-                    <th class="text-right py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Basis-EK</th>
-                    <th class="text-right py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">EK €</th>
-                    <th class="text-center py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">MwSt.</th>
-                    <th class="text-right py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Gesamt €</th>
-                    <th class="text-left py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Bemerkung</th>
-                    <th class="w-8"></th>
-                </tr>
-            </thead>
+        <table class="w-full border-collapse text-[0.65rem] table-fixed" x-data="{ lastIdx: null }">
+            @include('events::partials._position-table-columns', ['mode' => 'order'])
             <tbody data-sortable-action="reorderOrderPositions">
                 @forelse($positions as $p)
                     @php
@@ -118,21 +105,21 @@
                             toggle="togglePositionSelection"
                             range="togglePositionRange"
                             toggleAll="toggleAllPositions" />
-                        <td class="py-1.5 px-2.5 text-slate-600">{{ $p->gruppe }}</td>
-                        <td class="py-1.5 px-2" style="{{ $rs['nameStyle'] ?: '' }}">{{ $p->name }}</td>
-                        <td class="py-1.5 px-1.5 text-right font-mono">{{ $text ? '' : $p->anz }}</td>
-                        <td class="py-1.5 px-1.5 text-right font-mono text-slate-500">{{ $text ? '' : $p->anz2 }}</td>
-                        <td class="py-1.5 px-1.5 font-mono text-slate-500">{{ $text ? '' : $p->uhrzeit }}</td>
-                        <td class="py-1.5 px-1.5 font-mono text-slate-500">{{ $text ? '' : $p->bis }}</td>
-                        <td class="py-1.5 px-1.5 text-slate-500">{{ $text ? '' : $p->gebinde }}</td>
-                        <td class="py-1.5 px-1.5 text-right font-mono text-slate-400">{{ $text ? '' : ($p->basis_ek ? $fmt($p->basis_ek) : '') }}</td>
-                        <td class="py-1.5 px-1.5 text-right font-mono font-semibold">{{ $text ? '' : $fmt($p->ek) }}</td>
-                        <td class="py-1.5 px-1.5 text-center text-slate-500">{{ $text ? '' : $p->mwst }}</td>
-                        <td class="py-1.5 px-1.5 text-right font-mono font-bold text-red-600">{{ $text ? '' : $fmt($p->gesamt) }}</td>
-                        <td class="py-1.5 px-1.5 text-slate-500 italic truncate max-w-[200px]" title="{{ $p->bemerkung }}">{{ $p->bemerkung }}</td>
-                        <td class="py-1.5 px-1.5">
+                        <td class="py-1.5 px-2.5 text-slate-600 truncate" title="{{ $p->gruppe }}">{{ $p->gruppe }}</td>
+                        <td class="py-1.5 px-2 truncate" style="{{ $rs['nameStyle'] ?: '' }}" title="{{ $p->name }}">{{ $p->name }}</td>
+                        <td class="py-1.5 px-1 text-right font-mono">{{ $text ? '' : $p->anz }}</td>
+                        <td class="py-1.5 px-1 text-right font-mono text-slate-500">{{ $text ? '' : $p->anz2 }}</td>
+                        <td class="py-1.5 px-1 font-mono text-slate-500">{{ $text ? '' : $p->uhrzeit }}</td>
+                        <td class="py-1.5 px-1 font-mono text-slate-500">{{ $text ? '' : $p->bis }}</td>
+                        <td class="py-1.5 px-1 text-slate-500 truncate" title="{{ $p->gebinde }}">{{ $text ? '' : $p->gebinde }}</td>
+                        <td class="py-1.5 px-1 text-right font-mono text-slate-400">{{ $text ? '' : ($p->basis_ek ? $fmt($p->basis_ek) : '') }}</td>
+                        <td class="py-1.5 px-1 text-right font-mono font-semibold">{{ $text ? '' : $fmt($p->ek) }}</td>
+                        <td class="py-1.5 px-1 text-center text-slate-500">{{ $text ? '' : $p->mwst }}</td>
+                        <td class="py-1.5 px-1 text-right font-mono font-bold text-red-600">{{ $text ? '' : $fmt($p->gesamt) }}</td>
+                        <td class="py-1.5 px-1 text-slate-500 italic truncate" title="{{ $p->bemerkung }}">{{ $p->bemerkung }}</td>
+                        <td class="py-1.5 px-1 whitespace-nowrap">
                             <button wire:click="deletePosition({{ $p->id }})" wire:confirm="Position löschen?"
-                                    class="text-red-500 hover:text-red-700">
+                                    class="text-red-500 hover:text-red-700 p-0.5">
                                 @svg('heroicon-o-trash', 'w-3 h-3')
                             </button>
                         </td>
