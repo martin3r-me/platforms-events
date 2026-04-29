@@ -23,16 +23,22 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
 
     public function getDescription(): string
     {
-        return 'POST /events - Erstellt ein Event. Pflichtfeld: name. Optional: customer, crm_company_id, group, location, start_date, end_date, status, '
-            . 'organizer_contact, organizer_crm_contact_id, organizer_contact_onsite, organizer_onsite_crm_contact_id, organizer_for_whom, '
-            . 'orderer_company, orderer_contact, orderer_via, orderer_crm_company_id, orderer_crm_contact_id, '
-            . 'invoice_to, invoice_contact, invoice_date_type, invoice_crm_company_id, invoice_crm_contact_id, '
-            . 'responsible, responsible_onsite, cost_center, cost_carrier, quote_price_mode (netto|brutto), event_type, '
-            . 'sign_left, sign_right, mr_data (object), follow_up_date, follow_up_note, '
-            . 'delivery_address, delivery_address_crm_company_id, delivery_location_id, delivery_note, '
-            . 'inquiry_date, inquiry_time, inquiry_note, potential, forwarded, forwarding_date, forwarding_time, '
-            . 'auto_create_days (boolean, default true) – bei gesetztem start_date werden EventDays angelegt. '
-            . 'pax / default_pax (int|string) – wird beim Anlegen der EventDays in pers_von/pers_bis aller Tage geschrieben.';
+        return 'POST /events - Erstellt ein Event. Pflicht: name. '
+            . 'Felder sind in fachliche GRUPPEN organisiert (UI-Bereiche): '
+            . '[Stammdaten] name, event_type, status, start_date, end_date, group, location (Legacy-Freitext); '
+            . '[Kunde] customer (Legacy), crm_company_id (FK CRM-Firma); '
+            . '[Veranstalter] organizer_contact, organizer_crm_contact_id, organizer_contact_onsite, organizer_onsite_crm_contact_id, organizer_for_whom; '
+            . '[Besteller] orderer_company, orderer_contact, orderer_via, orderer_crm_company_id, orderer_crm_contact_id; '
+            . '[Rechnung] invoice_to, invoice_contact, invoice_date_type, invoice_crm_company_id, invoice_crm_contact_id; '
+            . '[Zustaendigkeit] responsible, responsible_onsite, cost_center, cost_carrier, quote_price_mode (netto|brutto), sign_left, sign_right; '
+            . '[Wiedervorlage] follow_up_date, follow_up_note; '
+            . '[Lieferung] delivery_address (Freitext), delivery_address_crm_company_id (CRM-Firma), delivery_location_id (eigene Location), delivery_note – '
+            . 'genau eine der drei Quellen befuellen, abhaengig vom Lieferadress-Typ; '
+            . '[Eingang] inquiry_date, inquiry_time, inquiry_note, potential; '
+            . '[Weiterleitung] forwarded, forwarding_date, forwarding_time; '
+            . '[Management Report] mr_data (object); '
+            . '[Auto-Days] auto_create_days (boolean, default true) erzeugt EventDays aus start_date..end_date; '
+            . 'pax / default_pax (int|string) wird in pers_von/pers_bis aller Tage gesetzt.';
     }
 
     public function getSchema(): array
@@ -40,66 +46,78 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
         return [
             'type' => 'object',
             'properties' => [
-                'name'       => ['type' => 'string',  'description' => 'Name der Veranstaltung (ERFORDERLICH).'],
-                'team_id'    => ['type' => 'integer', 'description' => 'Optional: Team-ID. Default: aktuelles Team.'],
-                'customer'   => ['type' => 'string',  'description' => 'Kundenname (freitext, legacy). Bevorzugt crm_company_id verwenden.'],
-                'crm_company_id' => ['type' => 'integer', 'description' => 'FK auf crm_companies.id (Kunde).'],
-                'group'      => ['type' => 'string'],
-                'location'   => ['type' => 'string',  'description' => 'Ort (freitext, legacy).'],
-                'start_date' => ['type' => 'string',  'description' => 'YYYY-MM-DD.'],
-                'end_date'   => ['type' => 'string',  'description' => 'YYYY-MM-DD.'],
-                'status'     => ['type' => 'string',  'description' => 'Option | Definitiv | Vertrag | Abgeschlossen | Storno | Warteliste | Tendenz'],
-                'event_type' => ['type' => 'string'],
+                // [Stammdaten]
+                'name'       => ['type' => 'string',  'description' => '[Stammdaten] Name der Veranstaltung (ERFORDERLICH).'],
+                'team_id'    => ['type' => 'integer', 'description' => '[System] Optional: Team-ID. Default: aktuelles Team.'],
+                'group'      => ['type' => 'string',  'description' => '[Stammdaten] Gruppe/Bereich (freitext).'],
+                'location'   => ['type' => 'string',  'description' => '[Stammdaten] Ort (freitext, Legacy – fuer Lieferadresse stattdessen delivery_*).'],
+                'start_date' => ['type' => 'string',  'description' => '[Stammdaten] YYYY-MM-DD.'],
+                'end_date'   => ['type' => 'string',  'description' => '[Stammdaten] YYYY-MM-DD.'],
+                'status'     => ['type' => 'string',  'description' => '[Stammdaten] Option | Definitiv | Vertrag | Abgeschlossen | Storno | Warteliste | Tendenz.'],
+                'event_type' => ['type' => 'string',  'description' => '[Stammdaten] Anlass-Typ (siehe Settings → Anlass-Typen).'],
 
-                'organizer_contact'              => ['type' => 'string'],
-                'organizer_crm_contact_id'       => ['type' => 'integer', 'description' => 'FK crm_contacts.id (Veranstalter-Ansprechpartner).'],
-                'organizer_contact_onsite'       => ['type' => 'string'],
-                'organizer_onsite_crm_contact_id'=> ['type' => 'integer', 'description' => 'FK crm_contacts.id (Veranstalter vor Ort).'],
-                'organizer_for_whom'             => ['type' => 'string'],
+                // [Kunde]
+                'customer'       => ['type' => 'string',  'description' => '[Kunde] Kundenname (freitext, Legacy). Bevorzugt crm_company_id verwenden.'],
+                'crm_company_id' => ['type' => 'integer', 'description' => '[Kunde] FK crm_companies.id.'],
 
-                'orderer_company'        => ['type' => 'string'],
-                'orderer_contact'        => ['type' => 'string'],
-                'orderer_via'            => ['type' => 'string', 'description' => 'mail|phone|meeting|referral|other'],
-                'orderer_crm_company_id' => ['type' => 'integer', 'description' => 'FK crm_companies.id (Besteller-Firma).'],
-                'orderer_crm_contact_id' => ['type' => 'integer', 'description' => 'FK crm_contacts.id (Besteller-Ansprechpartner).'],
+                // [Veranstalter]
+                'organizer_contact'              => ['type' => 'string',  'description' => '[Veranstalter] Ansprechpartner (freitext).'],
+                'organizer_crm_contact_id'       => ['type' => 'integer', 'description' => '[Veranstalter] FK crm_contacts.id (Ansprechpartner).'],
+                'organizer_contact_onsite'       => ['type' => 'string',  'description' => '[Veranstalter] Ansprechpartner vor Ort (freitext).'],
+                'organizer_onsite_crm_contact_id'=> ['type' => 'integer', 'description' => '[Veranstalter] FK crm_contacts.id (vor Ort).'],
+                'organizer_for_whom'             => ['type' => 'string',  'description' => '[Veranstalter] Veranstaltung fuer (Anzeige-Text).'],
 
-                'invoice_to'             => ['type' => 'string'],
-                'invoice_contact'        => ['type' => 'string'],
-                'invoice_date_type'      => ['type' => 'string'],
-                'invoice_crm_company_id' => ['type' => 'integer', 'description' => 'FK crm_companies.id (Rechnungs-Empfaenger).'],
-                'invoice_crm_contact_id' => ['type' => 'integer', 'description' => 'FK crm_contacts.id (Rechnungs-Ansprechpartner).'],
+                // [Besteller]
+                'orderer_company'        => ['type' => 'string',  'description' => '[Besteller] Firma (freitext).'],
+                'orderer_contact'        => ['type' => 'string',  'description' => '[Besteller] Ansprechpartner (freitext).'],
+                'orderer_via'            => ['type' => 'string',  'description' => '[Besteller] Eingangskanal: mail|phone|meeting|referral|other.'],
+                'orderer_crm_company_id' => ['type' => 'integer', 'description' => '[Besteller] FK crm_companies.id.'],
+                'orderer_crm_contact_id' => ['type' => 'integer', 'description' => '[Besteller] FK crm_contacts.id.'],
 
-                'responsible'        => ['type' => 'string', 'description' => 'Hauptverantwortliche/r (Name oder User-Identifier).'],
-                'responsible_onsite' => ['type' => 'string', 'description' => 'Verantwortliche/r vor Ort am Veranstaltungstag.'],
-                'cost_center'        => ['type' => 'string'],
-                'cost_carrier'       => ['type' => 'string'],
-                'quote_price_mode'   => ['type' => 'string', 'description' => 'Preis-Modus fuer das gesamte Angebot: "netto" (default) oder "brutto".'],
+                // [Rechnung]
+                'invoice_to'             => ['type' => 'string',  'description' => '[Rechnung] Adressat-Name (freitext).'],
+                'invoice_contact'        => ['type' => 'string',  'description' => '[Rechnung] Ansprechpartner (freitext).'],
+                'invoice_date_type'      => ['type' => 'string',  'description' => '[Rechnung] Rechnungsdatum-Typ.'],
+                'invoice_crm_company_id' => ['type' => 'integer', 'description' => '[Rechnung] FK crm_companies.id.'],
+                'invoice_crm_contact_id' => ['type' => 'integer', 'description' => '[Rechnung] FK crm_contacts.id.'],
 
-                'sign_left'  => ['type' => 'string'],
-                'sign_right' => ['type' => 'string'],
+                // [Zustaendigkeit]
+                'responsible'        => ['type' => 'string', 'description' => '[Zustaendigkeit] Hauptverantwortliche/r.'],
+                'responsible_onsite' => ['type' => 'string', 'description' => '[Zustaendigkeit] Verantwortliche/r vor Ort am Veranstaltungstag.'],
+                'cost_center'        => ['type' => 'string', 'description' => '[Zustaendigkeit] Kostenstelle (siehe Settings).'],
+                'cost_carrier'       => ['type' => 'string', 'description' => '[Zustaendigkeit] Kostentraeger.'],
+                'quote_price_mode'   => ['type' => 'string', 'description' => '[Zustaendigkeit] Preis-Modus fuer das Angebot: "netto" (default) oder "brutto".'],
+                'sign_left'          => ['type' => 'string', 'description' => '[Zustaendigkeit] Linke Unterschrift.'],
+                'sign_right'         => ['type' => 'string', 'description' => '[Zustaendigkeit] Rechte Unterschrift.'],
 
-                'mr_data' => ['type' => 'object', 'description' => 'Management-Report Werte als Key/Value-Map.'],
+                // [Management Report]
+                'mr_data' => ['type' => 'object', 'description' => '[Management Report] Werte als Key/Value-Map.'],
 
-                'follow_up_date' => ['type' => 'string', 'description' => 'YYYY-MM-DD'],
-                'follow_up_note' => ['type' => 'string'],
+                // [Wiedervorlage]
+                'follow_up_date' => ['type' => 'string', 'description' => '[Wiedervorlage] YYYY-MM-DD.'],
+                'follow_up_note' => ['type' => 'string', 'description' => '[Wiedervorlage] Bemerkung.'],
 
-                'delivery_address'                => ['type' => 'string'],
-                'delivery_address_crm_company_id' => ['type' => 'integer', 'description' => 'FK crm_companies.id (Lieferadresse aus CRM).'],
-                'delivery_location_id'            => ['type' => 'integer', 'description' => 'FK auf locations_locations.id (eigene Location).'],
-                'delivery_note'                   => ['type' => 'string',  'description' => 'Freitext, z.B. "Haupteingang".'],
+                // [Lieferung] – exakt EINE der drei Quellen befuellen
+                'delivery_address'                => ['type' => 'string',  'description' => '[Lieferung] Freitext-Adresse, wenn weder CRM-Firma noch eigene Location passt.'],
+                'delivery_address_crm_company_id' => ['type' => 'integer', 'description' => '[Lieferung] FK crm_companies.id (Lieferadresse aus CRM).'],
+                'delivery_location_id'            => ['type' => 'integer', 'description' => '[Lieferung] FK locations_locations.id (eigene Location).'],
+                'delivery_note'                   => ['type' => 'string',  'description' => '[Lieferung] Hinweis (z.B. "Haupteingang").'],
 
-                'inquiry_date' => ['type' => 'string'],
-                'inquiry_time' => ['type' => 'string'],
-                'inquiry_note' => ['type' => 'string'],
-                'potential'    => ['type' => 'string'],
+                // [Eingang]
+                'inquiry_date' => ['type' => 'string', 'description' => '[Eingang] YYYY-MM-DD (Default: heute).'],
+                'inquiry_time' => ['type' => 'string', 'description' => '[Eingang] HH:MM (Default: jetzt).'],
+                'inquiry_note' => ['type' => 'string', 'description' => '[Eingang] Bemerkung.'],
+                'potential'    => ['type' => 'string', 'description' => '[Eingang] Wahrscheinlichkeitstext, z.B. "70% (deutliche Tendenz zur Buchung)".'],
 
-                'forwarded'       => ['type' => 'boolean'],
-                'forwarding_date' => ['type' => 'string'],
-                'forwarding_time' => ['type' => 'string'],
+                // [Weiterleitung]
+                'forwarded'       => ['type' => 'boolean', 'description' => '[Weiterleitung] Wurde die Anfrage weitergeleitet?'],
+                'forwarding_date' => ['type' => 'string',  'description' => '[Weiterleitung] YYYY-MM-DD.'],
+                'forwarding_time' => ['type' => 'string',  'description' => '[Weiterleitung] HH:MM.'],
 
-                'auto_create_days' => ['type' => 'boolean', 'description' => 'Default true: EventDays aus start_date..end_date anlegen.'],
-                'pax'              => ['type' => ['integer', 'string'], 'description' => 'Default-Personenzahl. Wird auf alle automatisch angelegten EventDays in pers_von/pers_bis geschrieben. Alias: default_pax.'],
-                'default_pax'      => ['type' => ['integer', 'string'], 'description' => 'Alias fuer pax.'],
+                // [Auto-Days]
+                'auto_create_days' => ['type' => 'boolean', 'description' => '[Auto-Days] Default true: EventDays aus start_date..end_date anlegen.'],
+                'pax'              => ['type' => ['integer', 'string'], 'description' => '[Auto-Days] Default-Personenzahl. Setzt pers_von/pers_bis aller Tage. Alias: default_pax.'],
+                'default_pax'      => ['type' => ['integer', 'string'], 'description' => '[Auto-Days] Alias fuer pax.'],
             ],
             'required' => ['name'],
         ];

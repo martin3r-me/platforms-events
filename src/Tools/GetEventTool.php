@@ -27,10 +27,14 @@ class GetEventTool implements ToolContract, ToolMetadataContract
     {
         return 'GET /events/{id} - Liefert Details zu einem Event. Identifikation: event_id ODER uuid ODER event_number (auch ohne "#"). '
             . 'Optional include: days, bookings, schedule, notes (alle true/false). '
-            . 'Hinweis: Foreign-Keys (CRM-Companies/Contacts, eigene Locations) sind doppelt im Result: '
+            . 'Hydratisierungs-Pattern: Foreign-Keys liegen doppelt im Result – '
             . 'als Roh-FK (z.B. crm_company_id) UND als hydratisiertes Objekt (z.B. customer_company={id,name}). '
-            . 'Das alte Freitext-Feld customer bleibt aus Kompat-Gruenden parallel bestehen (deprecated, '
-            . 'bevorzugt crm_company_id + customer_company).';
+            . 'Hydratisierte Refs: customer_company, organizer_contact_ref, organizer_onsite_contact, '
+            . 'orderer_company_ref, orderer_contact_ref, invoice_company, invoice_contact_ref, '
+            . 'delivery_company (CRM-Firma als Lieferadresse) und delivery_location (eigener Raum). '
+            . 'Abgeleitete Felder: primary_location (erste Buchung mit location_id) sowie '
+            . 'delivery = {source, label, location?|company?|address?, note} – Aggregat ueber alle drei Lieferadress-Quellen. '
+            . 'Legacy-Felder customer/location bleiben parallel (deprecated).';
     }
 
     public function getSchema(): array
@@ -163,6 +167,25 @@ class GetEventTool implements ToolContract, ToolMetadataContract
                 'kuerzel' => $primaryBooking->location->kuerzel,
                 'gruppe'  => $primaryBooking->location->gruppe,
             ] : null;
+
+            // Abgeleitetes delivery-Aggregat: liefert genau eine sichtbare Quelle
+            // (own_location | crm_company | freetext | none). Source-Priorisierung
+            // = location > crm_company > freetext (entspricht UI-Pattern).
+            $deliveryAggregate = ['source' => 'none', 'label' => null, 'note' => $event->delivery_note ?: null];
+            if (!empty($payload['delivery_location'])) {
+                $deliveryAggregate['source']   = 'own_location';
+                $deliveryAggregate['label']    = $payload['delivery_location']['name'] ?? null;
+                $deliveryAggregate['location'] = $payload['delivery_location'];
+            } elseif (!empty($payload['delivery_company'])) {
+                $deliveryAggregate['source']  = 'crm_company';
+                $deliveryAggregate['label']   = $payload['delivery_company']['name'] ?? null;
+                $deliveryAggregate['company'] = $payload['delivery_company'];
+            } elseif (!empty($event->delivery_address)) {
+                $deliveryAggregate['source']  = 'freetext';
+                $deliveryAggregate['label']   = $event->delivery_address;
+                $deliveryAggregate['address'] = $event->delivery_address;
+            }
+            $payload['delivery'] = $deliveryAggregate;
 
             if (!empty($arguments['include_days'])) {
                 $payload['days'] = $event->days()->orderBy('sort_order')->get()
