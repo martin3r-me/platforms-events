@@ -214,17 +214,39 @@
                                        class="text-sm font-bold text-[var(--ui-secondary)] hover:text-[var(--ui-primary)] no-underline truncate">
                                         {{ $event->name ?: 'Unbenannte Veranstaltung' }}
                                     </a>
+                                    @php
+                                        $customerLabel = $customerLabels[$event->id] ?? null;
+                                        // Personenzahl-Spanne ueber alle Tage berechnen.
+                                        $paxValues = $event->days->flatMap(fn ($d) => [
+                                            $d->pers_von !== null && $d->pers_von !== '' ? (int) $d->pers_von : null,
+                                            $d->pers_bis !== null && $d->pers_bis !== '' ? (int) $d->pers_bis : null,
+                                        ])->filter(fn ($v) => $v !== null && $v > 0)->values();
+                                        $paxMin = $paxValues->min();
+                                        $paxMax = $paxValues->max();
+                                        $paxLabel = null;
+                                        if ($paxMin !== null && $paxMax !== null) {
+                                            $paxLabel = $paxMin === $paxMax
+                                                ? number_format($paxMin, 0, ',', '.') . ' Pers.'
+                                                : number_format($paxMin, 0, ',', '.') . '–' . number_format($paxMax, 0, ',', '.') . ' Pers.';
+                                        }
+                                    @endphp
                                     <div class="flex items-center gap-3 text-[0.65rem] text-[var(--ui-muted)] flex-wrap">
-                                        @if($event->customer)
+                                        @if($customerLabel)
                                             <span class="flex items-center gap-1">
                                                 @svg('heroicon-o-user', 'w-3 h-3')
-                                                {{ $event->customer }}
+                                                {{ $customerLabel }}
                                             </span>
                                         @endif
                                         @if($event->location)
                                             <span class="flex items-center gap-1">
                                                 @svg('heroicon-o-map-pin', 'w-3 h-3')
                                                 {{ $event->location }}
+                                            </span>
+                                        @endif
+                                        @if($paxLabel)
+                                            <span class="flex items-center gap-1">
+                                                @svg('heroicon-o-users', 'w-3 h-3')
+                                                {{ $paxLabel }}
                                             </span>
                                         @endif
                                         {{-- Bis-Datum wird im Datums-Block links angezeigt (→ Tag. Monat). --}}

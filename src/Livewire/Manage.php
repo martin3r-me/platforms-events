@@ -196,6 +196,9 @@ class Manage extends Component
             ->orderBy('start_date')
             ->paginate(50);
 
+        // Eager-load Tage (nur Pax-Felder) fuer die Karten – min/max Personenzahl.
+        $events->getCollection()->load(['days' => fn ($q) => $q->select('id', 'event_id', 'pers_von', 'pers_bis')]);
+
         $stats = [
             'total'    => Event::where('team_id', $team->id)->count(),
             'upcoming' => Event::where('team_id', $team->id)
@@ -229,6 +232,17 @@ class Manage extends Component
             ],
         ];
 
+        // Customer-Label pro Event vorberechnen: Wenn crm_company_id gesetzt ist,
+        // bevorzugt den CRM-Namen; sonst Legacy-Freitext customer.
+        $customerLabels = [];
+        foreach ($events as $e) {
+            $label = null;
+            if ($e->crm_company_id && $crmResolver) {
+                $label = $crmResolver->displayName($e->crm_company_id);
+            }
+            $customerLabels[$e->id] = $label ?: ($e->customer ?: null);
+        }
+
         return view('events::livewire.manage', [
             'events'              => $events,
             'stats'               => $stats,
@@ -238,6 +252,7 @@ class Manage extends Component
             'mrFields'            => $mrFields,
             'crmCompanyAvailable' => $crmCompanyAvailable,
             'crmSlots'            => $crmSlots,
+            'customerLabels'      => $customerLabels,
         ])->layout('platform::layouts.app');
     }
 }
