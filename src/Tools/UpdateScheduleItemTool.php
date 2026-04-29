@@ -143,6 +143,11 @@ class UpdateScheduleItemTool implements ToolContract, ToolMetadataContract
                 'is_day_linked'        => $matchedDayId !== null,
                 'aliases_applied'      => $aliasesApplied,
                 'ignored_fields'       => $ignored,
+                '_field_hints'         => [
+                    'linked'               => 'UI-Block-Flag: optisch verbunden mit dem Eintrag DARUEBER (zwei Halb-Bloecke werden als ein Block dargestellt). NICHT die Tag-Zuordnung.',
+                    'is_day_linked'        => 'Abgeleitet: true wenn datum mit einem EventDay matcht. Nutze stattdessen matched_event_day_id, um den konkreten Tag zu identifizieren.',
+                    'matched_event_day_id' => 'EventDay-ID, dessen datum mit dem ScheduleItem-datum uebereinstimmt (logisch, kein FK).',
+                ],
                 'message'              => 'Ablauf-Eintrag aktualisiert.',
             ]);
         } catch (\Throwable $e) {
