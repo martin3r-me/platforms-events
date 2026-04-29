@@ -253,17 +253,51 @@
                                     </div>
                                 </div>
 
-                                {{-- MR-Progress --}}
-                                @if($mrTotal > 0)
-                                    <div class="hidden md:flex items-center gap-2 px-4 py-3 flex-shrink-0">
-                                        <div class="w-16 h-1 bg-slate-200 rounded-full overflow-hidden">
-                                            <div class="h-full bg-green-500 transition-all" style="width: {{ $mrTotal > 0 ? ($mrDone / $mrTotal) * 100 : 0 }}%"></div>
-                                        </div>
-                                        <span class="text-[0.6rem] font-mono text-[var(--ui-muted)] whitespace-nowrap">
-                                            {{ $mrDone }}/{{ $mrTotal }}
-                                            @if($mrOpen > 0)
-                                                <span class="text-red-500 font-semibold">· {{ $mrOpen }} offen</span>
-                                            @endif
+                                {{-- MR-Progress + Potential (kompakt) --}}
+                                @php
+                                    $potentialPct = (int) preg_replace('/[^0-9]/', '', (string) ($event->potential ?? ''));
+                                    if ($potentialPct >= 90)      { $potBar = 'bg-green-600';   $potText = 'text-green-700'; }
+                                    elseif ($potentialPct >= 70)  { $potBar = 'bg-green-500';   $potText = 'text-green-600'; }
+                                    elseif ($potentialPct >= 50)  { $potBar = 'bg-amber-500';   $potText = 'text-amber-700'; }
+                                    elseif ($potentialPct >= 30)  { $potBar = 'bg-orange-500';  $potText = 'text-orange-700';}
+                                    elseif ($potentialPct >= 10)  { $potBar = 'bg-red-500';     $potText = 'text-red-600';  }
+                                    else                          { $potBar = 'bg-slate-300';   $potText = 'text-slate-400'; }
+                                    $revenue = $revenueByEvent[$event->id] ?? null;
+                                @endphp
+                                @if($mrTotal > 0 || $potentialPct > 0)
+                                    <div class="hidden md:flex flex-col gap-1 px-4 py-3 flex-shrink-0 min-w-[140px]">
+                                        @if($mrTotal > 0)
+                                            <div class="flex items-center gap-2">
+                                                <div class="w-16 h-1 bg-slate-200 rounded-full overflow-hidden">
+                                                    <div class="h-full bg-green-500 transition-all" style="width: {{ $mrTotal > 0 ? ($mrDone / $mrTotal) * 100 : 0 }}%"></div>
+                                                </div>
+                                                <span class="text-[0.6rem] font-mono text-[var(--ui-muted)] whitespace-nowrap">
+                                                    {{ $mrDone }}/{{ $mrTotal }}
+                                                    @if($mrOpen > 0)
+                                                        <span class="text-red-500 font-semibold">· {{ $mrOpen }} offen</span>
+                                                    @endif
+                                                </span>
+                                            </div>
+                                        @endif
+                                        @if($potentialPct > 0)
+                                            <div class="flex items-center gap-2">
+                                                <div class="w-16 h-1 bg-slate-200 rounded-full overflow-hidden">
+                                                    <div class="h-full {{ $potBar }} transition-all" style="width: {{ $potentialPct }}%"></div>
+                                                </div>
+                                                <span class="text-[0.6rem] font-mono whitespace-nowrap {{ $potText }}">
+                                                    {{ $potentialPct }}%
+                                                    <span class="text-[var(--ui-muted)] uppercase tracking-wider ml-0.5">Potential</span>
+                                                </span>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endif
+
+                                {{-- Umsatz --}}
+                                @if($revenue !== null && $revenue > 0)
+                                    <div class="hidden md:flex items-center px-3 py-3 flex-shrink-0">
+                                        <span class="text-[0.78rem] font-bold font-mono text-green-700 whitespace-nowrap" title="Umsatz aus Angebots-Vorgaengen">
+                                            {{ number_format($revenue, 2, ',', '.') }} €
                                         </span>
                                     </div>
                                 @endif

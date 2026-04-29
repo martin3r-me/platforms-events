@@ -4,6 +4,7 @@ namespace Platform\Events\Livewire;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Url;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
@@ -199,6 +200,23 @@ class Manage extends Component
         // Eager-load Tage (nur Pax-Felder) fuer die Karten – min/max Personenzahl.
         $events->getCollection()->load(['days' => fn ($q) => $q->select('id', 'event_id', 'pers_von', 'pers_bis')]);
 
+        // Umsatz pro Event aggregieren: Summe events_quote_items.umsatz ueber alle Event-Days.
+        $eventIds = $events->getCollection()->pluck('id')->all();
+        $revenueByEvent = [];
+        if (!empty($eventIds)) {
+            $rows = DB::table('events_quote_items')
+                ->join('events_event_days', 'events_quote_items.event_day_id', '=', 'events_event_days.id')
+                ->whereIn('events_event_days.event_id', $eventIds)
+                ->whereNull('events_quote_items.deleted_at')
+                ->whereNull('events_event_days.deleted_at')
+                ->select('events_event_days.event_id as event_id', DB::raw('SUM(events_quote_items.umsatz) as total'))
+                ->groupBy('events_event_days.event_id')
+                ->get();
+            foreach ($rows as $r) {
+                $revenueByEvent[(int) $r->event_id] = (float) $r->total;
+            }
+        }
+
         $stats = [
             'total'    => Event::where('team_id', $team->id)->count(),
             'upcoming' => Event::where('team_id', $team->id)
@@ -253,6 +271,7 @@ class Manage extends Component
             'crmCompanyAvailable' => $crmCompanyAvailable,
             'crmSlots'            => $crmSlots,
             'customerLabels'      => $customerLabels,
+            'revenueByEvent'      => $revenueByEvent,
         ])->layout('platform::layouts.app');
     }
 }
