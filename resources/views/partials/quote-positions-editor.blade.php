@@ -152,26 +152,27 @@
         label="Position"
         labelPlural="Positionen" />
 
-    {{-- Positions-Tabelle --}}
+    {{-- Positions-Tabelle (7 Spalten; sekundaere Felder gestapelt in den Hauptzellen) --}}
     <div class="overflow-x-auto">
         <table class="w-full border-collapse text-[0.65rem]" x-data="{ lastIdx: null }">
+            <colgroup>
+                <col style="width: 8px;">
+                <col style="width: 130px;">
+                <col>
+                <col style="width: 90px;">
+                <col style="width: 110px;">
+                <col style="width: 130px;">
+                <col style="width: 32px;">
+            </colgroup>
             <thead>
                 <tr class="bg-slate-50 border-b border-slate-200">
-                    <th class="px-0 py-1.5 w-[8px]"></th>
+                    <th class="px-0 py-1.5"></th>
                     <th class="text-left py-1.5 px-2.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Gruppe</th>
-                    <th class="text-left py-1.5 px-2 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Name</th>
+                    <th class="text-left py-1.5 px-2 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Bezeichnung</th>
                     <th class="text-right py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Anz.</th>
-                    <th class="text-right py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Anz.2</th>
-                    <th class="text-left py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Uhrzeit</th>
-                    <th class="text-left py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Bis</th>
-                    <th class="text-left py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Gebinde</th>
-                    <th class="text-right py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">EK €</th>
                     <th class="text-right py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Preis</th>
-                    <th class="text-center py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">MwSt.</th>
                     <th class="text-right py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Gesamt €</th>
-                    <th class="text-left py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider" title="Getränke-Modus (Override pro Position)">Modus</th>
-                    <th class="text-left py-1.5 px-1.5 text-[0.55rem] font-semibold text-[var(--ui-muted)] uppercase tracking-wider">Bemerkung</th>
-                    <th class="w-8"></th>
+                    <th class=""></th>
                 </tr>
             </thead>
             <tbody data-sortable-action="reorderQuotePositions">
@@ -182,7 +183,11 @@
                         $inp = 'w-full border border-transparent hover:border-slate-200 focus:border-[var(--ui-primary)]/60 rounded px-1 py-0.5 text-[0.65rem] bg-transparent focus:bg-white';
                         $isSelected = in_array($p->uuid, $selectedPositionUuids ?? [], true);
                     @endphp
-                    <tr wire:key="pos-{{ $p->id }}" data-sortable-uuid="{{ $p->uuid }}" class="border-b border-slate-100 hover:bg-slate-50/40 group {{ $isSelected ? 'bg-blue-50/50' : '' }}" style="{{ $rs['style'] }}">
+                    @php
+                        $hasOverride = !empty($p->beverage_mode);
+                        $sub = 'w-full border border-transparent hover:border-slate-200 focus:border-[var(--ui-primary)]/60 rounded px-1 py-0.5 text-[0.58rem] bg-transparent focus:bg-white text-slate-500';
+                    @endphp
+                    <tr wire:key="pos-{{ $p->id }}" data-sortable-uuid="{{ $p->uuid }}" class="border-b border-slate-100 hover:bg-slate-50/40 group align-top {{ $isSelected ? 'bg-blue-50/50' : '' }}" style="{{ $rs['style'] }}">
                         <x-events::select-handle
                             :uuid="$p->uuid"
                             :index="$loop->index"
@@ -190,88 +195,101 @@
                             toggle="togglePositionSelection"
                             range="togglePositionRange"
                             toggleAll="toggleAllPositions" />
+                        {{-- Gruppe --}}
                         <td class="py-1 px-2">
                             <input type="text" value="{{ $p->gruppe }}"
                                    x-data @blur="if ($el.value !== @js($p->gruppe)) $wire.updatePositionField({{ $p->id }}, 'gruppe', $el.value)"
                                    class="{{ $inp }} text-slate-600">
                         </td>
-                        <td class="py-1 px-1.5">
+                        {{-- Bezeichnung (Name oben, Detail-Sub-Zeile darunter) --}}
+                        <td class="py-1 px-1.5 {{ $text ? 'opacity-40' : '' }}">
                             <input type="text" value="{{ $p->name }}"
                                    x-data @blur="if ($el.value !== @js($p->name)) $wire.updatePositionField({{ $p->id }}, 'name', $el.value)"
                                    style="{{ $rs['nameStyle'] ?: '' }}"
+                                   placeholder="Bezeichnung"
                                    class="{{ $inp }}">
+                            <div class="flex items-center gap-1 mt-0.5 flex-wrap">
+                                {{-- Uhrzeit --}}
+                                <input type="text" value="{{ $p->uhrzeit }}" maxlength="5" inputmode="numeric"
+                                       title="Uhrzeit"
+                                       x-data="{ invalid: false }"
+                                       x-on:input="let v = $el.value.replace(/[^0-9]/g,'').substring(0,4); if (v.length >= 3) v = v.substring(0,2)+':'+v.substring(2); $el.value = v; invalid = false;"
+                                       x-on:blur="const v = $el.value.trim(); const ok = v === '' || /^([01]?\d|2[0-3]):[0-5]\d$/.test(v); invalid = !ok; if (ok && v !== @js((string)$p->uhrzeit)) $wire.updatePositionField({{ $p->id }}, 'uhrzeit', v)"
+                                       :class="invalid ? 'ring-1 ring-red-500 border-red-500 bg-red-50' : ''"
+                                       placeholder="von"
+                                       class="{{ $sub }} font-mono w-[44px] text-center">
+                                <span class="text-[0.55rem] text-slate-300">–</span>
+                                {{-- Bis --}}
+                                <input type="text" value="{{ $p->bis }}" maxlength="5" inputmode="numeric"
+                                       title="Bis"
+                                       x-data="{ invalid: false }"
+                                       x-on:input="let v = $el.value.replace(/[^0-9]/g,'').substring(0,4); if (v.length >= 3) v = v.substring(0,2)+':'+v.substring(2); $el.value = v; invalid = false;"
+                                       x-on:blur="const v = $el.value.trim(); const ok = v === '' || /^([01]?\d|2[0-3]):[0-5]\d$/.test(v); invalid = !ok; if (ok && v !== @js((string)$p->bis)) $wire.updatePositionField({{ $p->id }}, 'bis', v)"
+                                       :class="invalid ? 'ring-1 ring-red-500 border-red-500 bg-red-50' : ''"
+                                       placeholder="bis"
+                                       class="{{ $sub }} font-mono w-[44px] text-center">
+                                {{-- Gebinde --}}
+                                <input type="text" value="{{ $p->gebinde }}"
+                                       title="Gebinde / Einheit"
+                                       x-data @blur="if ($el.value !== @js((string)$p->gebinde)) $wire.updatePositionField({{ $p->id }}, 'gebinde', $el.value)"
+                                       placeholder="Gebinde"
+                                       class="{{ $sub }} w-[80px]">
+                                {{-- Anz2 --}}
+                                <input type="text" value="{{ $p->anz2 }}"
+                                       title="Anz.2"
+                                       x-data @blur="if ($el.value !== @js((string)$p->anz2)) $wire.updatePositionField({{ $p->id }}, 'anz2', $el.value)"
+                                       placeholder="Anz.2"
+                                       class="{{ $sub }} font-mono text-right w-[44px]">
+                                {{-- EK --}}
+                                <input type="number" step="0.01" value="{{ $p->ek }}"
+                                       title="EK €"
+                                       x-data @blur="if (parseFloat($el.value) !== parseFloat(@js((string)$p->ek))) $wire.updatePositionField({{ $p->id }}, 'ek', $el.value)"
+                                       placeholder="EK"
+                                       class="{{ $sub }} font-mono text-right text-slate-400 w-[60px]">
+                                {{-- Bemerkung (flex-grow) --}}
+                                <input type="text" value="{{ $p->bemerkung }}"
+                                       title="Bemerkung"
+                                       x-data @blur="if ($el.value !== @js((string)$p->bemerkung)) $wire.updatePositionField({{ $p->id }}, 'bemerkung', $el.value)"
+                                       placeholder="Bemerkung"
+                                       class="{{ $sub }} italic flex-1 min-w-[80px]">
+                                {{-- Modus (Override) --}}
+                                <select wire:change="setPositionBeverageMode({{ $p->id }}, $event.target.value)"
+                                        title="{{ $hasOverride ? 'Position-Override: ' . $p->beverage_mode : 'Modus: erbt vom Vorgang' . ($activeItem->beverage_mode ? ' (' . $activeItem->beverage_mode . ')' : '') }}"
+                                        class="{{ $sub }} {{ $hasOverride ? 'text-amber-700 font-semibold' : '' }} w-[110px]">
+                                    <option value="__inherit__" @selected(!$hasOverride)>⤴ Vorgang</option>
+                                    @foreach(($beverageModes ?? []) as $mode)
+                                        <option value="{{ $mode }}" @selected($p->beverage_mode === $mode)>{{ $mode }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </td>
+                        {{-- Anz --}}
                         <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
                             <input type="text" value="{{ $p->anz }}"
                                    x-data @blur="if ($el.value !== @js((string)$p->anz)) $wire.updatePositionField({{ $p->id }}, 'anz', $el.value)"
                                    class="{{ $inp }} font-mono text-right">
                         </td>
-                        <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
-                            <input type="text" value="{{ $p->anz2 }}"
-                                   x-data @blur="if ($el.value !== @js((string)$p->anz2)) $wire.updatePositionField({{ $p->id }}, 'anz2', $el.value)"
-                                   class="{{ $inp }} font-mono text-right text-slate-500">
-                        </td>
-                        <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
-                            <input type="text" value="{{ $p->uhrzeit }}" maxlength="5" inputmode="numeric"
-                                   x-data="{ invalid: false }"
-                                   x-on:input="let v = $el.value.replace(/[^0-9]/g,'').substring(0,4); if (v.length >= 3) v = v.substring(0,2)+':'+v.substring(2); $el.value = v; invalid = false;"
-                                   x-on:blur="const v = $el.value.trim(); const ok = v === '' || /^([01]?\d|2[0-3]):[0-5]\d$/.test(v); invalid = !ok; if (ok && v !== @js((string)$p->uhrzeit)) $wire.updatePositionField({{ $p->id }}, 'uhrzeit', v)"
-                                   :class="invalid ? 'ring-1 ring-red-500 border-red-500 bg-red-50' : ''"
-                                   class="{{ $inp }} font-mono text-slate-500">
-                        </td>
-                        <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
-                            <input type="text" value="{{ $p->bis }}" maxlength="5" inputmode="numeric"
-                                   x-data="{ invalid: false }"
-                                   x-on:input="let v = $el.value.replace(/[^0-9]/g,'').substring(0,4); if (v.length >= 3) v = v.substring(0,2)+':'+v.substring(2); $el.value = v; invalid = false;"
-                                   x-on:blur="const v = $el.value.trim(); const ok = v === '' || /^([01]?\d|2[0-3]):[0-5]\d$/.test(v); invalid = !ok; if (ok && v !== @js((string)$p->bis)) $wire.updatePositionField({{ $p->id }}, 'bis', v)"
-                                   :class="invalid ? 'ring-1 ring-red-500 border-red-500 bg-red-50' : ''"
-                                   class="{{ $inp }} font-mono text-slate-500">
-                        </td>
-                        <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
-                            <input type="text" value="{{ $p->gebinde }}"
-                                   x-data @blur="if ($el.value !== @js((string)$p->gebinde)) $wire.updatePositionField({{ $p->id }}, 'gebinde', $el.value)"
-                                   class="{{ $inp }} text-slate-500">
-                        </td>
-                        <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
-                            <input type="number" step="0.01" value="{{ $p->ek }}"
-                                   x-data @blur="if (parseFloat($el.value) !== parseFloat(@js((string)$p->ek))) $wire.updatePositionField({{ $p->id }}, 'ek', $el.value)"
-                                   class="{{ $inp }} font-mono text-right text-slate-400">
-                        </td>
+                        {{-- Preis (oben Preis, MwSt darunter klein) --}}
                         <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
                             <input type="number" step="0.01" value="{{ $p->preis }}"
                                    x-data @blur="if (parseFloat($el.value) !== parseFloat(@js((string)$p->preis))) $wire.updatePositionField({{ $p->id }}, 'preis', $el.value)"
                                    class="{{ $inp }} font-mono text-right font-semibold">
-                        </td>
-                        <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
                             <select x-data @change="$wire.updatePositionField({{ $p->id }}, 'mwst', $el.value)"
-                                    class="{{ $inp }} text-center text-slate-500">
+                                    title="MwSt"
+                                    class="{{ $sub }} mt-0.5 text-center">
                                 @foreach(['0%','7%','19%'] as $m)
-                                    <option value="{{ $m }}" @selected($p->mwst === $m)>{{ $m }}</option>
+                                    <option value="{{ $m }}" @selected($p->mwst === $m)>MwSt {{ $m }}</option>
                                 @endforeach
                             </select>
                         </td>
+                        {{-- Gesamt --}}
                         <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
                             <input type="number" step="0.01" value="{{ $p->gesamt }}"
                                    x-data @blur="if (parseFloat($el.value) !== parseFloat(@js((string)$p->gesamt))) $wire.updatePositionField({{ $p->id }}, 'gesamt', $el.value)"
                                    class="{{ $inp }} font-mono text-right font-bold text-green-700">
                         </td>
-                        <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
-                            @php $hasOverride = !empty($p->beverage_mode); @endphp
-                            <select wire:change="setPositionBeverageMode({{ $p->id }}, $event.target.value)"
-                                    title="{{ $hasOverride ? 'Position-Override: ' . $p->beverage_mode : 'Erbt vom Vorgang' . ($activeItem->beverage_mode ? ' (' . $activeItem->beverage_mode . ')' : '') }}"
-                                    class="{{ $inp }} text-[0.6rem] {{ $hasOverride ? 'text-amber-700 font-semibold' : 'text-slate-400' }}">
-                                <option value="__inherit__" @selected(!$hasOverride)>⤴ Vorgang</option>
-                                @foreach(($beverageModes ?? []) as $mode)
-                                    <option value="{{ $mode }}" @selected($p->beverage_mode === $mode)>{{ $mode }}</option>
-                                @endforeach
-                            </select>
-                        </td>
-                        <td class="py-1 px-1">
-                            <input type="text" value="{{ $p->bemerkung }}"
-                                   x-data @blur="if ($el.value !== @js((string)$p->bemerkung)) $wire.updatePositionField({{ $p->id }}, 'bemerkung', $el.value)"
-                                   class="{{ $inp }} text-slate-500 italic">
-                        </td>
-                        <td class="py-1 px-1 whitespace-nowrap">
+                        {{-- Trash --}}
+                        <td class="py-1 px-1 whitespace-nowrap align-top">
                             <button wire:click="deletePosition({{ $p->id }})" wire:confirm="Position löschen?"
                                     class="text-red-500 hover:text-red-700 p-0.5 opacity-0 group-hover:opacity-100">
                                 @svg('heroicon-o-trash', 'w-3 h-3')
@@ -280,7 +298,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="15" class="py-6 text-center text-[0.7rem] text-[var(--ui-muted)]">
+                        <td colspan="7" class="py-6 text-center text-[0.7rem] text-[var(--ui-muted)]">
                             Noch keine Positionen. Fülle die Eingabefelder unten aus oder nutze „Headline" / „Speisentexte" / „Trenntext" als Gruppe für Text-Zeilen.
                         </td>
                     </tr>
@@ -289,34 +307,34 @@
             @if($positions->isNotEmpty())
                 <tfoot>
                     <tr class="bg-slate-50 border-t-2 border-slate-200">
-                        <td colspan="11" class="py-2 px-2.5 text-right text-[0.58rem] font-bold uppercase tracking-wider text-slate-500">
+                        <td colspan="5" class="py-2 px-2.5 text-right text-[0.58rem] font-bold uppercase tracking-wider text-slate-500">
                             Positionen <span class="text-[var(--ui-secondary)] font-mono ml-1">{{ $totalArticles }}</span> · Netto
                         </td>
                         <td class="py-2 px-1.5 text-right font-mono font-semibold text-slate-600 text-[0.7rem]">{{ $fmt($totalNet) }} €</td>
-                        <td colspan="3"></td>
+                        <td colspan="1"></td>
                     </tr>
                     @foreach($mwstBreakdown as $row)
                         <tr class="bg-slate-50">
-                            <td colspan="11" class="py-1 px-2.5 text-right text-[0.56rem] text-slate-500">
+                            <td colspan="5" class="py-1 px-2.5 text-right text-[0.56rem] text-slate-500">
                                 MwSt {{ $row['rate'] }} <span class="text-[var(--ui-muted)]">(von Netto {{ $fmt($row['net']) }} €)</span>
                             </td>
                             <td class="py-1 px-1.5 text-right font-mono text-slate-600 text-[0.65rem]">{{ $fmt($row['tax']) }} €</td>
-                            <td colspan="3"></td>
+                            <td colspan="1"></td>
                         </tr>
                     @endforeach
                     <tr class="bg-slate-100 border-t border-slate-200">
-                        <td colspan="11" class="py-2 px-2.5 text-right text-[0.6rem] font-bold uppercase tracking-wider text-slate-600">
+                        <td colspan="5" class="py-2 px-2.5 text-right text-[0.6rem] font-bold uppercase tracking-wider text-slate-600">
                             Gesamt (brutto)
                         </td>
                         <td class="py-2 px-1.5 text-right font-mono font-bold text-green-700 text-[0.75rem]">{{ $fmt($totalGross) }} €</td>
-                        <td colspan="3"></td>
+                        <td colspan="1"></td>
                     </tr>
                 </tfoot>
             @endif
             {{-- Add-Row: Spalten richten sich automatisch nach der Tabelle aus --}}
             <tbody class="bg-slate-50 border-t-2 border-slate-300">
                 <tr>
-                    <td colspan="15" class="px-2.5 pt-2 pb-1">
+                    <td colspan="7" class="px-2.5 pt-2 pb-1">
                         <div class="flex items-center gap-2 flex-wrap">
                             <div class="w-[3px] h-3 bg-blue-600 rounded-sm"></div>
                             <span class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Neue Position</span>
@@ -385,9 +403,10 @@
                         </div>
                     </td>
                 </tr>
-                <tr>
-                    <td class="w-[8px]"></td>
-                    <td class="px-1.5 py-1.5 align-top">
+                <tr class="align-top">
+                    <td></td>
+                    {{-- Gruppe --}}
+                    <td class="px-1.5 py-1.5">
                         <input wire:model="newPosition.gruppe" type="text" placeholder="Gruppe / Typ *"
                                list="quote-gruppen-{{ $activeItem->id }}"
                                title="Pflicht – ohne Gruppe fehlt das Erlöskonto für die Buchhaltung"
@@ -398,7 +417,8 @@
                             @endforeach
                         </datalist>
                     </td>
-                    <td class="px-1.5 py-1.5 align-top relative" x-data="{ showArticles: false }">
+                    {{-- Bezeichnung (Name + Sub-Zeile) --}}
+                    <td class="px-1.5 py-1.5 relative" x-data="{ showArticles: false }">
                         <input wire:model.live.debounce.300ms="newPosition.name" type="text" placeholder="Bezeichnung / Artikel suchen"
                                @keydown.enter.prevent="$wire.set('newPosition.name', $event.target.value, false); $wire.addPosition()"
                                @focus="showArticles = true"
@@ -426,63 +446,49 @@
                                 @endforeach
                             </div>
                         @endif
+                        {{-- Sub-Zeile fuer Detailfelder --}}
+                        <div class="flex items-center gap-1 mt-1 flex-wrap">
+                            <input wire:model.blur="newPosition.uhrzeit" type="text" placeholder="von" maxlength="5" inputmode="numeric" title="von"
+                                   x-data x-on:input="let v = $el.value.replace(/[^0-9]/g,'').substring(0,4); if (v.length >= 3) v = v.substring(0,2)+':'+v.substring(2); $el.value = v;"
+                                   class="border border-slate-200 rounded px-1 py-0.5 text-[0.58rem] font-mono bg-white w-[44px] text-center">
+                            <span class="text-[0.55rem] text-slate-300">–</span>
+                            <input wire:model.blur="newPosition.bis" type="text" placeholder="bis" maxlength="5" inputmode="numeric" title="bis"
+                                   x-data x-on:input="let v = $el.value.replace(/[^0-9]/g,'').substring(0,4); if (v.length >= 3) v = v.substring(0,2)+':'+v.substring(2); $el.value = v;"
+                                   class="border border-slate-200 rounded px-1 py-0.5 text-[0.58rem] font-mono bg-white w-[44px] text-center">
+                            <input wire:model="newPosition.gebinde" type="text" placeholder="Gebinde" title="Gebinde"
+                                   class="border border-slate-200 rounded px-1 py-0.5 text-[0.58rem] bg-white w-[80px]">
+                            <input wire:model.blur="newPosition.anz2" type="text" placeholder="Anz.2" title="Anz.2"
+                                   class="border border-slate-200 rounded px-1 py-0.5 text-[0.58rem] font-mono bg-white w-[44px] text-right">
+                            <input wire:model="newPosition.ek" type="number" step="0.01" placeholder="EK" title="EK"
+                                   class="border border-slate-200 rounded px-1 py-0.5 text-[0.58rem] font-mono bg-white w-[60px] text-right text-slate-400">
+                            <input wire:model="newPosition.bemerkung" type="text" placeholder="Bemerkung" title="Bemerkung"
+                                   class="border border-slate-200 rounded px-1 py-0.5 text-[0.58rem] italic bg-white flex-1 min-w-[80px]">
+                            <span class="text-[0.55rem] text-slate-400 italic" title="Modus erbt vom Vorgang">⤴ Vorgang</span>
+                        </div>
                     </td>
-                    <td class="px-1.5 py-1.5 align-top">
+                    {{-- Anz --}}
+                    <td class="px-1.5 py-1.5">
                         <input wire:model.blur="newPosition.anz" type="text" placeholder="0"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
                     </td>
-                    <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model.blur="newPosition.anz2" type="text" placeholder="0"
-                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
-                    </td>
-                    <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model.blur="newPosition.uhrzeit" type="text" placeholder="HH:MM" maxlength="5"
-                               inputmode="numeric"
-                               x-data
-                               x-on:input="let v = $el.value.replace(/[^0-9]/g, '').substring(0, 4); if (v.length >= 3) v = v.substring(0, 2) + ':' + v.substring(2); $el.value = v;"
-                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono bg-white">
-                    </td>
-                    <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model.blur="newPosition.bis" type="text" placeholder="HH:MM" maxlength="5"
-                               inputmode="numeric"
-                               x-data
-                               x-on:input="let v = $el.value.replace(/[^0-9]/g, '').substring(0, 4); if (v.length >= 3) v = v.substring(0, 2) + ':' + v.substring(2); $el.value = v;"
-                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono bg-white">
-                    </td>
-                    <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model="newPosition.gebinde" type="text" placeholder="1 Stk."
-                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] bg-white">
-                    </td>
-                    <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model="newPosition.ek" type="number" step="0.01" placeholder="0,00"
-                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
-                    </td>
-                    <td class="px-1.5 py-1.5 align-top">
+                    {{-- Preis + MwSt --}}
+                    <td class="px-1.5 py-1.5">
                         <input wire:model.blur="newPosition.preis" type="number" step="0.01" placeholder="0,00"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
-                    </td>
-                    <td class="px-1.5 py-1.5 align-top">
                         <select wire:model="newPosition.mwst"
-                                class="w-full border border-slate-200 rounded px-1 py-1 text-[0.65rem] bg-white">
-                            <option value="0%">0%</option>
-                            <option value="7%">7%</option>
-                            <option value="19%">19%</option>
+                                class="w-full border border-slate-200 rounded px-1 py-0.5 text-[0.58rem] bg-white text-center mt-0.5 text-slate-500">
+                            <option value="0%">MwSt 0%</option>
+                            <option value="7%">MwSt 7%</option>
+                            <option value="19%">MwSt 19%</option>
                         </select>
                     </td>
-                    <td class="px-1.5 py-1.5 align-top">
+                    {{-- Gesamt --}}
+                    <td class="px-1.5 py-1.5">
                         <input wire:model.blur="newPosition.gesamt" type="number" step="0.01" placeholder="auto"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
                     </td>
-                    <td class="px-1.5 py-1.5 align-top">
-                        {{-- Modus-Spalte: neue Positionen erben standardmaessig vom Vorgang.
-                             Override kann nach dem Anlegen pro Position gesetzt werden. --}}
-                        <span class="block text-[0.55rem] text-slate-400 italic text-center py-1">⤴</span>
-                    </td>
-                    <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model="newPosition.bemerkung" type="text" placeholder="Bemerkung"
-                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] bg-white">
-                    </td>
-                    <td class="px-1.5 py-1.5 align-top">
+                    {{-- Add-Button --}}
+                    <td class="px-1 py-1.5">
                         <button wire:click="addPosition"
                                 class="w-full flex items-center justify-center gap-1 rounded bg-blue-600 hover:bg-blue-700 text-white border-0 cursor-pointer text-[0.65rem] font-semibold py-1 whitespace-nowrap"
                                 title="Position hinzufügen">
@@ -491,7 +497,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <td colspan="15" class="px-2.5 pt-0.5 pb-2">
+                    <td colspan="7" class="px-2.5 pt-0.5 pb-2">
                         <p class="text-[0.52rem] text-slate-400 m-0">
                             Enter im Bezeichnungs-Feld oder „+" zum Hinzufügen · Gesamt leer → Anz × Preis wird berechnet.
                         </p>
