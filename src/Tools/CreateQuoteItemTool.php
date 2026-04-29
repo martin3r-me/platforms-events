@@ -25,7 +25,8 @@ class CreateQuoteItemTool implements ToolContract, ToolMetadataContract
 
     public function getDescription(): string
     {
-        return 'POST /events/{event}/days/{day}/quote-items - Legt einen Angebots-Vorgang (z.B. Speisen) an einem Event-Tag an.';
+        return 'POST /events/{event}/days/{day}/quote-items - Legt einen Angebots-Vorgang (z.B. Speisen) an einem Event-Tag an. '
+            . 'Optional beverage_mode als Vorgang-Default (Verbrauch/Alternativ/Auf Anfrage); Positionen koennen ueberschreiben.';
     }
 
     public function getSchema(): array
@@ -33,11 +34,12 @@ class CreateQuoteItemTool implements ToolContract, ToolMetadataContract
         return [
             'type' => 'object',
             'properties' => array_merge($this->eventSelectorSchema(), [
-                'event_day_id' => ['type' => 'integer', 'description' => 'ID des Event-Tages. Alternative: event_day_uuid.'],
-                'event_day_uuid' => ['type' => 'string', 'description' => 'UUID des Event-Tages.'],
-                'typ'          => ['type' => 'string',  'description' => 'Vorgangs-Typ, z.B. Speisen/Getränke/Personal/Equipment.'],
-                'status'       => ['type' => 'string',  'description' => 'Optional: Status (default "Entwurf").'],
-                'mwst'         => ['type' => 'string',  'description' => 'Optional: MwSt-Satz "0%", "7%", "19%" (default "19%").'],
+                'event_day_id'   => ['type' => 'integer', 'description' => 'ID des Event-Tages. Alternative: event_day_uuid.'],
+                'event_day_uuid' => ['type' => 'string',  'description' => 'UUID des Event-Tages.'],
+                'typ'            => ['type' => 'string',  'description' => 'Vorgangs-Typ, z.B. Speisen/Getränke/Personal/Equipment.'],
+                'status'         => ['type' => 'string',  'description' => 'Optional: Status (default "Entwurf").'],
+                'mwst'           => ['type' => 'string',  'description' => 'Optional: MwSt-Satz "0%", "7%", "19%" (default "19%").'],
+                'beverage_mode'  => ['type' => 'string',  'description' => 'Optional: Default-Modus fuer Getraenke-Positionen dieses Vorgangs (z.B. "Verbrauch", "Alternativ", "Auf Anfrage"). Positionen koennen via beverage_mode-Override abweichen. Leer/null = kein Default.'],
             ]),
             'required' => ['typ'],
         ];
@@ -64,21 +66,27 @@ class CreateQuoteItemTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('VALIDATION_ERROR', 'typ ist erforderlich.');
             }
 
+            $beverageMode = isset($arguments['beverage_mode']) && trim((string) $arguments['beverage_mode']) !== ''
+                ? trim((string) $arguments['beverage_mode'])
+                : null;
+
             $maxSort = (int) QuoteItem::where('event_day_id', $day->id)->max('sort_order');
             $item = QuoteItem::create([
-                'team_id'      => $event->team_id,
-                'user_id'      => Auth::id(),
-                'event_day_id' => $day->id,
-                'typ'          => $typ,
-                'status'       => $arguments['status'] ?? 'Entwurf',
-                'mwst'         => $arguments['mwst']   ?? '19%',
-                'sort_order'   => $maxSort + 1,
+                'team_id'       => $event->team_id,
+                'user_id'       => Auth::id(),
+                'event_day_id'  => $day->id,
+                'typ'           => $typ,
+                'status'        => $arguments['status'] ?? 'Entwurf',
+                'mwst'          => $arguments['mwst']   ?? '19%',
+                'beverage_mode' => $beverageMode,
+                'sort_order'    => $maxSort + 1,
             ]);
 
             return ToolResult::success([
                 'quote_item' => [
                     'id' => $item->id, 'uuid' => $item->uuid, 'typ' => $item->typ,
                     'status' => $item->status, 'mwst' => $item->mwst,
+                    'beverage_mode' => $item->beverage_mode,
                     'event_day_id' => $item->event_day_id,
                 ],
                 'message' => "Vorgang «{$item->typ}» angelegt.",

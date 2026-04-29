@@ -9,6 +9,7 @@ use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\QuotePosition;
+use Platform\Events\Tools\Concerns\RecalculatesQuoteItem;
 
 /**
  * Legt eine neue Angebots-Position (Artikelzeile) an einem QuoteItem an.
@@ -16,6 +17,8 @@ use Platform\Events\Models\QuotePosition;
  */
 class CreateQuotePositionTool implements ToolContract, ToolMetadataContract
 {
+    use RecalculatesQuoteItem;
+
     public function getName(): string
     {
         return 'events.quote-positions.CREATE';
@@ -25,7 +28,9 @@ class CreateQuotePositionTool implements ToolContract, ToolMetadataContract
     {
         return 'POST /events/quote-items/{id}/positions - Legt eine Angebots-Position an. '
             . 'Identifikation via quote_item_id oder quote_item_uuid. '
-            . 'Gesamt wird automatisch aus anz × preis berechnet wenn nicht angegeben.';
+            . 'Gesamt wird automatisch aus anz × preis berechnet wenn nicht angegeben. '
+            . 'beverage_mode am Vorgang wird vererbt; Position kann mit beverage_mode ueberschreiben. '
+            . 'procurement_type optional fuer Lager-/Beschaffungslogik.';
     }
 
     public function getSchema(): array
@@ -33,20 +38,22 @@ class CreateQuotePositionTool implements ToolContract, ToolMetadataContract
         return [
             'type' => 'object',
             'properties' => [
-                'quote_item_id'   => ['type' => 'integer', 'description' => 'ID des QuoteItems.'],
-                'quote_item_uuid' => ['type' => 'string',  'description' => 'UUID des QuoteItems.'],
-                'gruppe'          => ['type' => 'string',  'description' => 'Gruppe / Typ. "Headline"/"Speisentexte"/"Trenntext" erzeugt Text-Zeilen.'],
-                'name'            => ['type' => 'string',  'description' => 'Bezeichnung der Position.'],
-                'anz'             => ['type' => 'string',  'description' => 'Anzahl (als String, z.B. "10" oder "1,5").'],
-                'anz2'            => ['type' => 'string',  'description' => 'Optional: zweite Mengenangabe.'],
-                'uhrzeit'         => ['type' => 'string',  'description' => 'Optional: Von-Zeit.'],
-                'bis'             => ['type' => 'string',  'description' => 'Optional: Bis-Zeit.'],
-                'gebinde'         => ['type' => 'string',  'description' => 'Optional: Gebinde, z.B. "1 Port.".'],
-                'ek'              => ['type' => 'number',  'description' => 'Optional: EK-Preis.'],
-                'preis'           => ['type' => 'number',  'description' => 'VK-Preis pro Einheit.'],
-                'mwst'            => ['type' => 'string',  'description' => 'Optional: MwSt-Satz "0%"/"7%"/"19%" (default "7%").'],
-                'gesamt'          => ['type' => 'number',  'description' => 'Optional: Gesamt-Betrag. Leer = anz × preis.'],
-                'bemerkung'       => ['type' => 'string',  'description' => 'Optional: Bemerkung.'],
+                'quote_item_id'    => ['type' => 'integer', 'description' => 'ID des QuoteItems.'],
+                'quote_item_uuid'  => ['type' => 'string',  'description' => 'UUID des QuoteItems.'],
+                'gruppe'           => ['type' => 'string',  'description' => 'Gruppe / Typ. "Headline"/"Speisentexte"/"Trenntext" erzeugt Text-Zeilen.'],
+                'name'             => ['type' => 'string',  'description' => 'Bezeichnung der Position.'],
+                'anz'              => ['type' => 'string',  'description' => 'Anzahl (als String, z.B. "10" oder "1,5").'],
+                'anz2'             => ['type' => 'string',  'description' => 'Optional: zweite Mengenangabe.'],
+                'uhrzeit'          => ['type' => 'string',  'description' => 'Optional: Von-Zeit.'],
+                'bis'              => ['type' => 'string',  'description' => 'Optional: Bis-Zeit.'],
+                'gebinde'          => ['type' => 'string',  'description' => 'Optional: Gebinde, z.B. "1 Port.".'],
+                'ek'               => ['type' => 'number',  'description' => 'Optional: EK-Preis.'],
+                'preis'            => ['type' => 'number',  'description' => 'VK-Preis pro Einheit.'],
+                'mwst'             => ['type' => 'string',  'description' => 'Optional: MwSt-Satz "0%"/"7%"/"19%" (default "7%").'],
+                'gesamt'           => ['type' => 'number',  'description' => 'Optional: Gesamt-Betrag. Leer = anz × preis.'],
+                'bemerkung'        => ['type' => 'string',  'description' => 'Optional: Bemerkung.'],
+                'beverage_mode'    => ['type' => 'string',  'description' => 'Optional: Override fuer Getraenke-Modus dieser Position (z.B. "Verbrauch", "Auf Anfrage"). Leer/null = erbt vom Vorgang.'],
+                'procurement_type' => ['type' => 'string',  'description' => 'Optional: Beschaffungs-Typ (z.B. Lager / Einkauf / Eigenproduktion).'],
             ],
             'required' => ['name'],
         ];
@@ -82,32 +89,36 @@ class CreateQuotePositionTool implements ToolContract, ToolMetadataContract
 
             $maxSort = (int) QuotePosition::where('quote_item_id', $quoteItem->id)->max('sort_order');
 
+            $beverageMode = isset($arguments['beverage_mode']) && trim((string) $arguments['beverage_mode']) !== ''
+                ? trim((string) $arguments['beverage_mode'])
+                : null;
+            $procurementType = isset($arguments['procurement_type']) && trim((string) $arguments['procurement_type']) !== ''
+                ? trim((string) $arguments['procurement_type'])
+                : null;
+
             $position = QuotePosition::create([
-                'team_id'       => $event->team_id,
-                'user_id'       => Auth::id(),
-                'quote_item_id' => $quoteItem->id,
-                'gruppe'        => (string) ($arguments['gruppe']    ?? ''),
-                'name'          => (string) ($arguments['name']      ?? ''),
-                'anz'           => (string) ($arguments['anz']       ?? ''),
-                'anz2'          => (string) ($arguments['anz2']      ?? ''),
-                'uhrzeit'       => (string) ($arguments['uhrzeit']   ?? ''),
-                'bis'           => (string) ($arguments['bis']       ?? ''),
-                'gebinde'       => (string) ($arguments['gebinde']   ?? ''),
-                'ek'            => (float)  ($arguments['ek']        ?? 0),
-                'preis'         => $preis,
-                'mwst'          => (string) ($arguments['mwst']      ?? '7%'),
-                'gesamt'        => $gesamt,
-                'bemerkung'     => (string) ($arguments['bemerkung'] ?? ''),
-                'sort_order'    => $maxSort + 1,
+                'team_id'          => $event->team_id,
+                'user_id'          => Auth::id(),
+                'quote_item_id'    => $quoteItem->id,
+                'gruppe'           => (string) ($arguments['gruppe']    ?? ''),
+                'name'             => (string) ($arguments['name']      ?? ''),
+                'anz'              => (string) ($arguments['anz']       ?? ''),
+                'anz2'             => (string) ($arguments['anz2']      ?? ''),
+                'uhrzeit'          => (string) ($arguments['uhrzeit']   ?? ''),
+                'bis'              => (string) ($arguments['bis']       ?? ''),
+                'gebinde'          => (string) ($arguments['gebinde']   ?? ''),
+                'ek'               => (float)  ($arguments['ek']        ?? 0),
+                'preis'            => $preis,
+                'mwst'             => (string) ($arguments['mwst']      ?? '7%'),
+                'gesamt'           => $gesamt,
+                'bemerkung'        => (string) ($arguments['bemerkung'] ?? ''),
+                'beverage_mode'    => $beverageMode,
+                'procurement_type' => $procurementType,
+                'sort_order'       => $maxSort + 1,
             ]);
 
-            // Vorgang-Summen refresh
-            $positions = $quoteItem->posList()->get();
-            $quoteItem->update([
-                'artikel'    => $positions->count(),
-                'positionen' => $positions->count(),
-                'umsatz'     => (float) $positions->sum('gesamt'),
-            ]);
+            // Vorgang-Summen refresh (artikel ohne Bausteine, positionen inkl., umsatz)
+            $this->recalcQuoteItem($quoteItem);
 
             return ToolResult::success([
                 'position' => [

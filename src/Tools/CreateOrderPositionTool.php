@@ -28,20 +28,21 @@ class CreateOrderPositionTool implements ToolContract, ToolMetadataContract
         return [
             'type' => 'object',
             'properties' => [
-                'order_item_id'   => ['type' => 'integer'],
-                'order_item_uuid' => ['type' => 'string'],
-                'gruppe'          => ['type' => 'string'],
-                'name'            => ['type' => 'string'],
-                'anz'             => ['type' => 'string'],
-                'anz2'            => ['type' => 'string'],
-                'uhrzeit'         => ['type' => 'string'],
-                'bis'             => ['type' => 'string'],
-                'gebinde'         => ['type' => 'string'],
-                'basis_ek'        => ['type' => 'number'],
-                'ek'              => ['type' => 'number'],
-                'mwst'            => ['type' => 'string'],
-                'gesamt'          => ['type' => 'number'],
-                'bemerkung'       => ['type' => 'string'],
+                'order_item_id'    => ['type' => 'integer'],
+                'order_item_uuid'  => ['type' => 'string'],
+                'gruppe'           => ['type' => 'string'],
+                'name'             => ['type' => 'string'],
+                'anz'              => ['type' => 'string'],
+                'anz2'             => ['type' => 'string'],
+                'uhrzeit'          => ['type' => 'string'],
+                'bis'              => ['type' => 'string'],
+                'gebinde'          => ['type' => 'string'],
+                'basis_ek'         => ['type' => 'number'],
+                'ek'               => ['type' => 'number'],
+                'mwst'             => ['type' => 'string'],
+                'gesamt'           => ['type' => 'number'],
+                'bemerkung'        => ['type' => 'string'],
+                'procurement_type' => ['type' => 'string', 'description' => 'Optional: Beschaffungs-Typ (Lager / Einkauf / Eigenproduktion ...).'],
             ],
             'required' => ['name'],
         ];
@@ -73,23 +74,28 @@ class CreateOrderPositionTool implements ToolContract, ToolMetadataContract
 
             $maxSort = (int) OrderPosition::where('order_item_id', $orderItem->id)->max('sort_order');
 
+            $procurementType = isset($arguments['procurement_type']) && trim((string) $arguments['procurement_type']) !== ''
+                ? trim((string) $arguments['procurement_type'])
+                : null;
+
             $pos = OrderPosition::create([
-                'team_id'       => $event->team_id,
-                'user_id'       => Auth::id(),
-                'order_item_id' => $orderItem->id,
-                'gruppe'        => (string) ($arguments['gruppe']    ?? ''),
-                'name'          => (string) ($arguments['name']      ?? ''),
-                'anz'           => (string) ($arguments['anz']       ?? ''),
-                'anz2'          => (string) ($arguments['anz2']      ?? ''),
-                'uhrzeit'       => (string) ($arguments['uhrzeit']   ?? ''),
-                'bis'           => (string) ($arguments['bis']       ?? ''),
-                'gebinde'       => (string) ($arguments['gebinde']   ?? ''),
-                'basis_ek'      => (float)  ($arguments['basis_ek']  ?? 0),
-                'ek'            => $ek,
-                'mwst'          => (string) ($arguments['mwst']      ?? '7%'),
-                'gesamt'        => $gesamt,
-                'bemerkung'     => (string) ($arguments['bemerkung'] ?? ''),
-                'sort_order'    => $maxSort + 1,
+                'team_id'          => $event->team_id,
+                'user_id'          => Auth::id(),
+                'order_item_id'    => $orderItem->id,
+                'gruppe'           => (string) ($arguments['gruppe']    ?? ''),
+                'name'             => (string) ($arguments['name']      ?? ''),
+                'anz'              => (string) ($arguments['anz']       ?? ''),
+                'anz2'             => (string) ($arguments['anz2']      ?? ''),
+                'uhrzeit'          => (string) ($arguments['uhrzeit']   ?? ''),
+                'bis'              => (string) ($arguments['bis']       ?? ''),
+                'gebinde'          => (string) ($arguments['gebinde']   ?? ''),
+                'basis_ek'         => (float)  ($arguments['basis_ek']  ?? 0),
+                'ek'               => $ek,
+                'mwst'             => (string) ($arguments['mwst']      ?? '7%'),
+                'gesamt'           => $gesamt,
+                'bemerkung'        => (string) ($arguments['bemerkung'] ?? ''),
+                'procurement_type' => $procurementType,
+                'sort_order'       => $maxSort + 1,
             ]);
 
             $positions = $orderItem->posList()->get();

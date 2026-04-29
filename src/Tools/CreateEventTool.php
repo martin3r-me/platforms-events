@@ -23,10 +23,13 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
 
     public function getDescription(): string
     {
-        return 'POST /events - Erstellt ein Event. Pflichtfeld: name. Optional: customer, group, location, start_date, end_date, status, '
-            . 'organizer_contact, organizer_contact_onsite, organizer_for_whom, orderer_company, orderer_contact, orderer_via, '
-            . 'invoice_to, invoice_contact, invoice_date_type, responsible, cost_center, cost_carrier, event_type, '
-            . 'sign_left, sign_right, mr_data (object), follow_up_date, follow_up_note, delivery_address, delivery_location_id, delivery_note, '
+        return 'POST /events - Erstellt ein Event. Pflichtfeld: name. Optional: customer, crm_company_id, group, location, start_date, end_date, status, '
+            . 'organizer_contact, organizer_crm_contact_id, organizer_contact_onsite, organizer_onsite_crm_contact_id, organizer_for_whom, '
+            . 'orderer_company, orderer_contact, orderer_via, orderer_crm_company_id, orderer_crm_contact_id, '
+            . 'invoice_to, invoice_contact, invoice_date_type, invoice_crm_company_id, invoice_crm_contact_id, '
+            . 'responsible, responsible_onsite, cost_center, cost_carrier, quote_price_mode (netto|brutto), event_type, '
+            . 'sign_left, sign_right, mr_data (object), follow_up_date, follow_up_note, '
+            . 'delivery_address, delivery_address_crm_company_id, delivery_location_id, delivery_note, '
             . 'inquiry_date, inquiry_time, inquiry_note, potential, forwarded, forwarding_date, forwarding_time, '
             . 'auto_create_days (boolean, default true) – bei gesetztem start_date werden EventDays angelegt.';
     }
@@ -38,7 +41,8 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
             'properties' => [
                 'name'       => ['type' => 'string',  'description' => 'Name der Veranstaltung (ERFORDERLICH).'],
                 'team_id'    => ['type' => 'integer', 'description' => 'Optional: Team-ID. Default: aktuelles Team.'],
-                'customer'   => ['type' => 'string'],
+                'customer'   => ['type' => 'string',  'description' => 'Kundenname (freitext, legacy). Bevorzugt crm_company_id verwenden.'],
+                'crm_company_id' => ['type' => 'integer', 'description' => 'FK auf crm_companies.id (Kunde).'],
                 'group'      => ['type' => 'string'],
                 'location'   => ['type' => 'string',  'description' => 'Ort (freitext, legacy).'],
                 'start_date' => ['type' => 'string',  'description' => 'YYYY-MM-DD.'],
@@ -46,21 +50,29 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 'status'     => ['type' => 'string',  'description' => 'Option | Definitiv | Vertrag | Abgeschlossen | Storno | Warteliste | Tendenz'],
                 'event_type' => ['type' => 'string'],
 
-                'organizer_contact'        => ['type' => 'string'],
-                'organizer_contact_onsite' => ['type' => 'string'],
-                'organizer_for_whom'       => ['type' => 'string'],
+                'organizer_contact'              => ['type' => 'string'],
+                'organizer_crm_contact_id'       => ['type' => 'integer', 'description' => 'FK crm_contacts.id (Veranstalter-Ansprechpartner).'],
+                'organizer_contact_onsite'       => ['type' => 'string'],
+                'organizer_onsite_crm_contact_id'=> ['type' => 'integer', 'description' => 'FK crm_contacts.id (Veranstalter vor Ort).'],
+                'organizer_for_whom'             => ['type' => 'string'],
 
-                'orderer_company' => ['type' => 'string'],
-                'orderer_contact' => ['type' => 'string'],
-                'orderer_via'     => ['type' => 'string', 'description' => 'mail|phone|meeting|referral|other'],
+                'orderer_company'        => ['type' => 'string'],
+                'orderer_contact'        => ['type' => 'string'],
+                'orderer_via'            => ['type' => 'string', 'description' => 'mail|phone|meeting|referral|other'],
+                'orderer_crm_company_id' => ['type' => 'integer', 'description' => 'FK crm_companies.id (Besteller-Firma).'],
+                'orderer_crm_contact_id' => ['type' => 'integer', 'description' => 'FK crm_contacts.id (Besteller-Ansprechpartner).'],
 
-                'invoice_to'        => ['type' => 'string'],
-                'invoice_contact'   => ['type' => 'string'],
-                'invoice_date_type' => ['type' => 'string'],
+                'invoice_to'             => ['type' => 'string'],
+                'invoice_contact'        => ['type' => 'string'],
+                'invoice_date_type'      => ['type' => 'string'],
+                'invoice_crm_company_id' => ['type' => 'integer', 'description' => 'FK crm_companies.id (Rechnungs-Empfaenger).'],
+                'invoice_crm_contact_id' => ['type' => 'integer', 'description' => 'FK crm_contacts.id (Rechnungs-Ansprechpartner).'],
 
-                'responsible'  => ['type' => 'string'],
-                'cost_center'  => ['type' => 'string'],
-                'cost_carrier' => ['type' => 'string'],
+                'responsible'        => ['type' => 'string', 'description' => 'Hauptverantwortliche/r (Name oder User-Identifier).'],
+                'responsible_onsite' => ['type' => 'string', 'description' => 'Verantwortliche/r vor Ort am Veranstaltungstag.'],
+                'cost_center'        => ['type' => 'string'],
+                'cost_carrier'       => ['type' => 'string'],
+                'quote_price_mode'   => ['type' => 'string', 'description' => 'Preis-Modus fuer das gesamte Angebot: "netto" (default) oder "brutto".'],
 
                 'sign_left'  => ['type' => 'string'],
                 'sign_right' => ['type' => 'string'],
@@ -70,9 +82,10 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 'follow_up_date' => ['type' => 'string', 'description' => 'YYYY-MM-DD'],
                 'follow_up_note' => ['type' => 'string'],
 
-                'delivery_address'     => ['type' => 'string'],
-                'delivery_location_id' => ['type' => 'integer', 'description' => 'FK auf locations_locations.id (eigene Location).'],
-                'delivery_note'        => ['type' => 'string',  'description' => 'Freitext, z.B. "Haupteingang".'],
+                'delivery_address'                => ['type' => 'string'],
+                'delivery_address_crm_company_id' => ['type' => 'integer', 'description' => 'FK crm_companies.id (Lieferadresse aus CRM).'],
+                'delivery_location_id'            => ['type' => 'integer', 'description' => 'FK auf locations_locations.id (eigene Location).'],
+                'delivery_note'                   => ['type' => 'string',  'description' => 'Freitext, z.B. "Haupteingang".'],
 
                 'inquiry_date' => ['type' => 'string'],
                 'inquiry_time' => ['type' => 'string'],
@@ -124,15 +137,29 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 'organizer_contact', 'organizer_contact_onsite', 'organizer_for_whom',
                 'orderer_company', 'orderer_contact', 'orderer_via',
                 'invoice_to', 'invoice_contact', 'invoice_date_type',
-                'responsible', 'cost_center', 'cost_carrier',
+                'responsible', 'responsible_onsite', 'cost_center', 'cost_carrier', 'quote_price_mode',
                 'sign_left', 'sign_right',
                 'follow_up_date', 'follow_up_note',
-                'delivery_address', 'delivery_location_id', 'delivery_note',
+                'delivery_address', 'delivery_note',
                 'inquiry_date', 'inquiry_time', 'inquiry_note', 'potential',
                 'forwarding_date', 'forwarding_time',
             ] as $f) {
                 if (array_key_exists($f, $arguments)) {
                     $data[$f] = $arguments[$f];
+                }
+            }
+            // Integer-FKs (CRM/Locations) – nullable + Cast
+            foreach ([
+                'crm_company_id',
+                'organizer_crm_contact_id', 'organizer_onsite_crm_contact_id',
+                'orderer_crm_company_id', 'orderer_crm_contact_id',
+                'invoice_crm_company_id', 'invoice_crm_contact_id',
+                'delivery_address_crm_company_id', 'delivery_location_id',
+            ] as $f) {
+                if (array_key_exists($f, $arguments)) {
+                    $data[$f] = $arguments[$f] !== null && $arguments[$f] !== ''
+                        ? (int) $arguments[$f]
+                        : null;
                 }
             }
             if (array_key_exists('forwarded', $arguments)) {

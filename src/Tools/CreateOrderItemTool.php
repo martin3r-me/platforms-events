@@ -35,6 +35,7 @@ class CreateOrderItemTool implements ToolContract, ToolMetadataContract
                 'typ'            => ['type' => 'string', 'description' => 'Vorgangs-Typ.'],
                 'status'         => ['type' => 'string', 'description' => 'Optional (default "Offen").'],
                 'lieferant'      => ['type' => 'string', 'description' => 'Optional: Lieferant.'],
+                'price_mode'     => ['type' => 'string', 'description' => 'Optional: "netto" (default) oder "brutto".'],
             ]),
             'required' => ['typ'],
         ];
@@ -65,6 +66,7 @@ class CreateOrderItemTool implements ToolContract, ToolMetadataContract
                 'typ'          => $typ,
                 'status'       => $arguments['status']    ?? 'Offen',
                 'lieferant'    => $arguments['lieferant'] ?? null,
+                'price_mode'   => $arguments['price_mode'] ?? 'netto',
                 'sort_order'   => $maxSort + 1,
             ]);
 

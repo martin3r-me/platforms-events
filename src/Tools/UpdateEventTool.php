@@ -18,16 +18,26 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
         'organizer_contact', 'organizer_contact_onsite', 'organizer_for_whom',
         'orderer_company', 'orderer_contact', 'orderer_via',
         'invoice_to', 'invoice_contact', 'invoice_date_type',
-        'responsible', 'cost_center', 'cost_carrier',
+        'responsible', 'responsible_onsite', 'cost_center', 'cost_carrier', 'quote_price_mode',
         'sign_left', 'sign_right',
         'follow_up_note',
         'delivery_address', 'delivery_note',
         'inquiry_time', 'inquiry_note', 'potential',
         'forwarding_time',
+        // Schluss-Bewertung
+        'internal_rating', 'customer_satisfaction', 'rebooking_recommendation',
     ];
 
     protected const UPDATABLE_DATE_FIELDS = [
         'start_date', 'end_date', 'follow_up_date', 'inquiry_date', 'forwarding_date',
+    ];
+
+    protected const UPDATABLE_FK_FIELDS = [
+        'crm_company_id',
+        'organizer_crm_contact_id', 'organizer_onsite_crm_contact_id',
+        'orderer_crm_company_id', 'orderer_crm_contact_id',
+        'invoice_crm_company_id', 'invoice_crm_contact_id',
+        'delivery_address_crm_company_id', 'delivery_location_id',
     ];
 
     public function getName(): string
@@ -52,6 +62,10 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
         foreach (self::UPDATABLE_DATE_FIELDS as $f) {
             $dateFields[$f] = ['type' => 'string', 'description' => 'YYYY-MM-DD'];
         }
+        $fkFields = [];
+        foreach (self::UPDATABLE_FK_FIELDS as $f) {
+            $fkFields[$f] = ['type' => 'integer', 'description' => 'FK (null setzbar via leerem String)'];
+        }
 
         return [
             'type' => 'object',
@@ -61,8 +75,7 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
                 'event_number'         => ['type' => 'string'],
                 'mr_data'              => ['type' => 'object', 'description' => 'Management-Report als Key/Value-Map (ersetzt den gesamten Inhalt).'],
                 'forwarded'            => ['type' => 'boolean'],
-                'delivery_location_id' => ['type' => 'integer', 'description' => 'FK auf locations_locations.id.'],
-            ], $stringFields, $dateFields),
+            ], $stringFields, $dateFields, $fkFields),
         ];
     }
 
@@ -107,10 +120,12 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
             if (array_key_exists('forwarded', $arguments)) {
                 $update['forwarded'] = (bool) $arguments['forwarded'];
             }
-            if (array_key_exists('delivery_location_id', $arguments)) {
-                $update['delivery_location_id'] = $arguments['delivery_location_id'] !== null
-                    ? (int) $arguments['delivery_location_id']
-                    : null;
+            foreach (self::UPDATABLE_FK_FIELDS as $f) {
+                if (array_key_exists($f, $arguments)) {
+                    $update[$f] = $arguments[$f] !== null && $arguments[$f] !== ''
+                        ? (int) $arguments[$f]
+                        : null;
+                }
             }
             if (array_key_exists('mr_data', $arguments)) {
                 $update['mr_data'] = is_array($arguments['mr_data']) ? $arguments['mr_data'] : null;
