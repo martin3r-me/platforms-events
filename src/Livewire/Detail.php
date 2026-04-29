@@ -292,7 +292,6 @@ class Detail extends Component
             'event.follow_up_note'           => 'nullable|string',
             'event.inquiry_date'             => 'nullable|date',
             'event.inquiry_time'             => 'nullable|string|max:32',
-            'event.inquiry_note'             => 'nullable|string',
             'event.potential'                => 'nullable|string|max:64',
             'event.forwarded'                => 'boolean',
             'event.forwarding_date'          => 'nullable|date',

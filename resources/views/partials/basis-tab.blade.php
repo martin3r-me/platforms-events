@@ -456,11 +456,6 @@
                         @endforeach
                     </div>
                 </div>
-                <div>
-                    <label class="{{ $lbl }}">Bemerkung zur Anfrage</label>
-                    <input wire:model.blur="event.inquiry_note" type="text" placeholder="Bemerkung hinzufügen…" class="{{ $in }}">
-                </div>
-
                 @php $pct = (int) preg_replace('/[^0-9]/', '', (string) ($event->potential ?? '')); @endphp
                 <div x-data="{
                         pct: {{ $pct }},

@@ -37,7 +37,7 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
             . '[Wiedervorlage] follow_up_date, follow_up_note; '
             . '[Lieferung] delivery_address (Freitext), delivery_address_crm_company_id (CRM-Firma), delivery_location_id (eigene Location), delivery_note – '
             . 'genau eine der drei Quellen befuellen, abhaengig vom Lieferadress-Typ; '
-            . '[Eingang] inquiry_date, inquiry_time, inquiry_note, potential; '
+            . '[Eingang] inquiry_date, inquiry_time, potential; '
             . '[Weiterleitung] forwarded, forwarding_date, forwarding_time; '
             . '[Management Report] mr_data (object); '
             . '[Auto-Days] auto_create_days (boolean, default true) erzeugt EventDays aus start_date..end_date; '
@@ -109,7 +109,6 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 // [Eingang]
                 'inquiry_date' => ['type' => 'string', 'description' => '[Eingang] YYYY-MM-DD (Default: heute).'],
                 'inquiry_time' => ['type' => 'string', 'description' => '[Eingang] HH:MM (Default: jetzt).'],
-                'inquiry_note' => ['type' => 'string', 'description' => '[Eingang] Bemerkung.'],
                 'potential'    => ['type' => 'string', 'description' => '[Eingang] Wahrscheinlichkeitstext, z.B. "70% (deutliche Tendenz zur Buchung)".'],
 
                 // [Weiterleitung]
@@ -165,7 +164,7 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 'sign_left', 'sign_right',
                 'follow_up_date', 'follow_up_note',
                 'delivery_address', 'delivery_note',
-                'inquiry_date', 'inquiry_time', 'inquiry_note', 'potential',
+                'inquiry_date', 'inquiry_time', 'potential',
                 'forwarding_date', 'forwarding_time',
             ] as $f) {
                 if (array_key_exists($f, $arguments)) {

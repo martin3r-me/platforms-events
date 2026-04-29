@@ -131,7 +131,6 @@ class GetEventTool implements ToolContract, ToolMetadataContract
 
                 'inquiry_date' => $event->inquiry_date?->toDateString(),
                 'inquiry_time' => $event->inquiry_time,
-                'inquiry_note' => $event->inquiry_note,
                 'potential'    => $event->potential,
 
                 'forwarded'        => (bool) $event->forwarded,

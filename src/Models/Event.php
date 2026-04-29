@@ -50,7 +50,7 @@ class Event extends Model
         // Lieferung
         'delivery_address', 'delivery_address_crm_company_id', 'delivery_location_id', 'delivery_note',
         // Eingang
-        'inquiry_date', 'inquiry_time', 'inquiry_note', 'potential',
+        'inquiry_date', 'inquiry_time', 'potential',
         // Weiterleitung
         'forwarded', 'forwarding_date', 'forwarding_time',
     ];

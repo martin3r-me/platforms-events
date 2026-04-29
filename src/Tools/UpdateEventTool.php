@@ -25,7 +25,7 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
         'sign_left', 'sign_right',
         'follow_up_note',
         'delivery_address', 'delivery_note',
-        'inquiry_time', 'inquiry_note', 'potential',
+        'inquiry_time', 'potential',
         'forwarding_time',
         // Schluss-Bewertung
         'internal_rating', 'customer_satisfaction', 'rebooking_recommendation',
