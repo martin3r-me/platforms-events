@@ -93,7 +93,37 @@ class EventFactory
             );
         }
 
+        // Rechnungsdatum (invoice_date_type haelt im UI-Schema das konkrete Datum
+        // aus dem EventDay-Dropdown) standardmaessig auf den ersten Tag setzen.
+        // Bleibt manuell editierbar – nur Default fuer den initialen Anlage-Schritt.
+        if (empty($event->invoice_date_type)) {
+            $firstDayDate = self::firstDayDateString($event);
+            if ($firstDayDate !== null) {
+                $event->invoice_date_type = $firstDayDate;
+                $event->save();
+            }
+        }
+
         return $event;
+    }
+
+    /**
+     * Liefert das Y-m-d-Datum des ersten EventDays bzw. start_date als Fallback.
+     */
+    public static function firstDayDateString(Event $event): ?string
+    {
+        $firstDay = $event->days()->orderBy('sort_order')->orderBy('datum')->first();
+        if ($firstDay && $firstDay->datum) {
+            return $firstDay->datum instanceof Carbon
+                ? $firstDay->datum->format('Y-m-d')
+                : (string) $firstDay->datum;
+        }
+        if ($event->start_date) {
+            return $event->start_date instanceof Carbon
+                ? $event->start_date->format('Y-m-d')
+                : (string) $event->start_date;
+        }
+        return null;
     }
 
     /**

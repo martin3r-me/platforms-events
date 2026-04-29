@@ -32,7 +32,7 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
             . '[Kunde] customer (Legacy), crm_company_id (FK CRM-Firma); '
             . '[Veranstalter] organizer_contact, organizer_crm_contact_id, organizer_contact_onsite, organizer_onsite_crm_contact_id, organizer_for_whom; '
             . '[Besteller] orderer_company, orderer_contact, orderer_via, orderer_crm_company_id, orderer_crm_contact_id; '
-            . '[Rechnung] invoice_to, invoice_contact, invoice_date_type, invoice_crm_company_id, invoice_crm_contact_id; '
+            . '[Rechnung] invoice_to, invoice_contact, invoice_date_type (Default: erster Tag), invoice_crm_company_id, invoice_crm_contact_id; '
             . '[Zustaendigkeit] responsible, responsible_onsite, cost_center, cost_carrier, quote_price_mode (netto|brutto), sign_left, sign_right; '
             . '[Wiedervorlage] follow_up_date, follow_up_note; '
             . '[Lieferung] delivery_address (Freitext), delivery_address_crm_company_id (CRM-Firma), delivery_location_id (eigene Location), delivery_note – '
@@ -80,7 +80,7 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 // [Rechnung]
                 'invoice_to'             => ['type' => 'string',  'description' => '[Rechnung] Adressat-Name (freitext).'],
                 'invoice_contact'        => ['type' => 'string',  'description' => '[Rechnung] Ansprechpartner (freitext).'],
-                'invoice_date_type'      => ['type' => 'string',  'description' => '[Rechnung] Rechnungsdatum-Typ.'],
+                'invoice_date_type'      => ['type' => 'string',  'description' => '[Rechnung] Rechnungsdatum (YYYY-MM-DD oder Wert aus dem EventDay-Dropdown). Default: erster Tag (start_date / erstes EventDay-datum). Manuell ueberschreibbar.'],
                 'invoice_crm_company_id' => ['type' => 'integer', 'description' => '[Rechnung] FK crm_companies.id.'],
                 'invoice_crm_contact_id' => ['type' => 'integer', 'description' => '[Rechnung] FK crm_contacts.id.'],
 
