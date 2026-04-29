@@ -31,7 +31,8 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
             . 'sign_left, sign_right, mr_data (object), follow_up_date, follow_up_note, '
             . 'delivery_address, delivery_address_crm_company_id, delivery_location_id, delivery_note, '
             . 'inquiry_date, inquiry_time, inquiry_note, potential, forwarded, forwarding_date, forwarding_time, '
-            . 'auto_create_days (boolean, default true) – bei gesetztem start_date werden EventDays angelegt.';
+            . 'auto_create_days (boolean, default true) – bei gesetztem start_date werden EventDays angelegt. '
+            . 'pax / default_pax (int|string) – wird beim Anlegen der EventDays in pers_von/pers_bis aller Tage geschrieben.';
     }
 
     public function getSchema(): array
@@ -97,6 +98,8 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 'forwarding_time' => ['type' => 'string'],
 
                 'auto_create_days' => ['type' => 'boolean', 'description' => 'Default true: EventDays aus start_date..end_date anlegen.'],
+                'pax'              => ['type' => ['integer', 'string'], 'description' => 'Default-Personenzahl. Wird auf alle automatisch angelegten EventDays in pers_von/pers_bis geschrieben. Alias: default_pax.'],
+                'default_pax'      => ['type' => ['integer', 'string'], 'description' => 'Alias fuer pax.'],
             ],
             'required' => ['name'],
         ];
@@ -167,6 +170,14 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
             }
             if (array_key_exists('mr_data', $arguments) && is_array($arguments['mr_data'])) {
                 $data['mr_data'] = $arguments['mr_data'];
+            }
+
+            // pax / default_pax: KEIN Event-Feld, wird in EventFactory extrahiert und
+            // beim Anlegen der EventDays auf pers_von/pers_bis gemappt.
+            foreach (['pax', 'default_pax'] as $f) {
+                if (array_key_exists($f, $arguments) && $arguments[$f] !== null && $arguments[$f] !== '') {
+                    $data[$f] = $arguments[$f];
+                }
             }
 
             $event = EventFactory::create(

@@ -39,6 +39,21 @@ class EventFactory
     {
         $status = $data['status'] ?? 'Option';
 
+        // default_pax (oder pax) ist KEIN Event-Feld – wir extrahieren es vor dem
+        // Event::create und propagieren es spaeter auf die generierten Tage.
+        $defaultPax = null;
+        foreach (['default_pax', 'pax', 'pers', 'pers_von'] as $k) {
+            if (array_key_exists($k, $data) && $data[$k] !== null && $data[$k] !== '') {
+                $defaultPax = $data[$k];
+                unset($data[$k]);
+                break;
+            }
+        }
+        // Restliche pax-Aliase einfach abraeumen, damit sie nicht in Event::create landen.
+        foreach (['default_pax', 'pax', 'pers', 'pers_von', 'pers_bis'] as $k) {
+            unset($data[$k]);
+        }
+
         $payload = array_merge($data, [
             'team_id'           => $teamId,
             'user_id'           => $user->id,
@@ -67,7 +82,15 @@ class EventFactory
         }
 
         if ($createDays && !empty($payload['start_date'])) {
-            self::createDaysForRange($event, $user->id, $teamId, $payload['start_date'], $payload['end_date'] ?? null, $status);
+            self::createDaysForRange(
+                $event,
+                $user->id,
+                $teamId,
+                $payload['start_date'],
+                $payload['end_date'] ?? null,
+                $status,
+                $defaultPax,
+            );
         }
 
         return $event;
@@ -93,10 +116,13 @@ class EventFactory
 
     /**
      * Erzeugt EventDays fuer jeden Tag im Zeitraum (max. MAX_DAYS).
+     * Wenn $defaultPax gesetzt ist, wird der Wert in pers_von UND pers_bis
+     * an jedem neu angelegten Tag eingetragen.
      */
-    public static function createDaysForRange(Event $event, int $userId, int $teamId, string $startDate, ?string $endDate, string $status): void
+    public static function createDaysForRange(Event $event, int $userId, int $teamId, string $startDate, ?string $endDate, string $status, mixed $defaultPax = null): void
     {
         $weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+        $pax = ($defaultPax === null || $defaultPax === '') ? null : (string) $defaultPax;
 
         try {
             $start = Carbon::parse($startDate);
@@ -125,6 +151,8 @@ class EventFactory
                     'day_of_week' => $weekdays[$dt->dayOfWeek],
                     'day_status'  => $status,
                     'color'       => '#6366f1',
+                    'pers_von'    => $pax,
+                    'pers_bis'    => $pax,
                     'sort_order'  => $sort++,
                 ]);
             }

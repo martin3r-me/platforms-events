@@ -24,7 +24,11 @@ class UpdateBookingTool implements ToolContract, ToolMetadataContract
     public function getDescription(): string
     {
         return 'PATCH /events/bookings/{id} - Aktualisiert eine Buchung. Identifikation: booking_id ODER uuid. '
-            . 'Felder: location_id, raum, datum, beginn, ende, pers, bestuhlung, optionsrang, absprache, sort_order.';
+            . 'Felder: location_id (FK locations_locations.id, null = auf raum-Fallback zurueck), '
+            . 'raum (Legacy-Kuerzel), datum (YYYY-MM-DD oder Freitext), '
+            . 'beginn (HH:MM), ende (HH:MM), pers (string), '
+            . 'bestuhlung, optionsrang ("1. Option"|"2. Option"|"Definitiv"|"Vertrag"), absprache, sort_order. '
+            . 'WICHTIG: Tag-Feldnamen werden ebenfalls akzeptiert (von→beginn, bis→ende, pers_von/pers_bis→pers).';
     }
 
     public function getSchema(): array
@@ -38,6 +42,11 @@ class UpdateBookingTool implements ToolContract, ToolMetadataContract
         foreach (self::STRING_FIELDS as $f) {
             $props[$f] = ['type' => 'string'];
         }
+        // Tag-Feld-Aliase
+        $props['von']      = ['type' => 'string', 'description' => 'Alias fuer beginn.'];
+        $props['bis']      = ['type' => 'string', 'description' => 'Alias fuer ende.'];
+        $props['pers_von'] = ['type' => 'string', 'description' => 'Alias fuer pers.'];
+        $props['pers_bis'] = ['type' => 'string', 'description' => 'Alias fuer pers.'];
         return ['type' => 'object', 'properties' => $props];
     }
 
@@ -46,6 +55,21 @@ class UpdateBookingTool implements ToolContract, ToolMetadataContract
         try {
             if (!$context->user) {
                 return ToolResult::error('AUTH_ERROR', 'Kein User im Kontext gefunden.');
+            }
+
+            // Aliase mappen (siehe CreateBookingTool)
+            if (!isset($arguments['beginn']) && !empty($arguments['von'])) {
+                $arguments['beginn'] = $arguments['von'];
+            }
+            if (!isset($arguments['ende']) && !empty($arguments['bis'])) {
+                $arguments['ende'] = $arguments['bis'];
+            }
+            if ((!isset($arguments['pers']) || $arguments['pers'] === '' || $arguments['pers'] === null)) {
+                if (!empty($arguments['pers_von'])) {
+                    $arguments['pers'] = $arguments['pers_von'];
+                } elseif (!empty($arguments['pers_bis'])) {
+                    $arguments['pers'] = $arguments['pers_bis'];
+                }
             }
 
             $query = Booking::query();

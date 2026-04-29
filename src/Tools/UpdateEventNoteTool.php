@@ -19,7 +19,11 @@ class UpdateEventNoteTool implements ToolContract, ToolMetadataContract
 
     public function getDescription(): string
     {
-        return 'PATCH /events/notes/{id} - Aktualisiert eine Notiz. Identifikation: note_id ODER uuid. Felder: type, text, user_name.';
+        return 'PATCH /events/notes/{id} - Aktualisiert eine Notiz. Identifikation: note_id ODER uuid. '
+            . 'Felder (alle optional): '
+            . 'type ("liefertext" | "absprache" | "vereinbarung"), '
+            . 'text (string, Markdown erlaubt), '
+            . 'user_name (string, ueberschreibt den urspruenglichen Eintrag).';
     }
 
     public function getSchema(): array

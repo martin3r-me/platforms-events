@@ -19,7 +19,12 @@ class UpdateScheduleItemTool implements ToolContract, ToolMetadataContract
 
     public function getDescription(): string
     {
-        return 'PATCH /events/schedule/{id} - Aktualisiert einen Ablauf-Eintrag. Identifikation: schedule_id ODER uuid.';
+        return 'PATCH /events/schedule/{id} - Aktualisiert einen Ablauf-Eintrag. Identifikation: schedule_id ODER uuid. '
+            . 'Felder (alle optional): '
+            . 'beschreibung (string, z.B. "Empfang"), '
+            . 'datum (YYYY-MM-DD oder Freitext), von (HH:MM), bis (HH:MM), '
+            . 'raum (string, freitext), bemerkung (Freitext), '
+            . 'linked (boolean, verbindet Block-Anzeigen), sort_order (int).';
     }
 
     public function getSchema(): array

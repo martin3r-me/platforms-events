@@ -23,7 +23,14 @@ class UpdateEventDayTool implements ToolContract, ToolMetadataContract
     public function getDescription(): string
     {
         return 'PATCH /events/days/{id} - Aktualisiert einen Event-Tag. Identifikation: day_id ODER uuid. '
-            . 'Optionale Felder: label, day_type (Veranstaltungstag|Aufbautag|Abbautag|Rüsttag), datum, day_of_week, von, bis, pers_von, pers_bis, day_status, color, sort_order.';
+            . 'Felder (alle optional): '
+            . 'label (string, z.B. "Tag 1"), '
+            . 'day_type ("Veranstaltungstag" | "Aufbautag" | "Abbautag" | "Ruesttag"; weitere via Settings), '
+            . 'datum (YYYY-MM-DD), day_of_week (So..Sa, sonst aus datum), '
+            . 'von (HH:MM, Beginn), bis (HH:MM, Ende), '
+            . 'pers_von (Personenzahl ab), pers_bis (Personenzahl bis), '
+            . 'day_status ("Option" | "Definitiv" | "Vertrag" ...), '
+            . 'color (#RRGGBB), sort_order (int).';
     }
 
     public function getSchema(): array

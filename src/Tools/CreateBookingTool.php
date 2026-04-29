@@ -33,11 +33,21 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
     {
         return 'POST /events/{event}/bookings - Legt eine oder mehrere Raum-Buchungen an. '
             . 'Pflicht: event-Selector + (location_id ODER raum). '
-            . 'Bulk: apply_to_all_days=true (pro EventDay eine Buchung mit datum=Tag) ODER day_ids=[id,...] '
-            . '(nur an diese Tage). Sonst: Single-Booking mit optionalem datum (YYYY-MM-DD oder Freitext). '
-            . 'Defaults: optionsrang="1. Option" wenn nicht gesetzt. '
-            . 'Felder: location_id (FK locations_locations.id, bevorzugt), raum (Legacy-Fallback), '
-            . 'datum, beginn (HH:MM), ende, pers, bestuhlung, optionsrang ("1. Option"|"2. Option"|"Definitiv"|"Vertrag"), absprache.';
+            . 'Bulk-Modi: apply_to_all_days=true (pro EventDay eine Buchung mit datum=Tag) ODER day_ids=[id,...] '
+            . '(nur an diese Tage). Im Bulk werden beginn/ende/pers/bestuhlung/optionsrang/absprache identisch in alle '
+            . 'erzeugten Buchungen geschrieben – nur datum kommt vom Tag. Sonst Single-Booking. '
+            . 'Defaults: optionsrang="1. Option". '
+            . 'Buchungs-Felder (vollstaendig): '
+            . 'location_id (int, FK locations_locations.id, bevorzugt), '
+            . 'raum (string, Legacy-Fallback-Kuerzel), '
+            . 'datum (YYYY-MM-DD oder Freitext; bei Bulk ignoriert), '
+            . 'beginn (HH:MM), ende (HH:MM), pers (string – Personenzahl), '
+            . 'bestuhlung (string, siehe Settings → Bestuhlungs-Arten), '
+            . 'optionsrang ("1. Option" | "2. Option" | "Definitiv" | "Vertrag"; default "1. Option"), '
+            . 'absprache (Freitext). '
+            . 'WICHTIG: Tag-Feldnamen werden ebenfalls akzeptiert und automatisch gemappt: '
+            . 'von→beginn, bis→ende, pers_von/pers_bis→pers (pers hat Vorrang, sonst pers_von, sonst pers_bis). '
+            . 'Unbekannte Felder werden im Result als ignored_fields[] zurueckgegeben.';
     }
 
     public function getSchema(): array
@@ -48,12 +58,17 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
                 'location_id'        => ['type' => 'integer', 'description' => 'FK auf locations_locations.id – bevorzugt gegenueber raum.'],
                 'raum'               => ['type' => 'string',  'description' => 'Legacy-Fallback-Kürzel.'],
                 'datum'              => ['type' => 'string',  'description' => 'YYYY-MM-DD oder freitext (nur Single-Modus; bei Bulk wird datum aus EventDay übernommen).'],
-                'beginn'             => ['type' => 'string',  'description' => 'HH:MM.'],
-                'ende'               => ['type' => 'string',  'description' => 'HH:MM.'],
-                'pers'               => ['type' => 'string',  'description' => 'Personenzahl als String (Freitext erlaubt).'],
+                'beginn'             => ['type' => 'string',  'description' => 'HH:MM. Alias: "von" (Tag-Feldname).'],
+                'ende'               => ['type' => 'string',  'description' => 'HH:MM. Alias: "bis" (Tag-Feldname).'],
+                'pers'               => ['type' => 'string',  'description' => 'Personenzahl als String. Aliases: "pers_von"/"pers_bis" (Tag-Feldnamen).'],
                 'bestuhlung'         => ['type' => 'string',  'description' => 'z.B. "Bankett", "U-Form" – siehe Settings → Bestuhlungs-Arten.'],
                 'optionsrang'        => ['type' => 'string',  'description' => 'Default "1. Option". Werte: "1. Option" | "2. Option" | "Definitiv" | "Vertrag".'],
                 'absprache'          => ['type' => 'string',  'description' => 'Freitext-Kommentar.'],
+                // Tag-Feld-Aliase (werden auf beginn/ende/pers gemappt)
+                'von'                => ['type' => 'string',  'description' => 'Alias fuer beginn (Tag-Feldname). Wird gemappt.'],
+                'bis'                => ['type' => 'string',  'description' => 'Alias fuer ende (Tag-Feldname). Wird gemappt.'],
+                'pers_von'           => ['type' => 'string',  'description' => 'Alias fuer pers (Tag-Feldname). Wird gemappt.'],
+                'pers_bis'           => ['type' => 'string',  'description' => 'Alias fuer pers (Tag-Feldname). Wird gemappt, falls pers/pers_von nicht gesetzt.'],
                 // Bulk-Modi
                 'apply_to_all_days'  => ['type' => 'boolean', 'description' => 'Default false. Wenn true: pro EventDay eine Buchung mit datum=Tag.'],
                 'day_ids'            => ['type' => 'array',   'items' => ['type' => 'integer'], 'description' => 'Nur an diese EventDay-IDs Buchungen anlegen (Bulk-Modus).'],
@@ -68,6 +83,37 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
             if ($event instanceof ToolResult) {
                 return $event;
             }
+
+            // Aliase aus Tag-Feldnamen mappen, damit beginn/ende/pers gefuellt werden,
+            // wenn der Aufrufer von/bis/pers_von/pers_bis schickt (Inkonsistenz mit
+            // events_event_days; bewusst tolerant gemacht).
+            $aliases = [];
+            if (!isset($arguments['beginn']) && !empty($arguments['von'])) {
+                $arguments['beginn'] = $arguments['von'];
+                $aliases[] = 'von→beginn';
+            }
+            if (!isset($arguments['ende']) && !empty($arguments['bis'])) {
+                $arguments['ende'] = $arguments['bis'];
+                $aliases[] = 'bis→ende';
+            }
+            if (!isset($arguments['pers']) || $arguments['pers'] === '' || $arguments['pers'] === null) {
+                if (!empty($arguments['pers_von'])) {
+                    $arguments['pers'] = $arguments['pers_von'];
+                    $aliases[] = 'pers_von→pers';
+                } elseif (!empty($arguments['pers_bis'])) {
+                    $arguments['pers'] = $arguments['pers_bis'];
+                    $aliases[] = 'pers_bis→pers';
+                }
+            }
+
+            // Bekannte Felder zur Erkennung von ignored_fields
+            $known = [
+                'event_id', 'event_uuid', 'event_number',
+                'location_id', 'raum', 'datum', 'beginn', 'ende', 'pers', 'bestuhlung', 'optionsrang', 'absprache',
+                'von', 'bis', 'pers_von', 'pers_bis',
+                'apply_to_all_days', 'day_ids',
+            ];
+            $ignored = array_values(array_diff(array_keys($arguments), $known));
 
             $errors = [];
 
@@ -167,6 +213,8 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
                 'optionsrang'   => $base['optionsrang'],
                 'count'         => count($created),
                 'bookings'      => $created,
+                'aliases_applied' => $aliases,
+                'ignored_fields'  => $ignored,
                 'message'       => count($created) === 1
                     ? "Buchung fuer Event #{$event->event_number} angelegt."
                     : count($created) . " Buchungen fuer Event #{$event->event_number} angelegt.",

@@ -20,7 +20,14 @@ class CreateScheduleItemTool implements ToolContract, ToolMetadataContract
 
     public function getDescription(): string
     {
-        return 'POST /events/{event}/schedule - Legt einen Ablaufplan-Eintrag an. Pflicht: event-Selector + beschreibung. Optional: datum, von, bis, raum, bemerkung, linked.';
+        return 'POST /events/{event}/schedule - Legt einen Ablaufplan-Eintrag an. '
+            . 'Pflicht: event-Selector + beschreibung (z.B. "Empfang", "Vortrag"; siehe Settings → Ablaufplan-Beschreibungen). '
+            . 'Felder: '
+            . 'datum (YYYY-MM-DD; sonst freitext), '
+            . 'von (HH:MM, Beginn), bis (HH:MM, Ende), '
+            . 'raum (string, freitext), '
+            . 'bemerkung (Freitext-Notiz), '
+            . 'linked (boolean, Default false – verbindet zwei Ablaufeintraege fuer Block-Anzeigen).';
     }
 
     public function getSchema(): array

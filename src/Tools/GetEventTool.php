@@ -26,7 +26,11 @@ class GetEventTool implements ToolContract, ToolMetadataContract
     public function getDescription(): string
     {
         return 'GET /events/{id} - Liefert Details zu einem Event. Identifikation: event_id ODER uuid ODER event_number (auch ohne "#"). '
-            . 'Optional include: days, bookings, schedule, notes (alle true/false).';
+            . 'Optional include: days, bookings, schedule, notes (alle true/false). '
+            . 'Hinweis: Foreign-Keys (CRM-Companies/Contacts, eigene Locations) sind doppelt im Result: '
+            . 'als Roh-FK (z.B. crm_company_id) UND als hydratisiertes Objekt (z.B. customer_company={id,name}). '
+            . 'Das alte Freitext-Feld customer bleibt aus Kompat-Gruenden parallel bestehen (deprecated, '
+            . 'bevorzugt crm_company_id + customer_company).';
     }
 
     public function getSchema(): array
