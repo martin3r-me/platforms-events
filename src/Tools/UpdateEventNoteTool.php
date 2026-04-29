@@ -84,13 +84,23 @@ class UpdateEventNoteTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('VALIDATION_ERROR', 'Keine Felder zum Aktualisieren übergeben.');
             }
 
+            $known = ['note_id', 'uuid', 'type', 'text', 'user_name'];
+            $ignored = array_values(array_diff(array_keys($arguments), $known));
+
             $note->update($update);
 
             return ToolResult::success([
-                'id'       => $note->id,
-                'uuid'     => $note->uuid,
-                'event_id' => $note->event_id,
-                'message'  => 'Notiz aktualisiert.',
+                'id'             => $note->id,
+                'uuid'           => $note->uuid,
+                'event_id'       => $note->event_id,
+                'type'           => $note->type,
+                'text'           => $note->text,
+                'user_name'      => $note->user_name,
+                'created_at'     => $note->created_at?->toIso8601String(),
+                'updated_at'     => $note->updated_at?->toIso8601String(),
+                'updated_fields' => array_keys($update),
+                'ignored_fields' => $ignored,
+                'message'        => 'Notiz aktualisiert.',
             ]);
         } catch (\Throwable $e) {
             return ToolResult::error('EXECUTION_ERROR', 'Fehler beim Aktualisieren: ' . $e->getMessage());

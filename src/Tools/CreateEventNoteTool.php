@@ -64,6 +64,9 @@ class CreateEventNoteTool implements ToolContract, ToolMetadataContract
                 return $this->validationFailure($errors);
             }
 
+            $known = array_merge(['type', 'text', 'user_name'], array_keys($this->eventSelectorSchema()));
+            $ignored = array_values(array_diff(array_keys($arguments), $known));
+
             $note = EventNote::create([
                 'event_id'  => $event->id,
                 'team_id'   => $event->team_id,
@@ -74,11 +77,16 @@ class CreateEventNoteTool implements ToolContract, ToolMetadataContract
             ]);
 
             return ToolResult::success([
-                'id'       => $note->id,
-                'uuid'     => $note->uuid,
-                'event_id' => $event->id,
-                'type'     => $note->type,
-                'message'  => "Notiz zu Event #{$event->event_number} angelegt.",
+                'id'             => $note->id,
+                'uuid'           => $note->uuid,
+                'event_id'       => $event->id,
+                'type'           => $note->type,
+                'text'           => $note->text,
+                'user_name'      => $note->user_name,
+                'created_at'     => $note->created_at?->toIso8601String(),
+                'aliases_applied'=> [],
+                'ignored_fields' => $ignored,
+                'message'        => "Notiz zu Event #{$event->event_number} angelegt.",
             ]);
         } catch (\Throwable $e) {
             return ToolResult::error('EXECUTION_ERROR', 'Fehler beim Anlegen der Notiz: ' . $e->getMessage());

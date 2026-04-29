@@ -187,6 +187,19 @@ class GetEventTool implements ToolContract, ToolMetadataContract
             }
             $payload['delivery'] = $deliveryAggregate;
 
+            // Hinweis-Block: Legacy-Felder, die parallel weiterhin im Result stehen.
+            // Aufrufer sollten die genannten Ersatz-Felder bevorzugen.
+            $payload['_deprecated'] = [
+                'customer'        => 'Legacy-Freitext. Bevorzugt: crm_company_id + customer_company.',
+                'location'        => 'Legacy-Freitext (Veranstaltungsort). Lieferadresse via delivery_*; Buchungs-Raeume ueber bookings/primary_location.',
+                'orderer_company' => 'Legacy-Freitext. Bevorzugt: orderer_crm_company_id + orderer_company_ref.',
+                'orderer_contact' => 'Legacy-Freitext. Bevorzugt: orderer_crm_contact_id + orderer_contact_ref.',
+                'invoice_to'      => 'Legacy-Freitext. Bevorzugt: invoice_crm_company_id + invoice_company.',
+                'invoice_contact' => 'Legacy-Freitext. Bevorzugt: invoice_crm_contact_id + invoice_contact_ref.',
+                'organizer_contact'        => 'Legacy-Freitext. Bevorzugt: organizer_crm_contact_id + organizer_contact_ref.',
+                'organizer_contact_onsite' => 'Legacy-Freitext. Bevorzugt: organizer_onsite_crm_contact_id + organizer_onsite_contact.',
+            ];
+
             if (!empty($arguments['include_days'])) {
                 $payload['days'] = $event->days()->orderBy('sort_order')->get()
                     ->map(fn($d) => [
