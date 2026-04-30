@@ -17,10 +17,17 @@ class CreateArticlePackageItemTool implements ToolContract, ToolMetadataContract
         return 'events.article-package-items.POST';
     }
 
+    /** Aliases analog zur restlichen API. */
+    protected const FIELD_ALIASES = [
+        'article_package_id'   => 'package_id',
+        'article_package_uuid' => 'package_uuid',
+    ];
+
     public function getDescription(): string
     {
         return 'POST /events/article-packages/{package}/items - Fuegt ein Item zu einem Paket hinzu. '
-            . 'Pflicht: package_id|package_uuid + name (oder article_id, dann wird name aus Stammartikel uebernommen). '
+            . 'Pflicht: package_id|package_uuid (Aliase: article_package_id|article_package_uuid) + name '
+            . '(oder article_id, dann wird name aus Stammartikel uebernommen). '
             . 'Felder: article_id, name, gruppe, quantity (default 1), gebinde, vk, gesamt (default quantity*vk), sort_order. '
             . 'Bulk-POST mit items[] auch ueber CreateArticlePackageTool moeglich.';
     }
@@ -30,16 +37,18 @@ class CreateArticlePackageItemTool implements ToolContract, ToolMetadataContract
         return [
             'type' => 'object',
             'properties' => [
-                'package_id'   => ['type' => 'integer'],
-                'package_uuid' => ['type' => 'string'],
-                'article_id'   => ['type' => 'integer'],
-                'name'         => ['type' => 'string'],
-                'gruppe'       => ['type' => 'string'],
-                'quantity'     => ['type' => 'integer'],
-                'gebinde'      => ['type' => 'string'],
-                'vk'           => ['type' => 'number'],
-                'gesamt'       => ['type' => 'number'],
-                'sort_order'   => ['type' => 'integer'],
+                'package_id'           => ['type' => 'integer'],
+                'package_uuid'         => ['type' => 'string'],
+                'article_package_id'   => ['type' => 'integer', 'description' => 'Alias fuer package_id.'],
+                'article_package_uuid' => ['type' => 'string',  'description' => 'Alias fuer package_uuid.'],
+                'article_id'           => ['type' => 'integer'],
+                'name'                 => ['type' => 'string'],
+                'gruppe'                => ['type' => 'string'],
+                'quantity'              => ['type' => 'integer'],
+                'gebinde'               => ['type' => 'string'],
+                'vk'                    => ['type' => 'number'],
+                'gesamt'                => ['type' => 'number'],
+                'sort_order'            => ['type' => 'integer'],
             ],
         ];
     }
@@ -50,6 +59,18 @@ class CreateArticlePackageItemTool implements ToolContract, ToolMetadataContract
             if (!$context->user) {
                 return ToolResult::error('AUTH_ERROR', 'Kein User im Kontext.');
             }
+
+            // Aliases mappen (article_package_id → package_id, article_package_uuid → package_uuid).
+            $aliasesApplied = [];
+            foreach (self::FIELD_ALIASES as $alias => $primary) {
+                if (array_key_exists($alias, $arguments)
+                    && (!array_key_exists($primary, $arguments) || $arguments[$primary] === null || $arguments[$primary] === '')
+                ) {
+                    $arguments[$primary] = $arguments[$alias];
+                    $aliasesApplied[] = "{$alias}→{$primary}";
+                }
+            }
+
             $package = null;
             if (!empty($arguments['package_id'])) {
                 $package = ArticlePackage::find((int) $arguments['package_id']);
@@ -57,7 +78,7 @@ class CreateArticlePackageItemTool implements ToolContract, ToolMetadataContract
                 $package = ArticlePackage::where('uuid', $arguments['package_uuid'])->first();
             }
             if (!$package) {
-                return ToolResult::error('VALIDATION_ERROR', 'package_id oder package_uuid ist erforderlich.');
+                return ToolResult::error('VALIDATION_ERROR', 'package_id oder package_uuid (Aliase: article_package_id|article_package_uuid) ist erforderlich.');
             }
             if (!$context->user->teams()->where('teams.id', $package->team_id)->exists()) {
                 return ToolResult::error('ACCESS_DENIED', 'Kein Zugriff auf das Paket.');
@@ -100,15 +121,24 @@ class CreateArticlePackageItemTool implements ToolContract, ToolMetadataContract
                 'sort_order' => $arguments['sort_order'] ?? ($maxSort + 1),
             ]);
 
+            $known = [
+                'package_id', 'package_uuid', 'article_id',
+                'name', 'gruppe', 'quantity', 'gebinde', 'vk', 'gesamt', 'sort_order',
+            ];
+            $known = array_merge($known, array_keys(self::FIELD_ALIASES));
+            $ignored = array_values(array_diff(array_keys($arguments), $known));
+
             return ToolResult::success([
-                'id'         => $item->id,
-                'uuid'       => $item->uuid,
-                'package_id' => $package->id,
-                'name'       => $item->name,
-                'quantity'   => (int) $item->quantity,
-                'vk'         => (float) $item->vk,
-                'gesamt'     => (float) $item->gesamt,
-                'message'    => "Item '{$item->name}' zu Paket '{$package->name}' hinzugefuegt.",
+                'id'              => $item->id,
+                'uuid'            => $item->uuid,
+                'package_id'      => $package->id,
+                'name'            => $item->name,
+                'quantity'        => (int) $item->quantity,
+                'vk'              => (float) $item->vk,
+                'gesamt'          => (float) $item->gesamt,
+                'aliases_applied' => $aliasesApplied,
+                'ignored_fields'  => $ignored,
+                'message'         => "Item '{$item->name}' zu Paket '{$package->name}' hinzugefuegt.",
             ]);
         } catch (\Throwable $e) {
             return ToolResult::error('EXECUTION_ERROR', 'Fehler: ' . $e->getMessage());

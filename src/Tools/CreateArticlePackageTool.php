@@ -9,9 +9,15 @@ use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\ArticleGroup;
 use Platform\Events\Models\ArticlePackage;
 use Platform\Events\Models\ArticlePackageItem;
+use Platform\Events\Tools\Concerns\CollectsValidationErrors;
 
 class CreateArticlePackageTool implements ToolContract, ToolMetadataContract
 {
+    use CollectsValidationErrors;
+
+    /** Erlaubte Formate: #RGB | #RRGGBB | #RRGGBBAA (case-insensitive). */
+    protected const COLOR_REGEX = '/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/';
+
     public function getName(): string
     {
         return 'events.article-packages.POST';
@@ -20,7 +26,8 @@ class CreateArticlePackageTool implements ToolContract, ToolMetadataContract
     public function getDescription(): string
     {
         return 'POST /events/article-packages - Legt eine Artikel-Vorlage (Paket) an. Pflicht: name. '
-            . 'Felder: description, color (#RRGGBB), article_group_id (FK), is_active (default true), sort_order. '
+            . 'Felder: description, color (#RGB | #RRGGBB | #RRGGBBAA; wenn nicht gesetzt: erbt von '
+            . 'article_group_id.color, sonst DB-Default), article_group_id (FK), is_active (default true), sort_order. '
             . 'Optional: items[] = Liste von Package-Items, die direkt mit angelegt werden – '
             . 'jedes Item: { article_id?, name, gruppe?, quantity (int, default 1), gebinde?, vk (decimal), gesamt (decimal optional) }. '
             . 'Wenn article_id angegeben ist, werden name/gebinde/vk aus dem Stammartikel uebernommen, sofern leer.';
@@ -72,30 +79,53 @@ class CreateArticlePackageTool implements ToolContract, ToolMetadataContract
             if (!$context->user->teams()->where('teams.id', $teamId)->exists()) {
                 return ToolResult::error('ACCESS_DENIED', "Kein Zugriff auf Team-ID {$teamId}.");
             }
+            // Strict-Validation (gebuendelt).
+            $errors = [];
             if (empty($arguments['name'])) {
-                return ToolResult::error('VALIDATION_ERROR', 'name ist erforderlich.');
+                $errors[] = $this->validationError('name', 'name ist erforderlich.');
+            }
+            $hasColor = array_key_exists('color', $arguments)
+                && $arguments['color'] !== null && $arguments['color'] !== '';
+            if ($hasColor && !preg_match(self::COLOR_REGEX, (string) $arguments['color'])) {
+                $errors[] = $this->validationError(
+                    'color',
+                    'color muss Hex-Format haben: #RGB, #RRGGBB oder #RRGGBBAA (z.B. "#8b5cf6").'
+                );
             }
 
-            $groupId = null;
+            $group = null;
             if (!empty($arguments['article_group_id'])) {
                 $group = ArticleGroup::where('team_id', $teamId)->find((int) $arguments['article_group_id']);
                 if (!$group) {
-                    return ToolResult::error('VALIDATION_ERROR', 'article_group_id gehoert nicht zum Team.');
+                    $errors[] = $this->validationError('article_group_id', 'article_group_id gehoert nicht zum Team.');
                 }
-                $groupId = $group->id;
+            }
+            if (!empty($errors)) {
+                return $this->validationFailure($errors);
             }
 
             $maxSort = (int) ArticlePackage::where('team_id', $teamId)->max('sort_order');
-            $package = ArticlePackage::create([
+
+            // Color-Resolution: explizit > group.color > DB-Default (Spalte einfach weglassen).
+            $colorSource = 'db_default';
+            $payload = [
                 'team_id'          => $teamId,
                 'user_id'          => $context->user->id,
-                'article_group_id' => $groupId,
+                'article_group_id' => $group?->id,
                 'name'             => $arguments['name'],
                 'description'      => $arguments['description'] ?? null,
-                'color'            => $arguments['color']       ?? null,
                 'is_active'        => array_key_exists('is_active', $arguments) ? (bool) $arguments['is_active'] : true,
                 'sort_order'       => $arguments['sort_order']  ?? $maxSort + 1,
-            ]);
+            ];
+            if ($hasColor) {
+                $payload['color'] = (string) $arguments['color'];
+                $colorSource = 'explicit';
+            } elseif ($group && $group->color) {
+                $payload['color'] = $group->color;
+                $colorSource = 'inherited_from_group';
+            }
+
+            $package = ArticlePackage::create($payload);
 
             // Items mitanlegen, wenn uebergeben.
             $createdItems = [];
@@ -142,13 +172,40 @@ class CreateArticlePackageTool implements ToolContract, ToolMetadataContract
                 }
             }
 
+            $known = [
+                'team_id', 'name', 'description', 'color', 'article_group_id',
+                'is_active', 'sort_order', 'items',
+            ];
+            $ignored = array_values(array_diff(array_keys($arguments), $known));
+
+            $emptyRecommended = [];
+            if (!$package->article_group_id) {
+                $emptyRecommended['article_group_id'] = 'Artikelgruppe (FK) – ohne Gruppe greifen Vererbungen wie Erloeskonto/color nicht.';
+            }
+            if (!$package->description) {
+                $emptyRecommended['description'] = 'Kurzbeschreibung der Vorlage (intern).';
+            }
+
             return ToolResult::success([
-                'id'             => $package->id,
-                'uuid'           => $package->uuid,
-                'name'           => $package->name,
-                'items_created'  => count($createdItems),
-                'items'          => $createdItems,
-                'message'        => "Paket '{$package->name}' angelegt" . (count($createdItems) ? " (mit " . count($createdItems) . " Items)" : "") . ".",
+                'id'                => $package->id,
+                'uuid'              => $package->uuid,
+                'name'              => $package->name,
+                'description'       => $package->description,
+                'color'             => $package->color,
+                'color_source'      => $colorSource,
+                'article_group_id'  => $package->article_group_id,
+                'is_active'         => (bool) $package->is_active,
+                'sort_order'        => (int) $package->sort_order,
+                'items_created'     => count($createdItems),
+                'items'             => $createdItems,
+                'aliases_applied'   => [],
+                'ignored_fields'    => $ignored,
+                'empty_recommended_fields' => $emptyRecommended,
+                '_field_hints'      => [
+                    'color' => 'Hex-Format. Wenn weggelassen: erbt von article_group_id.color, sonst DB-Default.',
+                    'items' => 'Bulk-Anlage von Package-Items moeglich. Einzeln auch via events.article-package-items.POST.',
+                ],
+                'message'           => "Paket '{$package->name}' angelegt" . (count($createdItems) ? " (mit " . count($createdItems) . " Items)" : "") . ".",
             ]);
         } catch (\Throwable $e) {
             return ToolResult::error('EXECUTION_ERROR', 'Fehler: ' . $e->getMessage());

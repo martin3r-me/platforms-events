@@ -8,10 +8,21 @@ use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\ArticleGroup;
 use Platform\Events\Models\ArticlePackage;
+use Platform\Events\Tools\Concerns\CollectsValidationErrors;
 
 class UpdateArticlePackageTool implements ToolContract, ToolMetadataContract
 {
+    use CollectsValidationErrors;
+
     protected const STRING_FIELDS = ['name', 'description', 'color'];
+
+    /** Aliases analog ArticleGroup-Tool (Naming-Bridge zur restlichen API). */
+    protected const FIELD_ALIASES = [
+        'article_package_id' => 'package_id',
+    ];
+
+    /** Erlaubte Formate: #RGB | #RRGGBB | #RRGGBBAA (case-insensitive). */
+    protected const COLOR_REGEX = '/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/';
 
     public function getName(): string
     {
@@ -21,18 +32,19 @@ class UpdateArticlePackageTool implements ToolContract, ToolMetadataContract
     public function getDescription(): string
     {
         return 'PATCH /events/article-packages/{id} - Aktualisiert ein Paket. '
-            . 'Identifikation: package_id ODER uuid. '
-            . 'Felder: name, description, color, article_group_id, is_active, sort_order.';
+            . 'Identifikation: package_id (Alias article_package_id) ODER uuid. '
+            . 'Felder: name, description, color (#RGB | #RRGGBB | #RRGGBBAA), article_group_id, is_active, sort_order.';
     }
 
     public function getSchema(): array
     {
         $props = [
-            'package_id'       => ['type' => 'integer'],
-            'uuid'             => ['type' => 'string'],
-            'article_group_id' => ['type' => 'integer'],
-            'is_active'        => ['type' => 'boolean'],
-            'sort_order'       => ['type' => 'integer'],
+            'package_id'         => ['type' => 'integer'],
+            'article_package_id' => ['type' => 'integer', 'description' => 'Alias fuer package_id.'],
+            'uuid'               => ['type' => 'string'],
+            'article_group_id'   => ['type' => 'integer'],
+            'is_active'          => ['type' => 'boolean'],
+            'sort_order'         => ['type' => 'integer'],
         ];
         foreach (self::STRING_FIELDS as $f) $props[$f] = ['type' => 'string'];
         return ['type' => 'object', 'properties' => $props];
@@ -44,13 +56,25 @@ class UpdateArticlePackageTool implements ToolContract, ToolMetadataContract
             if (!$context->user) {
                 return ToolResult::error('AUTH_ERROR', 'Kein User im Kontext.');
             }
+
+            // Aliases mappen (article_package_id → package_id).
+            $aliasesApplied = [];
+            foreach (self::FIELD_ALIASES as $alias => $primary) {
+                if (array_key_exists($alias, $arguments)
+                    && (!array_key_exists($primary, $arguments) || $arguments[$primary] === null || $arguments[$primary] === '')
+                ) {
+                    $arguments[$primary] = $arguments[$alias];
+                    $aliasesApplied[] = "{$alias}→{$primary}";
+                }
+            }
+
             $query = ArticlePackage::query();
             if (!empty($arguments['package_id'])) {
                 $query->where('id', (int) $arguments['package_id']);
             } elseif (!empty($arguments['uuid'])) {
                 $query->where('uuid', $arguments['uuid']);
             } else {
-                return ToolResult::error('VALIDATION_ERROR', 'package_id oder uuid ist erforderlich.');
+                return ToolResult::error('VALIDATION_ERROR', 'package_id (oder Alias article_package_id) oder uuid ist erforderlich.');
             }
             $package = $query->first();
             if (!$package) {
@@ -60,9 +84,29 @@ class UpdateArticlePackageTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('ACCESS_DENIED', 'Kein Zugriff.');
             }
 
+            // Strict-Validation (gebuendelt).
+            $errors = [];
+            if (array_key_exists('color', $arguments)
+                && $arguments['color'] !== null && $arguments['color'] !== ''
+                && !preg_match(self::COLOR_REGEX, (string) $arguments['color'])
+            ) {
+                $errors[] = $this->validationError(
+                    'color',
+                    'color muss Hex-Format haben: #RGB, #RRGGBB oder #RRGGBBAA (z.B. "#8b5cf6").'
+                );
+            }
+
             $update = [];
             foreach (self::STRING_FIELDS as $f) {
-                if (array_key_exists($f, $arguments)) $update[$f] = $arguments[$f];
+                if (array_key_exists($f, $arguments)) {
+                    $val = $arguments[$f];
+                    // color darf nicht NULL/"" gesetzt werden (Spalte ist NOT NULL mit DB-Default).
+                    if ($f === 'color' && ($val === null || $val === '')) {
+                        $errors[] = $this->validationError('color', 'color darf nicht leer sein.');
+                        continue;
+                    }
+                    $update[$f] = $val === null ? null : (string) $val;
+                }
             }
             if (array_key_exists('is_active', $arguments)) $update['is_active'] = (bool) $arguments['is_active'];
             if (array_key_exists('sort_order', $arguments)) $update['sort_order'] = (int) $arguments['sort_order'];
@@ -73,29 +117,46 @@ class UpdateArticlePackageTool implements ToolContract, ToolMetadataContract
                 } else {
                     $group = ArticleGroup::where('team_id', $package->team_id)->find((int) $gid);
                     if (!$group) {
-                        return ToolResult::error('VALIDATION_ERROR', 'article_group_id gehoert nicht zum Team.');
+                        $errors[] = $this->validationError('article_group_id', 'article_group_id gehoert nicht zum Team.');
+                    } else {
+                        $update['article_group_id'] = $group->id;
                     }
-                    $update['article_group_id'] = $group->id;
                 }
             }
 
+            if (!empty($errors)) {
+                return $this->validationFailure($errors);
+            }
             if (empty($update)) {
                 return ToolResult::error('VALIDATION_ERROR', 'Keine Felder zum Aktualisieren übergeben.');
             }
 
-            $known = array_merge(['package_id', 'uuid', 'article_group_id', 'is_active', 'sort_order'], self::STRING_FIELDS);
+            $known = array_merge(
+                ['package_id', 'uuid', 'article_group_id', 'is_active', 'sort_order'],
+                self::STRING_FIELDS,
+                array_keys(self::FIELD_ALIASES),
+            );
             $ignored = array_values(array_diff(array_keys($arguments), $known));
 
             $package->update($update);
 
             return ToolResult::success([
-                'id'             => $package->id,
-                'uuid'           => $package->uuid,
-                'name'           => $package->name,
-                'is_active'      => (bool) $package->is_active,
-                'updated_fields' => array_keys($update),
-                'ignored_fields' => $ignored,
-                'message'        => 'Paket aktualisiert.',
+                'id'               => $package->id,
+                'uuid'             => $package->uuid,
+                'name'             => $package->name,
+                'description'      => $package->description,
+                'color'            => $package->color,
+                'article_group_id' => $package->article_group_id,
+                'is_active'        => (bool) $package->is_active,
+                'sort_order'       => (int) $package->sort_order,
+                'updated_fields'   => array_keys($update),
+                'aliases_applied'  => $aliasesApplied,
+                'ignored_fields'   => $ignored,
+                '_field_hints'     => [
+                    'package_id' => 'Alias: article_package_id.',
+                    'color'      => 'Hex-Format: #RGB | #RRGGBB | #RRGGBBAA. Nicht leer setzen.',
+                ],
+                'message'          => 'Paket aktualisiert.',
             ]);
         } catch (\Throwable $e) {
             return ToolResult::error('EXECUTION_ERROR', 'Fehler: ' . $e->getMessage());

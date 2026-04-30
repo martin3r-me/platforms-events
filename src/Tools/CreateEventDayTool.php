@@ -19,6 +19,9 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
     use CollectsValidationErrors;
     use NormalizesTimeFields;
 
+    /** Erlaubte Formate: #RGB | #RRGGBB | #RRGGBBAA (case-insensitive). */
+    protected const COLOR_REGEX = '/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/';
+
     public function getName(): string
     {
         return 'events.days.POST';
@@ -32,7 +35,8 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
             . 'erlaubte Werte werden im Response unter empty_recommended_field_options.day_type.values gespiegelt; '
             . 'Tippfehler werden mit VALIDATION_ERROR abgelehnt; Liste in Einstellungen → Tages-Typen erweiterbar), '
             . 'von/bis (HH:MM), pers_von/pers_bis (Personenzahlen), '
-            . 'day_status ("Option" [Default] | "Definitiv" | "Vertrag" ...), color (#RRGGBB, Default #6366f1). '
+            . 'day_status ("Option" [Default] | "Definitiv" | "Vertrag" ...), '
+            . 'color (#RGB | #RRGGBB | #RRGGBBAA; wenn nicht gesetzt: DB-Default). '
             . 'day_of_week wird aus datum abgeleitet, wenn nicht uebergeben (So..Sa). '
             . 'sort_order wird automatisch (max+1) gesetzt.';
     }
@@ -51,7 +55,7 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
                 'pers_von'    => ['type' => 'string'],
                 'pers_bis'    => ['type' => 'string'],
                 'day_status'  => ['type' => 'string', 'description' => 'Option|Definitiv|Vertrag|...'],
-                'color'       => ['type' => 'string', 'description' => '#RRGGBB.'],
+                'color'       => ['type' => 'string', 'description' => 'Hex-Farbe, z.B. #6366f1. Optional (DB-Default greift sonst).'],
             ]),
             'required' => ['label', 'datum'],
         ];
@@ -103,6 +107,16 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
                 }
             }
 
+            // color Format-Validation (nur wenn explizit gesetzt).
+            $hasColor = array_key_exists('color', $arguments)
+                && $arguments['color'] !== null && $arguments['color'] !== '';
+            if ($hasColor && !preg_match(self::COLOR_REGEX, (string) $arguments['color'])) {
+                $errors[] = $this->validationError(
+                    'color',
+                    'color muss Hex-Format haben: #RGB, #RRGGBB oder #RRGGBBAA (z.B. "#6366f1").'
+                );
+            }
+
             if (!empty($errors)) {
                 return $this->validationFailure($errors);
             }
@@ -130,7 +144,9 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
 
             $maxSort = (int) EventDay::where('event_id', $event->id)->max('sort_order');
 
-            $day = EventDay::create([
+            // Color-Resolution: explizit > DB-Default (Spalte einfach weglassen).
+            $colorSource = 'db_default';
+            $payload = [
                 'event_id'    => $event->id,
                 'team_id'     => $event->team_id,
                 'user_id'     => $context->user->id,
@@ -143,9 +159,14 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
                 'pers_von'    => $arguments['pers_von'] ?? null,
                 'pers_bis'    => $arguments['pers_bis'] ?? null,
                 'day_status'  => $arguments['day_status'] ?? 'Option',
-                'color'       => $arguments['color'] ?? '#6366f1',
                 'sort_order'  => $maxSort + 1,
-            ]);
+            ];
+            if ($hasColor) {
+                $payload['color'] = (string) $arguments['color'];
+                $colorSource = 'explicit';
+            }
+
+            $day = EventDay::create($payload);
 
             return ToolResult::success([
                 'id'             => $day->id,
@@ -161,6 +182,7 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
                 'pers_bis'       => $day->pers_bis,
                 'day_status'     => $day->day_status,
                 'color'          => $day->color,
+                'color_source'   => $colorSource,
                 'sort_order'     => $day->sort_order,
                 'aliases_applied'=> $aliasesApplied,
                 'ignored_fields' => $ignored,
