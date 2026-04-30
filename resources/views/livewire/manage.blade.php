@@ -27,12 +27,34 @@
             ['label' => 'Events', 'route' => 'events.dashboard'],
             ['label' => 'Veranstaltungen'],
         ]">
-            <x-ui-button variant="primary" size="sm" wire:click="openCreate">
-                <span class="flex items-center gap-2">
-                    @svg('heroicon-o-plus', 'w-4 h-4')
-                    Neue Veranstaltung
-                </span>
-            </x-ui-button>
+            <div class="flex items-center gap-2">
+                {{-- View-Toggle: Liste / Kalender --}}
+                <div class="inline-flex items-center bg-slate-100 border border-slate-200 rounded-md p-0.5 gap-0.5">
+                    <button type="button" wire:click="setViewMode('list')"
+                            class="flex items-center gap-1.5 px-2.5 py-1 rounded text-[0.68rem] font-semibold transition
+                                   {{ $viewMode === 'list'
+                                       ? 'bg-white text-[var(--ui-secondary)] shadow-sm'
+                                       : 'text-slate-500 hover:text-[var(--ui-secondary)]' }}">
+                        @svg('heroicon-o-list-bullet', 'w-3.5 h-3.5')
+                        Liste
+                    </button>
+                    <button type="button" wire:click="setViewMode('calendar')"
+                            class="flex items-center gap-1.5 px-2.5 py-1 rounded text-[0.68rem] font-semibold transition
+                                   {{ $viewMode === 'calendar'
+                                       ? 'bg-white text-[var(--ui-secondary)] shadow-sm'
+                                       : 'text-slate-500 hover:text-[var(--ui-secondary)]' }}">
+                        @svg('heroicon-o-calendar-days', 'w-3.5 h-3.5')
+                        Kalender
+                    </button>
+                </div>
+
+                <x-ui-button variant="primary" size="sm" wire:click="openCreate">
+                    <span class="flex items-center gap-2">
+                        @svg('heroicon-o-plus', 'w-4 h-4')
+                        Neue Veranstaltung
+                    </span>
+                </x-ui-button>
+            </div>
         </x-ui-page-actionbar>
 
         {{-- Spacer zur Breadcrumb-Leiste --}}
@@ -40,7 +62,8 @@
 
         <div class="space-y-6">
 
-            {{-- Stats --}}
+            {{-- Stats (nur in der Listen-Ansicht; im Kalender uebernehmen die Tages-Zellen die Visualisierung) --}}
+            @if($viewMode === 'list')
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="bg-white border border-[var(--ui-border)] rounded-lg p-4">
                     <p class="text-2xl font-bold text-[var(--ui-secondary)]">{{ $stats['total'] }}</p>
@@ -55,10 +78,12 @@
                     <p class="text-[0.65rem] text-[var(--ui-muted)] uppercase tracking-wider font-semibold">Vergangen</p>
                 </div>
             </div>
+            @endif
 
-            {{-- Filter-Panel --}}
+            {{-- Filter-Panel: in Liste komplett, im Kalender ohne Period-Tabs (Kalender hat eigene Monats-Navigation) --}}
             <x-ui-panel>
                 <div class="flex flex-col gap-4">
+                    @if($viewMode === 'list')
                     <div class="flex items-center gap-3 flex-wrap">
                         <span class="text-[0.65rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] w-20 flex-shrink-0">
                             Zeitraum
@@ -71,8 +96,9 @@
                             activeVariant="secondary"
                         />
                     </div>
+                    @endif
 
-                    <div class="flex items-center gap-3 flex-wrap border-t border-[var(--ui-border)]/40 pt-4">
+                    <div class="flex items-center gap-3 flex-wrap {{ $viewMode === 'list' ? 'border-t border-[var(--ui-border)]/40 pt-4' : '' }}">
                         <span class="text-[0.65rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] w-20 flex-shrink-0">
                             Suche
                         </span>
@@ -95,6 +121,8 @@
                     </div>
                 </div>
             </x-ui-panel>
+
+            @if($viewMode === 'list')
 
             {{-- Card-Liste --}}
             @php
@@ -364,6 +392,89 @@
                     </div>
                 @endif
             @endif
+            @endif {{-- /viewMode list --}}
+
+            @if($viewMode === 'calendar')
+                {{-- ===== KALENDER-VIEW ===== --}}
+                @php
+                    // Status-Farben fuer Calendar-Eintrage. Werte spiegeln $statusColor in
+                    // CSS-Hex, damit Alpine sie direkt nutzen kann (Tailwind-Klassen sind
+                    // dynamisch nicht zur Compile-Time bekannt).
+                    $statusColorsJs = [
+                        'Vertrag'       => ['bg' => '#dcfce7', 'color' => '#065f46', 'bar' => '#16a34a'],
+                        'Definitiv'     => ['bg' => '#f0fdf4', 'color' => '#15803d', 'bar' => '#22c55e'],
+                        'Option'        => ['bg' => '#fefce8', 'color' => '#854d0e', 'bar' => '#eab308'],
+                        'Abgeschlossen' => ['bg' => '#f1f5f9', 'color' => '#475569', 'bar' => '#94a3b8'],
+                        'Storno'        => ['bg' => '#fef2f2', 'color' => '#b91c1c', 'bar' => '#ef4444'],
+                        'Warteliste'    => ['bg' => '#fff7ed', 'color' => '#c2410c', 'bar' => '#f97316'],
+                        'Tendenz'       => ['bg' => '#faf5ff', 'color' => '#7c3aed', 'bar' => '#a855f7'],
+                    ];
+                @endphp
+                <div x-data="eventsCalendar({{ json_encode($calendarEvents) }}, {{ json_encode($statusColorsJs) }})"
+                     class="bg-white border border-[var(--ui-border)] rounded-lg overflow-hidden">
+
+                    {{-- Header: Monats-Navigation --}}
+                    <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--ui-border)]">
+                        <div class="flex items-center gap-2">
+                            <button type="button" @click="prevMonth()"
+                                    class="w-7 h-7 border border-slate-200 rounded-md bg-white hover:bg-slate-50 flex items-center justify-center text-slate-500">
+                                @svg('heroicon-o-chevron-left', 'w-3.5 h-3.5')
+                            </button>
+                            <span class="text-sm font-bold text-[var(--ui-secondary)] min-w-[160px] text-center"
+                                  x-text="monthNames[currentMonth] + ' ' + currentYear"></span>
+                            <button type="button" @click="nextMonth()"
+                                    class="w-7 h-7 border border-slate-200 rounded-md bg-white hover:bg-slate-50 flex items-center justify-center text-slate-500">
+                                @svg('heroicon-o-chevron-right', 'w-3.5 h-3.5')
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[0.6rem] text-[var(--ui-muted)]">{{ count($calendarEvents) }} Veranstaltung{{ count($calendarEvents) === 1 ? '' : 'en' }}</span>
+                            <button type="button" @click="goToday()"
+                                    class="px-3 py-1 border border-slate-200 rounded-md bg-white hover:bg-slate-50 text-[0.65rem] font-semibold text-slate-600">
+                                Heute
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Wochentag-Header --}}
+                    <div class="grid grid-cols-7 border-b border-[var(--ui-border)] bg-slate-50">
+                        <template x-for="d in ['Mo','Di','Mi','Do','Fr','Sa','So']" :key="d">
+                            <div class="px-2 py-1.5 text-center text-[0.6rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]"
+                                 x-text="d"></div>
+                        </template>
+                    </div>
+
+                    {{-- Kalender-Grid (6 Wochen × 7 Tage = 42 Zellen) --}}
+                    <div class="grid grid-cols-7">
+                        <template x-for="(cell, idx) in calendarCells" :key="idx">
+                            <div class="min-h-[96px] px-1.5 py-1 border-b border-r border-slate-100"
+                                 :class="cell.isToday ? 'bg-blue-50/40' : (cell.isCurrentMonth ? 'bg-white' : 'bg-slate-50/40')">
+                                {{-- Tag-Nummer --}}
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[0.65rem]"
+                                          :class="cell.isToday
+                                              ? 'font-bold text-blue-600'
+                                              : (cell.isCurrentMonth ? 'font-medium text-slate-700' : 'text-slate-300')"
+                                          x-text="cell.day"></span>
+                                </div>
+                                {{-- Events an diesem Tag --}}
+                                <div class="flex flex-col gap-0.5">
+                                    <template x-for="ev in cell.events" :key="ev.id">
+                                        <a :href="ev.url"
+                                           wire:navigate
+                                           class="block px-1.5 py-0.5 rounded text-[0.55rem] font-semibold no-underline truncate border-l-[3px] transition hover:opacity-80"
+                                           :style="'border-left-color: ' + (statusColors[ev.status]?.bar || '#94a3b8')
+                                               + '; background:' + (statusColors[ev.status]?.bg || '#f1f5f9')
+                                               + '; color:' + (statusColors[ev.status]?.color || '#475569')"
+                                           :title="ev.event_number + ' · ' + ev.name + (ev.customer ? ' — ' + ev.customer : '')"
+                                           x-text="ev.name"></a>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            @endif {{-- /viewMode calendar --}}
         </div>
 
         {{-- Create-Modal --}}
@@ -430,4 +541,104 @@
             </form>
         </x-ui-modal>
     </x-ui-page-container>
+
+    {{-- Alpine-Komponente fuer den Kalender. Globale Funktion: einmalige
+         Definition bleibt nach wire:navigate erhalten. --}}
+    <script>
+        if (typeof window.eventsCalendar === 'undefined') {
+            window.eventsCalendar = function (events, statusColors) {
+                var now = new Date();
+                return {
+                    events: events || [],
+                    statusColors: statusColors || {},
+                    currentMonth: now.getMonth(),
+                    currentYear:  now.getFullYear(),
+                    monthNames: ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],
+
+                    prevMonth() {
+                        if (this.currentMonth === 0) { this.currentMonth = 11; this.currentYear--; }
+                        else { this.currentMonth--; }
+                    },
+                    nextMonth() {
+                        if (this.currentMonth === 11) { this.currentMonth = 0; this.currentYear++; }
+                        else { this.currentMonth++; }
+                    },
+                    goToday() {
+                        var t = new Date();
+                        this.currentMonth = t.getMonth();
+                        this.currentYear  = t.getFullYear();
+                    },
+
+                    fmtDate(dt) {
+                        return dt.getFullYear() + '-'
+                            + String(dt.getMonth() + 1).padStart(2, '0') + '-'
+                            + String(dt.getDate()).padStart(2, '0');
+                    },
+
+                    eventsForDate(dt) {
+                        var iso = this.fmtDate(dt);
+                        return this.events.filter(function (ev) {
+                            var start = ev.start_date || '';
+                            var end   = ev.end_date   || start;
+                            return iso >= start && iso <= end;
+                        });
+                    },
+
+                    get calendarCells() {
+                        var year  = this.currentYear;
+                        var month = this.currentMonth;
+                        var firstDay  = new Date(year, month, 1);
+                        var lastDay   = new Date(year, month + 1, 0);
+                        // Mo=0 .. So=6 (Wochenstart: Montag wie im Alt-System).
+                        var startDow = (firstDay.getDay() + 6) % 7;
+                        var daysInMonth = lastDay.getDate();
+                        var today = new Date(); today.setHours(0, 0, 0, 0);
+
+                        var cells = [];
+
+                        // Vormonat (Padding bis Wochenstart).
+                        var prevLast = new Date(year, month, 0).getDate();
+                        for (var i = startDow - 1; i >= 0; i--) {
+                            var d = prevLast - i;
+                            var dt = new Date(year, month - 1, d);
+                            cells.push({
+                                day: d,
+                                date: this.fmtDate(dt),
+                                isCurrentMonth: false,
+                                isToday: false,
+                                events: this.eventsForDate(dt),
+                            });
+                        }
+
+                        // Aktueller Monat.
+                        for (var d = 1; d <= daysInMonth; d++) {
+                            var dt = new Date(year, month, d);
+                            cells.push({
+                                day: d,
+                                date: this.fmtDate(dt),
+                                isCurrentMonth: true,
+                                isToday: dt.getTime() === today.getTime(),
+                                events: this.eventsForDate(dt),
+                            });
+                        }
+
+                        // Folgemonat (auf 42 Zellen = 6 Reihen auffuellen).
+                        var remaining = 42 - cells.length;
+                        for (var d = 1; d <= remaining; d++) {
+                            var dt = new Date(year, month + 1, d);
+                            cells.push({
+                                day: d,
+                                date: this.fmtDate(dt),
+                                isCurrentMonth: false,
+                                isToday: false,
+                                events: this.eventsForDate(dt),
+                            });
+                        }
+
+                        return cells;
+                    },
+                };
+            };
+        }
+    </script>
 </x-ui-page>

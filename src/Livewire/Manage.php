@@ -30,6 +30,10 @@ class Manage extends Component
     #[Url(as: 'to', except: '')]
     public string $dateTo = '';
 
+    /** Ansichtsmodus der Veranstaltungs-Uebersicht: 'list' (Default) oder 'calendar'. */
+    #[Url(as: 'view', except: 'list')]
+    public string $viewMode = 'list';
+
     // Create-Modal
     public bool $showCreateModal = false;
 
@@ -58,6 +62,11 @@ class Manage extends Component
         if (!in_array($value, ['week', 'month', 'year', 'all', 'custom'], true)) {
             $this->period = 'month';
         }
+    }
+
+    public function setViewMode(string $mode): void
+    {
+        $this->viewMode = in_array($mode, ['list', 'calendar'], true) ? $mode : 'list';
     }
 
     public function openCreate(): void
@@ -261,6 +270,44 @@ class Manage extends Component
             $customerLabels[$e->id] = $label ?: ($e->customer ?: null);
         }
 
+        // Kalender-Dataset: alle Events mit start_date (ohne Pagination), gefiltert
+        // nach Suche/Status (nicht nach Period – die Kalender-Komponente hat eigene
+        // Monats-Navigation). Minimale Felder fuer die Performance.
+        $calendarEvents = [];
+        if ($this->viewMode === 'calendar') {
+            $calQuery = Event::query()
+                ->where('team_id', $team->id)
+                ->whereNotNull('start_date');
+            if ($this->search !== '') {
+                $q = '%' . $this->search . '%';
+                $calQuery->where(function ($sub) use ($q) {
+                    $sub->where('name', 'like', $q)
+                        ->orWhere('customer', 'like', $q)
+                        ->orWhere('event_number', 'like', $q);
+                });
+            }
+            if ($this->statusFilter !== '' && $this->statusFilter !== 'Alle') {
+                $calQuery->where('status', $this->statusFilter);
+            }
+            $calendarEvents = $calQuery
+                ->orderBy('start_date')
+                ->get(['id', 'event_number', 'slug', 'name', 'customer', 'location', 'status', 'start_date', 'end_date'])
+                ->map(fn ($e) => [
+                    'id'           => $e->id,
+                    'event_number' => $e->event_number,
+                    'slug'         => $e->slug,
+                    'url'          => route('events.show', ['slug' => $e->slug]),
+                    'name'         => $e->name,
+                    'customer'     => $e->customer,
+                    'location'     => $e->location,
+                    'status'       => $e->status,
+                    'start_date'   => $e->start_date?->toDateString(),
+                    'end_date'     => $e->end_date?->toDateString() ?? $e->start_date?->toDateString(),
+                ])
+                ->values()
+                ->all();
+        }
+
         return view('events::livewire.manage', [
             'events'              => $events,
             'stats'               => $stats,
@@ -272,6 +319,7 @@ class Manage extends Component
             'crmSlots'            => $crmSlots,
             'customerLabels'      => $customerLabels,
             'revenueByEvent'      => $revenueByEvent,
+            'calendarEvents'      => $calendarEvents,
         ])->layout('platform::layouts.app');
     }
 }
