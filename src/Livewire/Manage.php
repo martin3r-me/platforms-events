@@ -307,7 +307,7 @@ class Manage extends Component
             }
             $calendarEvents = $calQuery
                 ->orderBy('start_date')
-                ->get(['id', 'event_number', 'slug', 'name', 'customer', 'location', 'status', 'start_date', 'end_date', 'is_highlight'])
+                ->get(['id', 'event_number', 'name', 'customer', 'location', 'status', 'start_date', 'end_date', 'is_highlight'])
                 ->map(fn ($e) => [
                     'id'           => $e->id,
                     'event_number' => $e->event_number,
