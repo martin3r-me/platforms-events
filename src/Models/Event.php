@@ -25,6 +25,7 @@ class Event extends Model
         'event_number', 'name', 'customer', 'crm_company_id', 'group', 'location',
         'start_date', 'end_date',
         'status', 'status_changed_at',
+        'is_highlight',
 
         // Veranstalter
         'organizer_contact', 'organizer_crm_contact_id',
@@ -65,6 +66,7 @@ class Event extends Model
         'inquiry_date'      => 'date:Y-m-d',
         'forwarding_date'   => 'date:Y-m-d',
         'forwarded'         => 'boolean',
+        'is_highlight'      => 'boolean',
     ];
 
     protected static function booted(): void

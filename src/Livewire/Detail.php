@@ -378,6 +378,16 @@ class Detail extends Component
         $this->event->save();
     }
 
+    /**
+     * Toggle "Highlight"-Markierung. Highlights sind besonders sehenswerte
+     * Veranstaltungen, die das Team gerne dokumentiert (Foto, vor Ort sein).
+     */
+    public function toggleHighlight(): void
+    {
+        $this->event->is_highlight = !$this->event->is_highlight;
+        $this->event->save();
+    }
+
     public function duplicate(): void
     {
         $copy = \Platform\Events\Services\EventCloner::clone(

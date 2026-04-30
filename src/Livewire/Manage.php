@@ -34,6 +34,10 @@ class Manage extends Component
     #[Url(as: 'view', except: 'list')]
     public string $viewMode = 'list';
 
+    /** Filter „Nur Highlights": zeigt nur besonders markierte Veranstaltungen. */
+    #[Url(as: 'highlights', except: false)]
+    public bool $highlightsOnly = false;
+
     // Create-Modal
     public bool $showCreateModal = false;
 
@@ -67,6 +71,11 @@ class Manage extends Component
     public function setViewMode(string $mode): void
     {
         $this->viewMode = in_array($mode, ['list', 'calendar'], true) ? $mode : 'list';
+    }
+
+    public function toggleHighlightsOnly(): void
+    {
+        $this->highlightsOnly = !$this->highlightsOnly;
     }
 
     public function openCreate(): void
@@ -199,6 +208,10 @@ class Manage extends Component
             $query->where('status', $this->statusFilter);
         }
 
+        if ($this->highlightsOnly) {
+            $query->where('is_highlight', true);
+        }
+
         $today = now()->toDateString();
 
         $events = $query
@@ -289,9 +302,12 @@ class Manage extends Component
             if ($this->statusFilter !== '' && $this->statusFilter !== 'Alle') {
                 $calQuery->where('status', $this->statusFilter);
             }
+            if ($this->highlightsOnly) {
+                $calQuery->where('is_highlight', true);
+            }
             $calendarEvents = $calQuery
                 ->orderBy('start_date')
-                ->get(['id', 'event_number', 'slug', 'name', 'customer', 'location', 'status', 'start_date', 'end_date'])
+                ->get(['id', 'event_number', 'slug', 'name', 'customer', 'location', 'status', 'start_date', 'end_date', 'is_highlight'])
                 ->map(fn ($e) => [
                     'id'           => $e->id,
                     'event_number' => $e->event_number,
@@ -301,6 +317,7 @@ class Manage extends Component
                     'customer'     => $e->customer,
                     'location'     => $e->location,
                     'status'       => $e->status,
+                    'is_highlight' => (bool) $e->is_highlight,
                     'start_date'   => $e->start_date?->toDateString(),
                     'end_date'     => $e->end_date?->toDateString() ?? $e->start_date?->toDateString(),
                 ])

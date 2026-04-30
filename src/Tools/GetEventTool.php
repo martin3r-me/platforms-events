@@ -137,6 +137,8 @@ class GetEventTool implements ToolContract, ToolMetadataContract
                 'forwarding_date'  => $event->forwarding_date?->toDateString(),
                 'forwarding_time'  => $event->forwarding_time,
 
+                'is_highlight'     => (bool) $event->is_highlight,
+
                 'team_id'    => $event->team_id,
                 'user_id'    => $event->user_id,
                 'created_at' => $event->created_at?->toIso8601String(),

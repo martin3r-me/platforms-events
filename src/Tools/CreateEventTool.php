@@ -125,6 +125,9 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 'forwarding_date' => ['type' => 'string',  'description' => '[Weiterleitung] YYYY-MM-DD.'],
                 'forwarding_time' => ['type' => 'string',  'description' => '[Weiterleitung] HH:MM.'],
 
+                // [Highlight]
+                'is_highlight'    => ['type' => 'boolean', 'description' => '[Highlight] Veranstaltung als „besonders sehenswert" markieren (Foto-Termin, vor Ort sein). Default false.'],
+
                 // [Auto-Days]
                 'auto_create_days' => ['type' => 'boolean', 'description' => '[Auto-Days] Default true: EventDays aus start_date..end_date anlegen.'],
                 'pax'              => ['type' => ['integer', 'string'], 'description' => '[Auto-Days] Default-Personenzahl. Setzt pers_von/pers_bis aller Tage. Alias: default_pax.'],
@@ -206,6 +209,9 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
             }
             if (array_key_exists('forwarded', $arguments)) {
                 $data['forwarded'] = (bool) $arguments['forwarded'];
+            }
+            if (array_key_exists('is_highlight', $arguments)) {
+                $data['is_highlight'] = (bool) $arguments['is_highlight'];
             }
             if (array_key_exists('mr_data', $arguments) && is_array($arguments['mr_data'])) {
                 $data['mr_data'] = $arguments['mr_data'];

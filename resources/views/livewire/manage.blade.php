@@ -118,6 +118,21 @@
                                 <option value="{{ $s }}">{{ $s }}</option>
                             @endforeach
                         </select>
+
+                        {{-- Highlight-Filter: nur besonders markierte Veranstaltungen anzeigen --}}
+                        <button type="button" wire:click="toggleHighlightsOnly"
+                                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-md border text-[0.7rem] font-semibold transition
+                                       {{ $highlightsOnly
+                                           ? 'bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100'
+                                           : 'bg-white border-[var(--ui-border)] text-slate-500 hover:border-amber-200 hover:text-amber-600' }}"
+                                title="Nur Highlights anzeigen">
+                            @if($highlightsOnly)
+                                @svg('heroicon-s-star', 'w-3.5 h-3.5')
+                            @else
+                                @svg('heroicon-o-star', 'w-3.5 h-3.5')
+                            @endif
+                            Highlights
+                        </button>
                     </div>
                 </div>
             </x-ui-panel>
@@ -239,8 +254,13 @@
                                         @endif
                                     </div>
                                     <a href="{{ route('events.show', ['slug' => $event->slug]) }}" wire:navigate
-                                       class="text-sm font-bold text-[var(--ui-secondary)] hover:text-[var(--ui-primary)] no-underline truncate">
-                                        {{ $event->name ?: 'Unbenannte Veranstaltung' }}
+                                       class="text-sm font-bold text-[var(--ui-secondary)] hover:text-[var(--ui-primary)] no-underline truncate flex items-center gap-1.5">
+                                        @if($event->is_highlight)
+                                            <span class="text-amber-500 flex-shrink-0" title="Highlight – besonders sehenswert">
+                                                @svg('heroicon-s-star', 'w-3.5 h-3.5')
+                                            </span>
+                                        @endif
+                                        <span class="truncate">{{ $event->name ?: 'Unbenannte Veranstaltung' }}</span>
                                     </a>
                                     @php
                                         $customerLabel = $customerLabels[$event->id] ?? null;
@@ -466,8 +486,9 @@
                                            :style="'border-left-color: ' + (statusColors[ev.status]?.bar || '#94a3b8')
                                                + '; background:' + (statusColors[ev.status]?.bg || '#f1f5f9')
                                                + '; color:' + (statusColors[ev.status]?.color || '#475569')"
-                                           :title="ev.event_number + ' · ' + ev.name + (ev.customer ? ' — ' + ev.customer : '')"
-                                           x-text="ev.name"></a>
+                                           :title="(ev.is_highlight ? '⭐ ' : '') + ev.event_number + ' · ' + ev.name + (ev.customer ? ' — ' + ev.customer : '')">
+                                            <span x-show="ev.is_highlight" class="mr-0.5">⭐</span><span x-text="ev.name"></span>
+                                        </a>
                                     </template>
                                 </div>
                             </div>

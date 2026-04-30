@@ -78,6 +78,7 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
                 'event_number'         => ['type' => 'string'],
                 'mr_data'              => ['type' => 'object', 'description' => 'Management-Report als Key/Value-Map (ersetzt den gesamten Inhalt).'],
                 'forwarded'            => ['type' => 'boolean'],
+                'is_highlight'         => ['type' => 'boolean', 'description' => '[Highlight] Veranstaltung als „besonders sehenswert" markieren (Foto-Termin, vor Ort sein).'],
             ], $stringFields, $dateFields, $fkFields),
         ];
     }
@@ -134,6 +135,9 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
             if (array_key_exists('forwarded', $arguments)) {
                 $update['forwarded'] = (bool) $arguments['forwarded'];
             }
+            if (array_key_exists('is_highlight', $arguments)) {
+                $update['is_highlight'] = (bool) $arguments['is_highlight'];
+            }
             foreach (self::UPDATABLE_FK_FIELDS as $f) {
                 if (array_key_exists($f, $arguments)) {
                     $update[$f] = $arguments[$f] !== null && $arguments[$f] !== ''
@@ -150,7 +154,7 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
             }
 
             $known = array_merge(
-                ['event_id', 'uuid', 'event_number', 'mr_data', 'forwarded'],
+                ['event_id', 'uuid', 'event_number', 'mr_data', 'forwarded', 'is_highlight'],
                 self::UPDATABLE_STRING_FIELDS,
                 self::UPDATABLE_DATE_FIELDS,
                 self::UPDATABLE_FK_FIELDS,

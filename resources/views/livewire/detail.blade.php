@@ -350,6 +350,20 @@
                     <span class="inline-flex items-center px-2.5 py-1 rounded-md border border-[var(--ui-border)] bg-[var(--ui-muted-5)] text-[0.72rem] font-bold font-mono text-[var(--ui-primary)]">
                         {{ $event->event_number }}
                     </span>
+                    {{-- Highlight-Toggle: besondere Veranstaltungen markieren (Foto-Termin, vor Ort sein). --}}
+                    <button type="button"
+                            wire:click="toggleHighlight"
+                            class="inline-flex items-center justify-center w-8 h-8 rounded-md border transition
+                                   {{ $event->is_highlight
+                                       ? 'bg-amber-50 border-amber-300 text-amber-500 hover:bg-amber-100'
+                                       : 'bg-white border-[var(--ui-border)] text-slate-300 hover:text-amber-400 hover:border-amber-200' }}"
+                            title="{{ $event->is_highlight ? 'Highlight entfernen' : 'Als Highlight markieren (besonders sehenswert)' }}">
+                        @if($event->is_highlight)
+                            @svg('heroicon-s-star', 'w-4 h-4')
+                        @else
+                            @svg('heroicon-o-star', 'w-4 h-4')
+                        @endif
+                    </button>
                     <div class="flex items-center gap-2">
                         <span class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Status</span>
                         <select wire:change="setStatus($event.target.value); $event.target.blur()"

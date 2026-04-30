@@ -102,6 +102,7 @@ class ListEventsTool implements ToolContract, ToolMetadataContract
                 'name', 'customer', 'group', 'location', 'status', 'event_type',
                 'responsible', 'cost_center', 'cost_carrier', 'start_date', 'end_date',
                 'follow_up_date', 'inquiry_date', 'forwarding_date', 'potential',
+                'is_highlight',
                 'created_at', 'updated_at',
             ]);
             $this->applyStandardSearch($query, $arguments, ['name', 'customer', 'event_number', 'group', 'location']);
@@ -143,6 +144,7 @@ class ListEventsTool implements ToolContract, ToolMetadataContract
             'status_changed_at' => $e->status_changed_at?->toIso8601String(),
             'responsible'       => $e->responsible,
             'event_type'        => $e->event_type,
+            'is_highlight'      => (bool) $e->is_highlight,
             'team_id'           => $e->team_id,
             'created_at'        => $e->created_at?->toIso8601String(),
             // Roh-FK (fuer Updates) + hydratisierte Customer-Company.
