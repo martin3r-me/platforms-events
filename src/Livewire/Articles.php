@@ -427,13 +427,13 @@ class Articles extends Component
     public function pickArticleForPackageItem(int $articleId): void
     {
         $team = Auth::user()->currentTeam;
-        $article = Article::with('group:id,name')->where('team_id', $team->id)->find($articleId);
+        $article = app(\Platform\Core\Contracts\CatalogArticleResolverInterface::class)->resolve($articleId, $team->id);
         if (!$article) return;
-        $this->newPackageItem['article_id'] = $article->id;
-        $this->newPackageItem['name']       = (string) $article->name;
-        $this->newPackageItem['gruppe']     = (string) ($article->group?->name ?? $this->newPackageItem['gruppe']);
-        $this->newPackageItem['gebinde']    = (string) ($article->gebinde ?? '');
-        $this->newPackageItem['vk']         = (float) ($article->vk ?? 0);
+        $this->newPackageItem['article_id'] = $article['id'];
+        $this->newPackageItem['name']       = (string) $article['name'];
+        $this->newPackageItem['gruppe']     = (string) ($article['category_name'] ?? $this->newPackageItem['gruppe']);
+        $this->newPackageItem['gebinde']    = (string) ($article['gebinde'] ?? '');
+        $this->newPackageItem['vk']         = (float) ($article['vk'] ?? 0);
     }
 
     public function addPackageItem(): void
@@ -445,7 +445,8 @@ class Articles extends Component
 
         $article = null;
         if (!empty($this->newPackageItem['article_id'])) {
-            $article = Article::where('team_id', $team->id)->find($this->newPackageItem['article_id']);
+            $article = app(\Platform\Core\Contracts\CatalogArticleResolverInterface::class)
+                ->resolve((int) $this->newPackageItem['article_id'], $team->id);
         }
 
         $maxSort = (int) ArticlePackageItem::where('package_id', $this->activePackageId)->max('sort_order');
@@ -454,12 +455,12 @@ class Articles extends Component
             'team_id'    => $team->id,
             'user_id'    => Auth::id(),
             'package_id' => $this->activePackageId,
-            'article_id' => $article?->id,
-            'name'       => $this->newPackageItem['name'] ?: ($article?->name ?? ''),
+            'article_id' => $article['id'] ?? null,
+            'name'       => $this->newPackageItem['name'] ?: ($article['name'] ?? ''),
             'gruppe'     => $this->newPackageItem['gruppe'],
             'quantity'   => (int) $this->newPackageItem['quantity'],
-            'gebinde'    => $this->newPackageItem['gebinde'] ?: ($article?->gebinde ?? ''),
-            'vk'         => (float) ($this->newPackageItem['vk'] ?: $article?->vk ?? 0),
+            'gebinde'    => $this->newPackageItem['gebinde'] ?: ($article['gebinde'] ?? ''),
+            'vk'         => (float) ($this->newPackageItem['vk'] ?: ($article['vk'] ?? 0)),
             'gesamt'     => (float) ($this->newPackageItem['gesamt'] ?: 0),
             'sort_order' => $maxSort + 1,
         ]);

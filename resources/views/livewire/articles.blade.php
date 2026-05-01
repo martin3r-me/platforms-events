@@ -531,18 +531,18 @@
                                      class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded shadow-lg z-50 max-h-64 overflow-y-auto min-w-[320px]">
                                     @foreach($packageArticleMatches as $art)
                                         <button type="button"
-                                                wire:click="pickArticleForPackageItem({{ $art->id }})"
+                                                wire:click="pickArticleForPackageItem({{ $art['id'] }})"
                                                 @click="showArticles = false"
                                                 class="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-slate-50 transition border-0 bg-transparent cursor-pointer">
-                                            <span class="text-[0.58rem] font-mono font-bold text-slate-500 min-w-[70px] flex-shrink-0">{{ $art->article_number }}</span>
+                                            <span class="text-[0.58rem] font-mono font-bold text-slate-500 min-w-[70px] flex-shrink-0">{{ $art['article_number'] }}</span>
                                             <div class="flex-1 min-w-0">
-                                                <div class="text-[0.7rem] text-slate-700 truncate">{{ $art->name }}</div>
-                                                @if($art->gebinde)
-                                                    <div class="text-[0.58rem] text-slate-400">{{ $art->gebinde }}</div>
+                                                <div class="text-[0.7rem] text-slate-700 truncate">{{ $art['name'] }}</div>
+                                                @if($art['gebinde'] ?? null)
+                                                    <div class="text-[0.58rem] text-slate-400">{{ $art['gebinde'] }}</div>
                                                 @endif
                                             </div>
-                                            @if($art->vk > 0)
-                                                <span class="text-[0.62rem] font-mono text-slate-500 flex-shrink-0">{{ number_format($art->vk, 2, ',', '.') }} €</span>
+                                            @if(($art['vk'] ?? 0) > 0)
+                                                <span class="text-[0.62rem] font-mono text-slate-500 flex-shrink-0">{{ number_format($art['vk'], 2, ',', '.') }} €</span>
                                             @endif
                                         </button>
                                     @endforeach
