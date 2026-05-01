@@ -11,9 +11,9 @@ use Platform\Core\Contracts\CatalogArticleSearchProviderInterface;
  */
 class ArticleSearchService
 {
-    public static function search(int $teamId, string $query, int $limit = 20): Collection
+    public static function search(int $teamId, string $query, int $limit = 20, ?int $catalogId = null): Collection
     {
         return app(CatalogArticleSearchProviderInterface::class)
-            ->search($teamId, $query, $limit);
+            ->search($teamId, $query, $limit, $catalogId);
     }
 }

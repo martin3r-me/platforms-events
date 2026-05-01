@@ -46,6 +46,6 @@ class ArticlePackageItem extends Model
 
     public function article(): BelongsTo
     {
-        return $this->belongsTo(\Platform\Commerce\Models\CommerceArticle::class, 'article_id');
+        return $this->belongsTo(\Platform\Commerce\Models\CommerceProduct::class, 'article_id');
     }
 }

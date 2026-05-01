@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Platform\Core\Contracts\CatalogArticleResolverInterface;
+use Platform\Core\Contracts\CatalogListProviderInterface;
 use Platform\Events\Models\ArticlePackage;
 use Platform\Events\Models\Event;
 use Platform\Events\Models\FlatRateApplication;
@@ -62,6 +63,9 @@ class Quotes extends Component
     public ?int $approvalQuoteId = null;
     public ?int $approvalApproverId = null;
     public string $approvalComment = '';
+
+    // Katalog-Filter fuer die Artikelsuche
+    public ?int $catalogFilter = null;
 
     // Package/Vorlage-Picker
     public bool $showPackagePicker = false;
@@ -1112,8 +1116,13 @@ class Quotes extends Component
 
         // Artikel-Suche via ArticleSearchService (nur im Editor-Modus)
         $articleMatches = $this->view === 'editor'
-            ? ArticleSearchService::search($event->team_id, (string) ($this->newPosition['name'] ?? ''))
+            ? ArticleSearchService::search($event->team_id, (string) ($this->newPosition['name'] ?? ''), 20, $this->catalogFilter)
             : collect();
+
+        // Verfuegbare Kataloge fuer den Filter-Dropdown
+        $catalogs = $this->view === 'editor'
+            ? app(CatalogListProviderInterface::class)->list($event->team_id)
+            : [];
 
         $eventWidePositionCount = (int) QuotePosition::whereIn('quote_item_id',
             QuoteItem::whereIn('event_day_id', $event->days->pluck('id'))->pluck('id')
@@ -1168,6 +1177,7 @@ class Quotes extends Component
             'bausteine'      => $bausteine,
             'beverageModes'  => $beverageModes,
             'articleMatches' => $articleMatches,
+            'catalogs'       => $catalogs,
             'articlePackages'=> $articlePackages,
             'selectedPackagePreview' => $selectedPackagePreview,
             'teamUsers'      => $teamUsers,

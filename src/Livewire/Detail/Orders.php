@@ -5,6 +5,7 @@ namespace Platform\Events\Livewire\Detail;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Platform\Core\Contracts\CatalogArticleResolverInterface;
+use Platform\Core\Contracts\CatalogListProviderInterface;
 use Platform\Events\Models\Event;
 use Platform\Events\Models\OrderItem;
 use Platform\Events\Models\OrderPosition;
@@ -29,6 +30,9 @@ class Orders extends Component
     public string $itemStatus = 'Offen';
     public string $itemLieferant = '';
     public string $itemPriceMode = 'netto';
+
+    // Katalog-Filter fuer die Artikelsuche
+    public ?int $catalogFilter = null;
 
     public array $newPosition = [
         'gruppe' => '', 'name' => '', 'anz' => '', 'anz2' => '',
@@ -429,8 +433,12 @@ class Orders extends Component
         $allowedGruppen = PositionValidator::allowedGruppen($event->team_id);
 
         $articleMatches = $this->view === 'editor'
-            ? ArticleSearchService::search($event->team_id, (string) ($this->newPosition['name'] ?? ''))
+            ? ArticleSearchService::search($event->team_id, (string) ($this->newPosition['name'] ?? ''), 20, $this->catalogFilter)
             : collect();
+
+        $catalogs = $this->view === 'editor'
+            ? app(CatalogListProviderInterface::class)->list($event->team_id)
+            : [];
 
         return view('events::livewire.detail.orders', [
             'event'          => $event,
@@ -440,6 +448,7 @@ class Orders extends Component
             'activeItem'     => $activeItem,
             'activeDay'      => $activeDay,
             'articleMatches' => $articleMatches,
+            'catalogs'       => $catalogs,
             'allPositions'   => $allPositions,
             'positions'      => $positions,
             'bausteine'      => $bausteine,

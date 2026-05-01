@@ -361,11 +361,23 @@
                         </datalist>
                     </td>
                     <td class="px-1.5 py-1.5 align-top relative" x-data="{ showArticles: false }">
-                        <input wire:model.live.debounce.300ms="newPosition.name" type="text" placeholder="Bezeichnung / Artikel suchen"
-                               @keydown.enter.prevent="$wire.set('newPosition.name', $event.target.value, false); $wire.addPosition()"
-                               @focus="showArticles = true"
-                               @click.outside="showArticles = false"
-                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] bg-white">
+                        <div class="flex gap-1">
+                            @if(!empty($catalogs ?? []))
+                                <select wire:model.live="catalogFilter"
+                                        class="border border-slate-200 rounded px-1 py-1 text-[0.6rem] bg-white flex-shrink-0 max-w-[100px]"
+                                        title="Katalog-Filter">
+                                    <option value="">Alle</option>
+                                    @foreach($catalogs as $cat)
+                                        <option value="{{ $cat['id'] }}">{{ $cat['name'] }}</option>
+                                    @endforeach
+                                </select>
+                            @endif
+                            <input wire:model.live.debounce.300ms="newPosition.name" type="text" placeholder="Bezeichnung / Artikel suchen"
+                                   @keydown.enter.prevent="$wire.set('newPosition.name', $event.target.value, false); $wire.addPosition()"
+                                   @focus="showArticles = true"
+                                   @click.outside="showArticles = false"
+                                   class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] bg-white">
+                        </div>
                         @if($articleMatches->isNotEmpty())
                             <div x-show="showArticles" x-cloak
                                  class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded shadow-lg z-50 max-h-64 overflow-y-auto min-w-[320px]">
