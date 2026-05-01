@@ -410,13 +410,13 @@
         </x-ui-page-sidebar>
     </x-slot>
 
+    {{-- Basis-Tab: Kanban-Board direkt im Page-Body (volle Höhe, wie Planner) --}}
+    @if($activeTab === 'basis')
+        @include('events::partials.basis-tab')
+    @endif
+
     <x-ui-page-container background="bg-slate-100">
         <div class="events-detail-page">
-
-        {{-- ================= Tab: Basis (4-Spalten-Layout analog Alt) ================= --}}
-        @if($activeTab === 'basis')
-            @include('events::partials.basis-tab')
-        @endif
 
         {{-- ================= Tab: Details ================= --}}
         @if($activeTab === 'details')

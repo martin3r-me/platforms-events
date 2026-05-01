@@ -1,5 +1,5 @@
 {{-- Basis-Tab: Kanban-Board mit Backlog + konfigurierbaren Spalten --}}
-<div class="h-full w-full overflow-x-auto">
+<div class="flex-grow overflow-x-auto">
     <x-ui-kanban-board wire:sortable="updateSlotOrder" wire:sortable-group="updateCardOrder">
 
         {{-- Backlog-Spalte --}}
