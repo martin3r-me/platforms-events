@@ -415,6 +415,7 @@
         @include('events::partials.basis-tab')
     @endif
 
+    @if($activeTab !== 'basis')
     <x-ui-page-container background="bg-slate-100">
         <div class="events-detail-page">
 
@@ -1592,4 +1593,5 @@
         @endonce
         </div>
     </x-ui-page-container>
+    @endif
 </x-ui-page>
