@@ -392,6 +392,13 @@
                     @endforeach
                 </select>
             </div>
+            @if($activeTab === 'basis')
+                <button type="button" wire:click="createBoardSlot"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-[var(--ui-border)] bg-white text-[0.72rem] font-medium text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)] hover:border-[var(--ui-primary)]/40 transition">
+                    @svg('heroicon-o-view-columns', 'w-3.5 h-3.5')
+                    <span>Spalte</span>
+                </button>
+            @endif
         </x-ui-page-actionbar>
     </x-slot>
 

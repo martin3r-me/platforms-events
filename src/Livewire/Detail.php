@@ -13,6 +13,8 @@ use Platform\Events\Models\MrFieldConfig;
 use Platform\Events\Models\DocumentSignature;
 use Platform\Events\Models\EmailLog;
 use Platform\Events\Models\Event;
+use Platform\Events\Models\EventBoardCard;
+use Platform\Events\Models\EventBoardSlot;
 use Platform\Events\Models\EventDay;
 use Platform\Events\Models\EventNote;
 use Platform\Events\Models\FeedbackEntry;
@@ -36,6 +38,23 @@ class Detail extends Component
         'absprache'    => 'Absprache',
         'vereinbarung' => 'Vereinbarung',
         'intern'       => 'Interne Info',
+    ];
+
+    public const PANEL_KEYS = [
+        'termine'       => 'Termine',
+        'name'          => 'Event-Name',
+        'veranstalter'  => 'Veranstalter',
+        'besteller'     => 'Besteller',
+        'rechnung'      => 'Rechnung',
+        'zustaendigkeit'=> 'Zuständigkeit',
+        'anlass'        => 'Anlass',
+        'lieferung'     => 'Lieferung an',
+        'follow_up'     => 'Follow-Up',
+        'liefertext'    => 'Liefertext',
+        'eingang'       => 'Eingang',
+        'weiterleitung' => 'Weiterleitung',
+        'absprache'     => 'Erste Absprache',
+        'vereinbarung'  => 'Vereinbarung',
     ];
 
     public ?Event $event = null;
@@ -1131,6 +1150,109 @@ class Detail extends Component
         $note->update(['text' => $text]);
     }
 
+    // ========== Board (Kanban) ==========
+
+    /**
+     * Erstellt Default-Spalten und Backlog-Cards, wenn das Event
+     * noch keine Board-Konfiguration hat.
+     */
+    protected function initBoardDefaults(): void
+    {
+        if ($this->event->boardSlots()->exists() || $this->event->boardCards()->exists()) {
+            return;
+        }
+
+        $defaults = ['To Do' => 0, 'Do' => 1, 'Done' => 2];
+        foreach ($defaults as $name => $order) {
+            EventBoardSlot::create([
+                'event_id' => $this->event->id,
+                'name'     => $name,
+                'order'    => $order,
+            ]);
+        }
+
+        $order = 0;
+        foreach (array_keys(self::PANEL_KEYS) as $key) {
+            EventBoardCard::create([
+                'event_id'  => $this->event->id,
+                'slot_id'   => null,
+                'panel_key' => $key,
+                'order'     => $order++,
+            ]);
+        }
+    }
+
+    /**
+     * Drag & Drop: Card zwischen Spalten/Backlog verschieben.
+     * Format: [{ value: slotId|'null', items: [{ value: cardId, order: N }] }]
+     */
+    public function updateCardOrder($groups): void
+    {
+        foreach ($groups as $group) {
+            $slotId = ($group['value'] === 'null' || $group['value'] === '' || (int) $group['value'] === 0)
+                ? null
+                : (int) $group['value'];
+
+            foreach ($group['items'] as $item) {
+                EventBoardCard::where('id', $item['value'])
+                    ->where('event_id', $this->event->id)
+                    ->update([
+                        'slot_id' => $slotId,
+                        'order'   => $item['order'],
+                    ]);
+            }
+        }
+    }
+
+    /**
+     * Drag & Drop: Spalten-Reihenfolge aktualisieren.
+     * Format: [{ value: slotId, order: N }]
+     */
+    public function updateSlotOrder($groups): void
+    {
+        foreach ($groups as $group) {
+            EventBoardSlot::where('id', $group['value'])
+                ->where('event_id', $this->event->id)
+                ->update(['order' => $group['order']]);
+        }
+    }
+
+    public function createBoardSlot(): void
+    {
+        $maxOrder = (int) $this->event->boardSlots()->max('order');
+        EventBoardSlot::create([
+            'event_id' => $this->event->id,
+            'name'     => 'Neue Spalte',
+            'order'    => $maxOrder + 1,
+        ]);
+    }
+
+    public function renameBoardSlot(int $slotId, string $name): void
+    {
+        $name = trim($name);
+        if ($name === '') return;
+
+        EventBoardSlot::where('id', $slotId)
+            ->where('event_id', $this->event->id)
+            ->update(['name' => $name]);
+    }
+
+    public function deleteBoardSlot(int $slotId): void
+    {
+        $slot = EventBoardSlot::where('id', $slotId)
+            ->where('event_id', $this->event->id)
+            ->first();
+
+        if (!$slot) return;
+
+        // Cards in Backlog verschieben (slot_id = NULL)
+        EventBoardCard::where('slot_id', $slotId)
+            ->where('event_id', $this->event->id)
+            ->update(['slot_id' => null]);
+
+        $slot->delete();
+    }
+
     // ========== Rendered (Core-Terminal-Dispatches) ==========
 
     public function rendered()
@@ -1371,6 +1493,30 @@ class Detail extends Component
 
         $notesByType = $notes->groupBy('type');
 
+        // Board: Default-Spalten anlegen falls noetig, dann Gruppen laden
+        if ($this->activeTab === 'basis') {
+            $this->initBoardDefaults();
+        }
+
+        $boardSlots = $this->event->boardSlots()->with('cards')->get();
+        $backlogCards = $this->event->boardCards()->whereNull('slot_id')->orderBy('order')->get();
+
+        $boardGroups = collect();
+        $boardGroups->push((object) [
+            'id'        => null,
+            'label'     => 'Backlog',
+            'isBacklog' => true,
+            'cards'     => $backlogCards,
+        ]);
+        foreach ($boardSlots as $slot) {
+            $boardGroups->push((object) [
+                'id'        => $slot->id,
+                'label'     => $slot->name,
+                'isBacklog' => false,
+                'cards'     => $slot->cards,
+            ]);
+        }
+
         // Räume, die beim Event tatsaechlich gebucht sind → Auswahlliste fuer Ablaufplan.
         // value = was gespeichert wird (bevorzugt Kuerzel)
         // short = kurze Anzeige (Kuerzel) in Closed-State
@@ -1419,6 +1565,8 @@ class Detail extends Component
             'crmContactAvailable' => $crmContactAvailable,
             'crmContactSlots'     => $crmContactSlots,
             'eventRooms'          => $eventRooms,
+            'boardGroups'         => $boardGroups,
+            'panelConfig'         => self::PANEL_KEYS,
         ])->layout('platform::layouts.app');
     }
 }

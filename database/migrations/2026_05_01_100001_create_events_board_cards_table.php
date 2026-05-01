@@ -1,0 +1,31 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('events_board_cards', function (Blueprint $table) {
+            $table->id();
+            $table->string('uuid', 36)->unique();
+            $table->foreignId('event_id')->constrained('events_events')->cascadeOnDelete();
+            $table->foreignId('slot_id')->nullable()->constrained('events_board_slots')->nullOnDelete();
+            $table->string('panel_key', 64);
+            $table->unsignedInteger('order')->default(0);
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('team_id')->nullable()->constrained('teams')->nullOnDelete();
+            $table->timestamps();
+
+            $table->index(['event_id', 'slot_id', 'order']);
+            $table->unique(['event_id', 'panel_key']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('events_board_cards');
+    }
+};

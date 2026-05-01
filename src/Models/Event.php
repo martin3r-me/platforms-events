@@ -207,6 +207,16 @@ class Event extends Model
         return $this->hasMany(EmailLog::class);
     }
 
+    public function boardSlots(): HasMany
+    {
+        return $this->hasMany(EventBoardSlot::class)->orderBy('order');
+    }
+
+    public function boardCards(): HasMany
+    {
+        return $this->hasMany(EventBoardCard::class);
+    }
+
     /**
      * Aggregierter Umsatz aus QuoteItems ueber alle Tage.
      */
