@@ -1131,6 +1131,70 @@ class Detail extends Component
         $note->update(['text' => $text]);
     }
 
+    // ========== Rendered (Core-Terminal-Dispatches) ==========
+
+    public function rendered()
+    {
+        if (!$this->event) {
+            return;
+        }
+
+        // Comms-Kontext setzen — Chat/Threads im Terminal
+        $this->dispatch('comms', [
+            'model'        => get_class($this->event),
+            'modelId'      => $this->event->id,
+            'subject'      => $this->event->name ?: $this->event->event_number,
+            'description'  => $this->event->customer ?? '',
+            'url'          => route('events.show', $this->event->slug),
+            'source'       => 'events.detail.view',
+            'recipients'   => [],
+            'capabilities' => [
+                'manage_channels' => true,
+                'threads'         => true,
+            ],
+            'meta' => [
+                'status'       => $this->event->status,
+                'start_date'   => $this->event->start_date?->toIso8601String(),
+                'end_date'     => $this->event->end_date?->toIso8601String(),
+                'customer'     => $this->event->customer,
+                'event_number' => $this->event->event_number,
+            ],
+        ]);
+
+        // Terminal-Tabs aktivieren
+        $this->dispatch('terminal:app:activity');
+        $this->dispatch('terminal:app:files');
+        $this->dispatch('terminal:app:tags');
+
+        // Organization-Kontext — Zeiten, keine Entities/Dimensionen
+        $this->dispatch('organization', [
+            'context_type'  => get_class($this->event),
+            'context_id'    => $this->event->id,
+            'allow_time_entry'  => true,
+            'allow_entities'    => false,
+            'allow_dimensions'  => false,
+        ]);
+
+        // Playground-Kontext — LLM-Integration
+        $this->dispatch('playground', [
+            'type'        => 'Event',
+            'model'       => get_class($this->event),
+            'modelId'     => $this->event->id,
+            'title'       => $this->event->name ?: $this->event->event_number,
+            'description' => $this->event->customer ?? '',
+            'url'         => route('events.show', $this->event->slug),
+            'source'      => 'events.detail.view',
+            'meta' => [
+                'status'       => $this->event->status,
+                'start_date'   => $this->event->start_date?->toIso8601String(),
+                'end_date'     => $this->event->end_date?->toIso8601String(),
+                'customer'     => $this->event->customer,
+                'event_number' => $this->event->event_number,
+                'is_highlight' => $this->event->is_highlight,
+            ],
+        ]);
+    }
+
     // ========== Render ==========
 
     public function render()
