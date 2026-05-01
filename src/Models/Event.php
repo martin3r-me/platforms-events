@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Platform\ActivityLog\Traits\LogsActivity;
 use Symfony\Component\Uid\UuidV7;
 
 /**
@@ -13,7 +14,7 @@ use Symfony\Component\Uid\UuidV7;
  */
 class Event extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, LogsActivity;
 
     protected $table = 'events_events';
 
@@ -181,7 +182,7 @@ class Event extends Model
         return $this->hasMany(Invoice::class)->latest();
     }
 
-    public function activities(): HasMany
+    public function eventActivities(): HasMany
     {
         return $this->hasMany(Activity::class)->latest();
     }

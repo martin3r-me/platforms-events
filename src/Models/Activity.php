@@ -36,4 +36,9 @@ class Activity extends Model
     {
         return $this->belongsTo(Event::class);
     }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(config('auth.providers.users.model'));
+    }
 }
