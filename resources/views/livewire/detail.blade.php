@@ -46,18 +46,96 @@
         ];
     @endphp
 
-    {{-- Event-Detail-Sidebar (Tab-Navigation + Drilldown) --}}
+    {{-- Event-Detail-Sidebar (Infos + gruppierte Navigation) --}}
     <x-slot name="sidebar">
-        <x-ui-page-sidebar title="Event-Modul" width="w-fit min-w-[150px] max-w-[260px]" :defaultOpen="true" side="left">
-            {{-- Event-Header --}}
-            <div class="p-4 border-b border-[var(--ui-border)] flex items-start gap-2">
-                @svg('heroicon-o-calendar-days', 'w-5 h-5 text-[var(--ui-primary)] flex-shrink-0 mt-0.5')
-                <div class="min-w-0 flex-1">
-                    <p class="text-sm font-bold text-[var(--ui-secondary)] truncate" title="{{ $event->name }}">{{ $event->name }}</p>
-                    <p class="text-[0.68rem] text-[var(--ui-muted)] font-mono">{{ $event->event_number }}</p>
+        <x-ui-page-sidebar title="{{ $event->name }}" width="w-80" :defaultOpen="true" side="left">
+
+            @php
+                $sidebarPersMin = 0; $sidebarPersMax = 0; $sidebarPersAny = false;
+                foreach ($days as $d) {
+                    $mn = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_von);
+                    $mx = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_bis);
+                    if ($mn === 0 && $mx === 0) continue;
+                    if ($mn === 0) $mn = $mx;
+                    if ($mx === 0) $mx = $mn;
+                    $sidebarPersMin += $mn; $sidebarPersMax += $mx; $sidebarPersAny = true;
+                }
+            @endphp
+
+            {{-- ===== Event-Informationen ===== --}}
+            <div class="p-4 space-y-5 border-b border-[var(--ui-border)]">
+
+                {{-- Status --}}
+                <div>
+                    <div class="text-[0.65rem] font-medium text-[var(--ui-muted)] uppercase tracking-wider mb-2">Status</div>
+                    <select wire:change="setStatus($event.target.value); $event.target.blur()"
+                            class="w-full border border-[var(--ui-border)] rounded-md px-3 py-1.5 text-xs font-semibold bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30 {{ $statusClass }}">
+                        @foreach($statusOptions as $s)
+                            <option value="{{ $s }}" @if($currentStatus === $s) selected @endif>{{ $s }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Details --}}
+                <div>
+                    <div class="text-[0.65rem] font-medium text-[var(--ui-muted)] uppercase tracking-wider mb-2">Details</div>
+                    <div class="space-y-2">
+                        @if($event->start_date)
+                            <div class="py-2.5 px-3 bg-[var(--ui-muted-5)] rounded-lg border border-[var(--ui-border)]/40">
+                                <span class="text-[0.65rem] text-[var(--ui-muted)]">Zeitraum</span>
+                                <div class="text-xs font-medium text-[var(--ui-secondary)] font-mono">
+                                    {{ $event->start_date->format('d.m.Y') }}@if($event->end_date && $event->end_date != $event->start_date) – {{ $event->end_date->format('d.m.Y') }}@endif
+                                </div>
+                            </div>
+                        @endif
+
+                        @if($event->customer)
+                            <div class="py-2.5 px-3 bg-[var(--ui-muted-5)] rounded-lg border border-[var(--ui-border)]/40">
+                                <span class="text-[0.65rem] text-[var(--ui-muted)]">Kunde</span>
+                                <div class="text-xs font-medium text-[var(--ui-secondary)]">{{ $event->customer }}</div>
+                            </div>
+                        @endif
+
+                        @if($event->responsible)
+                            <div class="py-2.5 px-3 bg-[var(--ui-muted-5)] rounded-lg border border-[var(--ui-border)]/40">
+                                <span class="text-[0.65rem] text-[var(--ui-muted)]">Verantwortlich</span>
+                                <div class="text-xs font-medium text-[var(--ui-secondary)]">{{ $event->responsible }}</div>
+                            </div>
+                        @endif
+
+                        @if($sidebarPersAny)
+                            <div class="py-2.5 px-3 bg-[var(--ui-muted-5)] rounded-lg border border-[var(--ui-border)]/40">
+                                <span class="text-[0.65rem] text-[var(--ui-muted)]">Personen</span>
+                                <div class="text-xs font-medium text-[var(--ui-secondary)] font-mono">
+                                    {{ $sidebarPersMin === $sidebarPersMax ? $sidebarPersMax : $sidebarPersMin . '–' . $sidebarPersMax }}
+                                </div>
+                            </div>
+                        @endif
+
+                        <div class="flex items-center gap-2">
+                            <div class="flex-1 py-2.5 px-3 bg-[var(--ui-muted-5)] rounded-lg border border-[var(--ui-border)]/40">
+                                <span class="text-[0.65rem] text-[var(--ui-muted)]">Event-Nr.</span>
+                                <div class="text-xs font-bold text-[var(--ui-primary)] font-mono">{{ $event->event_number }}</div>
+                            </div>
+                            <button type="button"
+                                    wire:click="toggleHighlight"
+                                    class="flex-shrink-0 inline-flex items-center justify-center w-10 h-full min-h-[3rem] rounded-lg border transition
+                                           {{ $event->is_highlight
+                                               ? 'bg-amber-50 border-amber-300 text-amber-500 hover:bg-amber-100'
+                                               : 'bg-[var(--ui-muted-5)] border-[var(--ui-border)]/40 text-slate-300 hover:text-amber-400 hover:border-amber-200' }}"
+                                    title="{{ $event->is_highlight ? 'Highlight entfernen' : 'Als Highlight markieren' }}">
+                                @if($event->is_highlight)
+                                    @svg('heroicon-s-star', 'w-4 h-4')
+                                @else
+                                    @svg('heroicon-o-star', 'w-4 h-4')
+                                @endif
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
+            {{-- ===== Gruppierte Navigation ===== --}}
             @php
                 $badgeClass = fn ($n, $color = 'slate') => $n > 0
                     ? match ($color) {
@@ -69,233 +147,220 @@
                     }
                     : 'hidden';
 
-                $primaryTabs = [
-                    ['key' => 'basis',        'label' => 'Basis',            'icon' => 'heroicon-o-identification'],
-                    ['key' => 'details',      'label' => 'Details',          'icon' => 'heroicon-o-document-text'],
-                    ['key' => 'buchungen',    'label' => 'Räume',            'icon' => 'heroicon-o-building-office-2', 'badge' => $counts['buchungen']],
-                    ['key' => 'ablauf',       'label' => 'Ablauf',           'icon' => 'heroicon-o-clock',             'badge' => $counts['ablauf']],
-                    ['key' => 'aktivitaeten', 'label' => 'Aktivitäten',      'icon' => 'heroicon-o-bolt',              'badge' => $counts['aktivitaeten']],
-                    ['key' => 'kalkulation',  'label' => 'Kalkulation',      'icon' => 'heroicon-o-calculator'],
-                    ['key' => 'vertraege',    'label' => 'Verträge',         'icon' => 'heroicon-o-document',          'badge' => $counts['vertraege'],    'badgeColor' => 'purple'],
-                    ['key' => 'kommunikation','label' => 'Kommunikation',    'icon' => 'heroicon-o-envelope',          'badge' => $counts['kommunikation'], 'badgeColor' => 'blue'],
-                ];
-
-                $tailTabs = [
-                    ['key' => 'projekt',    'label' => 'Projekt Function', 'icon' => 'heroicon-o-document-check'],
-                    ['key' => 'packliste',  'label' => 'Packliste',        'icon' => 'heroicon-o-cube',                    'badge' => $counts['packliste']],
-                    ['key' => 'rechnungen', 'label' => 'Rechnungen',       'icon' => 'heroicon-o-receipt-percent',         'badge' => $counts['rechnungen']],
-                    ['key' => 'schluss',    'label' => 'Schlussbericht',   'icon' => 'heroicon-o-presentation-chart-line'],
-                    ['key' => 'feedback',   'label' => 'Feedback',         'icon' => 'heroicon-o-chat-bubble-left-right',  'badge' => $counts['feedback']],
+                $navGroups = [
+                    'Planung' => [
+                        ['key' => 'basis',        'label' => 'Basis',       'icon' => 'heroicon-o-identification'],
+                        ['key' => 'details',      'label' => 'Details',     'icon' => 'heroicon-o-document-text'],
+                        ['key' => 'buchungen',    'label' => 'Räume',       'icon' => 'heroicon-o-building-office-2', 'badge' => $counts['buchungen']],
+                        ['key' => 'ablauf',       'label' => 'Ablauf',      'icon' => 'heroicon-o-clock',             'badge' => $counts['ablauf']],
+                    ],
+                    'Finanzen' => [
+                        ['key' => 'kalkulation',  'label' => 'Kalkulation', 'icon' => 'heroicon-o-calculator'],
+                        ['key' => '_angebote',    'label' => 'Angebote',    'icon' => 'heroicon-o-document-duplicate', 'drilldown' => 'angebote'],
+                        ['key' => '_bestellungen','label' => 'Bestellungen','icon' => 'heroicon-o-shopping-cart',      'drilldown' => 'bestellungen'],
+                        ['key' => 'rechnungen',   'label' => 'Rechnungen',  'icon' => 'heroicon-o-receipt-percent',   'badge' => $counts['rechnungen']],
+                    ],
+                    'Dokumente' => [
+                        ['key' => 'vertraege',    'label' => 'Verträge',          'icon' => 'heroicon-o-document',              'badge' => $counts['vertraege'], 'badgeColor' => 'purple'],
+                        ['key' => 'projekt',      'label' => 'Projekt Function',  'icon' => 'heroicon-o-document-check'],
+                        ['key' => 'packliste',    'label' => 'Packliste',         'icon' => 'heroicon-o-cube',                  'badge' => $counts['packliste']],
+                        ['key' => 'schluss',      'label' => 'Schlussbericht',    'icon' => 'heroicon-o-presentation-chart-line'],
+                    ],
+                    'Kommunikation' => [
+                        ['key' => 'aktivitaeten', 'label' => 'Aktivitäten',    'icon' => 'heroicon-o-bolt',                   'badge' => $counts['aktivitaeten']],
+                        ['key' => 'kommunikation','label' => 'Kommunikation',  'icon' => 'heroicon-o-envelope',               'badge' => $counts['kommunikation'], 'badgeColor' => 'blue'],
+                        ['key' => 'feedback',     'label' => 'Feedback',       'icon' => 'heroicon-o-chat-bubble-left-right', 'badge' => $counts['feedback']],
+                    ],
                 ];
             @endphp
 
-            <nav class="p-2 space-y-0.5 text-xs">
-                @foreach($primaryTabs as $t)
-                    <button wire:click="$set('activeTab', '{{ $t['key'] }}')" type="button"
-                            class="w-full flex items-center gap-2 px-3 py-2 rounded-md transition text-left
-                                   {{ $activeTab === $t['key']
-                                      ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold'
-                                      : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
-                        @svg($t['icon'], 'w-4 h-4 flex-shrink-0')
-                        <span class="flex-1 whitespace-nowrap">{{ $t['label'] }}</span>
-                        @if(!empty($t['badge']) && $t['badge'] > 0)
-                            <span class="text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full {{ $badgeClass($t['badge'], $t['badgeColor'] ?? 'slate') }}">{{ $t['badge'] }}</span>
-                        @endif
-                    </button>
-                @endforeach
+            <nav class="p-3 space-y-4 text-xs">
+                @foreach($navGroups as $groupLabel => $groupTabs)
+                    <div>
+                        <div class="text-[0.6rem] font-medium text-[var(--ui-muted)] uppercase tracking-wider px-3 mb-1">{{ $groupLabel }}</div>
+                        <div class="space-y-0.5">
+                            @foreach($groupTabs as $t)
+                                @if(($t['drilldown'] ?? null) === 'angebote')
+                                    {{-- ===== Angebote mit Drilldown ===== --}}
+                                    @php
+                                        $quotesRoot = $activeTab === 'angebote' && !$pendingQuoteView && !$pendingQuoteDayId && !$pendingQuoteItemId;
+                                        $quotesAnyInside = $activeTab === 'angebote';
+                                    @endphp
+                                    <div x-data="{ open: @js($quotesAnyInside) }">
+                                        <button type="button" @click="open = !open" x-on:dblclick="$wire.resetQuoteView()"
+                                                wire:click="resetQuoteView"
+                                                class="w-full flex items-center gap-2 px-3 py-2 rounded-md transition text-left
+                                                       {{ $quotesRoot ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : ($quotesAnyInside ? 'text-[var(--ui-primary)] font-medium' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]') }}">
+                                            @svg('heroicon-o-document-duplicate', 'w-4 h-4 flex-shrink-0')
+                                            <span class="flex-1 whitespace-nowrap">Angebote</span>
+                                            @if($counts['angebote_items'] > 0)
+                                                <span class="text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-[var(--ui-primary)]/20 text-[var(--ui-primary)]">{{ $counts['angebote_items'] }}</span>
+                                            @endif
+                                            <svg :class="open ? 'rotate-90' : ''" class="w-3 h-3 transition-transform text-[var(--ui-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                                        </button>
 
-                {{-- ===== Angebote mit Drilldown ===== --}}
-                @php
-                    $quotesRoot = $activeTab === 'angebote' && !$pendingQuoteView && !$pendingQuoteDayId && !$pendingQuoteItemId;
-                    $quotesAnyInside = $activeTab === 'angebote';
-                @endphp
-                <div x-data="{ open: @js($quotesAnyInside) }">
-                    <button type="button" @click="open = !open" x-on:dblclick="$wire.resetQuoteView()"
-                            wire:click="resetQuoteView"
-                            class="w-full flex items-center gap-2 px-3 py-2 rounded-md transition text-left
-                                   {{ $quotesRoot ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : ($quotesAnyInside ? 'text-[var(--ui-primary)] font-medium' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]') }}">
-                        @svg('heroicon-o-document-duplicate', 'w-4 h-4 flex-shrink-0')
-                        <span class="flex-1 whitespace-nowrap">Angebote</span>
-                        @if($counts['angebote_items'] > 0)
-                            <span class="text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-[var(--ui-primary)]/20 text-[var(--ui-primary)]">{{ $counts['angebote_items'] }}</span>
-                        @endif
-                        <svg :class="open ? 'rotate-90' : ''" class="w-3 h-3 transition-transform text-[var(--ui-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                    </button>
-
-                    @php
-                        $isQuotesTab = $activeTab === 'angebote';
-                        $qArticlesActive = $isQuotesTab && $pendingQuoteView === 'articles';
-                        // Root-Overview nur wenn Angebote-Tab aktiv UND weder Articles/Day/Item
-                        $qOverviewActive = $isQuotesTab && !$pendingQuoteView && !$pendingQuoteDayId && !$pendingQuoteItemId;
-
-                        // Day-Id des aktiven Items ermitteln (damit Datum mit-highlighted wird)
-                        $qActiveItemDayId = null;
-                        if ($pendingQuoteItemId) {
-                            foreach ($quoteTree as $dn) {
-                                foreach ($dn['types'] as $tp) {
-                                    if ($tp['id'] === $pendingQuoteItemId) { $qActiveItemDayId = $dn['day_id']; break 2; }
-                                }
-                            }
-                        }
-                    @endphp
-                    <div x-show="open" x-cloak class="ml-3 border-l border-[var(--ui-border)]/40 pl-2 space-y-0.5 mt-0.5">
-                        <button type="button" wire:click="openQuoteArticles"
-                                class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[0.72rem] transition
-                                       {{ $qArticlesActive ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
-                            @svg('heroicon-o-list-bullet', 'w-3.5 h-3.5 flex-shrink-0')
-                            <span class="flex-1 text-left">Alle Positionen</span>
-                            @if($counts['angebote_positionen'] > 0)
-                                <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full {{ $qArticlesActive ? 'bg-[var(--ui-primary)]/20 text-[var(--ui-primary)]' : 'bg-blue-100 text-blue-700' }}">{{ $counts['angebote_positionen'] }}</span>
-                            @endif
-                        </button>
-
-                        @foreach($quoteTree as $dayNode)
-                            @php
-                                $dayActive = $isQuotesTab && ($pendingQuoteDayId === $dayNode['day_id'] || $qActiveItemDayId === $dayNode['day_id']);
-                                $dayIsDirect = $isQuotesTab && $pendingQuoteDayId === $dayNode['day_id'];
-                            @endphp
-                            <div x-data="{ sub: @js($dayActive) }">
-                                <button type="button" @click="sub = !sub"
-                                        wire:click="openQuoteDay({{ $dayNode['day_id'] }})"
-                                        class="w-full flex items-center gap-1.5 px-2 py-1 rounded-md text-[0.72rem] transition
-                                               {{ $dayIsDirect ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : ($dayActive ? 'text-[var(--ui-secondary)]' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]') }}">
-                                    <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: {{ $dayNode['color'] }}"></span>
-                                    <span class="flex-1 text-left whitespace-nowrap font-mono text-[0.68rem]">{{ $dayNode['datum'] ?? $dayNode['label'] }}</span>
-                                    @if($dayNode['positions'] > 0)
-                                        <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-700">{{ $dayNode['positions'] }}</span>
-                                    @endif
-                                    @if(count($dayNode['types']) > 0)
-                                        <svg :class="sub ? 'rotate-90' : ''" class="w-2.5 h-2.5 transition-transform text-[var(--ui-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                                    @endif
-                                </button>
-                                @if(count($dayNode['types']) > 0)
-                                    <div x-show="sub" x-cloak class="ml-4 space-y-0.5 mt-0.5">
-                                        @foreach($dayNode['types'] as $type)
-                                            @php $typeActive = $isQuotesTab && $pendingQuoteItemId === $type['id']; @endphp
-                                            <button type="button" wire:click="openQuoteItem({{ $type['id'] }})"
-                                                    class="w-full flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[0.66rem] transition
-                                                           {{ $typeActive ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-muted)] hover:bg-[var(--ui-muted-5)] hover:text-[var(--ui-primary)]' }}">
-                                                <span class="w-1 h-1 rounded-full flex-shrink-0 {{ $typeActive ? 'bg-[var(--ui-primary)]' : 'bg-[var(--ui-muted)]' }}"></span>
-                                                <span class="flex-1 text-left whitespace-nowrap">{{ $type['typ'] }}</span>
-                                                @if($type['positions'] > 0)
-                                                    <span class="text-[0.58rem] text-[var(--ui-muted)]">{{ $type['positions'] }}</span>
+                                        @php
+                                            $isQuotesTab = $activeTab === 'angebote';
+                                            $qArticlesActive = $isQuotesTab && $pendingQuoteView === 'articles';
+                                            $qOverviewActive = $isQuotesTab && !$pendingQuoteView && !$pendingQuoteDayId && !$pendingQuoteItemId;
+                                            $qActiveItemDayId = null;
+                                            if ($pendingQuoteItemId) {
+                                                foreach ($quoteTree as $dn) {
+                                                    foreach ($dn['types'] as $tp) {
+                                                        if ($tp['id'] === $pendingQuoteItemId) { $qActiveItemDayId = $dn['day_id']; break 2; }
+                                                    }
+                                                }
+                                            }
+                                        @endphp
+                                        <div x-show="open" x-cloak class="ml-3 border-l border-[var(--ui-border)]/40 pl-2 space-y-0.5 mt-0.5">
+                                            <button type="button" wire:click="openQuoteArticles"
+                                                    class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[0.72rem] transition
+                                                           {{ $qArticlesActive ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
+                                                @svg('heroicon-o-list-bullet', 'w-3.5 h-3.5 flex-shrink-0')
+                                                <span class="flex-1 text-left">Alle Positionen</span>
+                                                @if($counts['angebote_positionen'] > 0)
+                                                    <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full {{ $qArticlesActive ? 'bg-[var(--ui-primary)]/20 text-[var(--ui-primary)]' : 'bg-blue-100 text-blue-700' }}">{{ $counts['angebote_positionen'] }}</span>
                                                 @endif
                                             </button>
-                                        @endforeach
+
+                                            @foreach($quoteTree as $dayNode)
+                                                @php
+                                                    $dayActive = $isQuotesTab && ($pendingQuoteDayId === $dayNode['day_id'] || $qActiveItemDayId === $dayNode['day_id']);
+                                                    $dayIsDirect = $isQuotesTab && $pendingQuoteDayId === $dayNode['day_id'];
+                                                @endphp
+                                                <div x-data="{ sub: @js($dayActive) }">
+                                                    <button type="button" @click="sub = !sub"
+                                                            wire:click="openQuoteDay({{ $dayNode['day_id'] }})"
+                                                            class="w-full flex items-center gap-1.5 px-2 py-1 rounded-md text-[0.72rem] transition
+                                                                   {{ $dayIsDirect ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : ($dayActive ? 'text-[var(--ui-secondary)]' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]') }}">
+                                                        <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: {{ $dayNode['color'] }}"></span>
+                                                        <span class="flex-1 text-left whitespace-nowrap font-mono text-[0.68rem]">{{ $dayNode['datum'] ?? $dayNode['label'] }}</span>
+                                                        @if($dayNode['positions'] > 0)
+                                                            <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-700">{{ $dayNode['positions'] }}</span>
+                                                        @endif
+                                                        @if(count($dayNode['types']) > 0)
+                                                            <svg :class="sub ? 'rotate-90' : ''" class="w-2.5 h-2.5 transition-transform text-[var(--ui-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                                                        @endif
+                                                    </button>
+                                                    @if(count($dayNode['types']) > 0)
+                                                        <div x-show="sub" x-cloak class="ml-4 space-y-0.5 mt-0.5">
+                                                            @foreach($dayNode['types'] as $type)
+                                                                @php $typeActive = $isQuotesTab && $pendingQuoteItemId === $type['id']; @endphp
+                                                                <button type="button" wire:click="openQuoteItem({{ $type['id'] }})"
+                                                                        class="w-full flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[0.66rem] transition
+                                                                               {{ $typeActive ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-muted)] hover:bg-[var(--ui-muted-5)] hover:text-[var(--ui-primary)]' }}">
+                                                                    <span class="w-1 h-1 rounded-full flex-shrink-0 {{ $typeActive ? 'bg-[var(--ui-primary)]' : 'bg-[var(--ui-muted)]' }}"></span>
+                                                                    <span class="flex-1 text-left whitespace-nowrap">{{ $type['typ'] }}</span>
+                                                                    @if($type['positions'] > 0)
+                                                                        <span class="text-[0.58rem] text-[var(--ui-muted)]">{{ $type['positions'] }}</span>
+                                                                    @endif
+                                                                </button>
+                                                            @endforeach
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                        </div>
                                     </div>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
+                                @elseif(($t['drilldown'] ?? null) === 'bestellungen')
+                                    {{-- ===== Bestellungen mit Drilldown ===== --}}
+                                    @php
+                                        $ordersRoot = $activeTab === 'bestellungen' && !$pendingOrderView && !$pendingOrderDayId && !$pendingOrderItemId;
+                                        $ordersAnyInside = $activeTab === 'bestellungen';
+                                        $oArticlesActive = $ordersAnyInside && $pendingOrderView === 'articles';
+                                        $oActiveItemDayId = null;
+                                        if ($pendingOrderItemId) {
+                                            foreach ($orderTree as $dn) {
+                                                foreach ($dn['types'] as $tp) {
+                                                    if ($tp['id'] === $pendingOrderItemId) { $oActiveItemDayId = $dn['day_id']; break 2; }
+                                                }
+                                            }
+                                        }
+                                    @endphp
+                                    <div x-data="{ open: @js($ordersAnyInside) }">
+                                        <button type="button" @click="open = !open"
+                                                wire:click="resetOrderView"
+                                                class="w-full flex items-center gap-2 px-3 py-2 rounded-md transition text-left
+                                                       {{ $ordersRoot ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : ($ordersAnyInside ? 'text-[var(--ui-primary)] font-medium' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]') }}">
+                                            @svg('heroicon-o-shopping-cart', 'w-4 h-4 flex-shrink-0')
+                                            <span class="flex-1 whitespace-nowrap">Bestellungen</span>
+                                            @if($counts['bestellungen_items'] > 0)
+                                                <span class="text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-[var(--ui-primary)]/20 text-[var(--ui-primary)]">{{ $counts['bestellungen_items'] }}</span>
+                                            @endif
+                                            <svg :class="open ? 'rotate-90' : ''" class="w-3 h-3 transition-transform text-[var(--ui-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                                        </button>
 
-                {{-- ===== Bestellungen mit Drilldown ===== --}}
-                @php
-                    $ordersRoot = $activeTab === 'bestellungen' && !$pendingOrderView && !$pendingOrderDayId && !$pendingOrderItemId;
-                    $ordersAnyInside = $activeTab === 'bestellungen';
-                    $oArticlesActive = $ordersAnyInside && $pendingOrderView === 'articles';
-
-                    $oActiveItemDayId = null;
-                    if ($pendingOrderItemId) {
-                        foreach ($orderTree as $dn) {
-                            foreach ($dn['types'] as $tp) {
-                                if ($tp['id'] === $pendingOrderItemId) { $oActiveItemDayId = $dn['day_id']; break 2; }
-                            }
-                        }
-                    }
-                @endphp
-                <div x-data="{ open: @js($ordersAnyInside) }">
-                    <button type="button" @click="open = !open"
-                            wire:click="resetOrderView"
-                            class="w-full flex items-center gap-2 px-3 py-2 rounded-md transition text-left
-                                   {{ $ordersRoot ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : ($ordersAnyInside ? 'text-[var(--ui-primary)] font-medium' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]') }}">
-                        @svg('heroicon-o-shopping-cart', 'w-4 h-4 flex-shrink-0')
-                        <span class="flex-1 whitespace-nowrap">Bestellungen</span>
-                        @if($counts['bestellungen_items'] > 0)
-                            <span class="text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-[var(--ui-primary)]/20 text-[var(--ui-primary)]">{{ $counts['bestellungen_items'] }}</span>
-                        @endif
-                        <svg :class="open ? 'rotate-90' : ''" class="w-3 h-3 transition-transform text-[var(--ui-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                    </button>
-
-                    <div x-show="open" x-cloak class="ml-3 border-l border-[var(--ui-border)]/40 pl-2 space-y-0.5 mt-0.5">
-                        <button type="button" wire:click="openOrderArticles"
-                                class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[0.72rem] transition
-                                       {{ $oArticlesActive ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
-                            @svg('heroicon-o-list-bullet', 'w-3.5 h-3.5 flex-shrink-0')
-                            <span class="flex-1 text-left">Alle Positionen</span>
-                            @if($counts['bestellungen_positionen'] > 0)
-                                <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full {{ $oArticlesActive ? 'bg-[var(--ui-primary)]/20 text-[var(--ui-primary)]' : 'bg-blue-100 text-blue-700' }}">{{ $counts['bestellungen_positionen'] }}</span>
-                            @endif
-                        </button>
-
-                        @foreach($orderTree as $dayNode)
-                            @php
-                                $dayActive = $ordersAnyInside && ($pendingOrderDayId === $dayNode['day_id'] || $oActiveItemDayId === $dayNode['day_id']);
-                                $dayIsDirect = $ordersAnyInside && $pendingOrderDayId === $dayNode['day_id'];
-                            @endphp
-                            <div x-data="{ sub: @js($dayActive) }">
-                                <button type="button" @click="sub = !sub"
-                                        wire:click="openOrderDay({{ $dayNode['day_id'] }})"
-                                        class="w-full flex items-center gap-1.5 px-2 py-1 rounded-md text-[0.72rem] transition
-                                               {{ $dayIsDirect ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : ($dayActive ? 'text-[var(--ui-secondary)]' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]') }}">
-                                    <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: {{ $dayNode['color'] }}"></span>
-                                    <span class="flex-1 text-left whitespace-nowrap font-mono text-[0.68rem]">{{ $dayNode['datum'] ?? $dayNode['label'] }}</span>
-                                    @if($dayNode['positions'] > 0)
-                                        <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-700">{{ $dayNode['positions'] }}</span>
-                                    @endif
-                                    @if(count($dayNode['types']) > 0)
-                                        <svg :class="sub ? 'rotate-90' : ''" class="w-2.5 h-2.5 transition-transform text-[var(--ui-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                                    @endif
-                                </button>
-                                @if(count($dayNode['types']) > 0)
-                                    <div x-show="sub" x-cloak class="ml-4 space-y-0.5 mt-0.5">
-                                        @foreach($dayNode['types'] as $type)
-                                            @php $typeActive = $ordersAnyInside && $pendingOrderItemId === $type['id']; @endphp
-                                            <button type="button" wire:click="openOrderItem({{ $type['id'] }})"
-                                                    class="w-full flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[0.66rem] transition
-                                                           {{ $typeActive ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-muted)] hover:bg-[var(--ui-muted-5)] hover:text-[var(--ui-primary)]' }}">
-                                                <span class="w-1 h-1 rounded-full flex-shrink-0 {{ $typeActive ? 'bg-[var(--ui-primary)]' : 'bg-[var(--ui-muted)]' }}"></span>
-                                                <span class="flex-1 text-left whitespace-nowrap">{{ $type['typ'] }}</span>
-                                                @if($type['positions'] > 0)
-                                                    <span class="text-[0.58rem] text-[var(--ui-muted)]">{{ $type['positions'] }}</span>
+                                        <div x-show="open" x-cloak class="ml-3 border-l border-[var(--ui-border)]/40 pl-2 space-y-0.5 mt-0.5">
+                                            <button type="button" wire:click="openOrderArticles"
+                                                    class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[0.72rem] transition
+                                                           {{ $oArticlesActive ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
+                                                @svg('heroicon-o-list-bullet', 'w-3.5 h-3.5 flex-shrink-0')
+                                                <span class="flex-1 text-left">Alle Positionen</span>
+                                                @if($counts['bestellungen_positionen'] > 0)
+                                                    <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full {{ $oArticlesActive ? 'bg-[var(--ui-primary)]/20 text-[var(--ui-primary)]' : 'bg-blue-100 text-blue-700' }}">{{ $counts['bestellungen_positionen'] }}</span>
                                                 @endif
                                             </button>
-                                        @endforeach
-                                    </div>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
 
-                @foreach($tailTabs as $t)
-                    <button wire:click="$set('activeTab', '{{ $t['key'] }}')" type="button"
-                            class="w-full flex items-center gap-2 px-3 py-2 rounded-md transition text-left
-                                   {{ $activeTab === $t['key']
-                                      ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold'
-                                      : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
-                        @svg($t['icon'], 'w-4 h-4 flex-shrink-0')
-                        <span class="flex-1 whitespace-nowrap">{{ $t['label'] }}</span>
-                        @if(!empty($t['badge']) && $t['badge'] > 0)
-                            <span class="text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full {{ $badgeClass($t['badge'], $t['badgeColor'] ?? 'slate') }}">{{ $t['badge'] }}</span>
-                        @endif
-                    </button>
+                                            @foreach($orderTree as $dayNode)
+                                                @php
+                                                    $dayActive = $ordersAnyInside && ($pendingOrderDayId === $dayNode['day_id'] || $oActiveItemDayId === $dayNode['day_id']);
+                                                    $dayIsDirect = $ordersAnyInside && $pendingOrderDayId === $dayNode['day_id'];
+                                                @endphp
+                                                <div x-data="{ sub: @js($dayActive) }">
+                                                    <button type="button" @click="sub = !sub"
+                                                            wire:click="openOrderDay({{ $dayNode['day_id'] }})"
+                                                            class="w-full flex items-center gap-1.5 px-2 py-1 rounded-md text-[0.72rem] transition
+                                                                   {{ $dayIsDirect ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : ($dayActive ? 'text-[var(--ui-secondary)]' : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]') }}">
+                                                        <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: {{ $dayNode['color'] }}"></span>
+                                                        <span class="flex-1 text-left whitespace-nowrap font-mono text-[0.68rem]">{{ $dayNode['datum'] ?? $dayNode['label'] }}</span>
+                                                        @if($dayNode['positions'] > 0)
+                                                            <span class="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-700">{{ $dayNode['positions'] }}</span>
+                                                        @endif
+                                                        @if(count($dayNode['types']) > 0)
+                                                            <svg :class="sub ? 'rotate-90' : ''" class="w-2.5 h-2.5 transition-transform text-[var(--ui-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                                                        @endif
+                                                    </button>
+                                                    @if(count($dayNode['types']) > 0)
+                                                        <div x-show="sub" x-cloak class="ml-4 space-y-0.5 mt-0.5">
+                                                            @foreach($dayNode['types'] as $type)
+                                                                @php $typeActive = $ordersAnyInside && $pendingOrderItemId === $type['id']; @endphp
+                                                                <button type="button" wire:click="openOrderItem({{ $type['id'] }})"
+                                                                        class="w-full flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[0.66rem] transition
+                                                                               {{ $typeActive ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold' : 'text-[var(--ui-muted)] hover:bg-[var(--ui-muted-5)] hover:text-[var(--ui-primary)]' }}">
+                                                                    <span class="w-1 h-1 rounded-full flex-shrink-0 {{ $typeActive ? 'bg-[var(--ui-primary)]' : 'bg-[var(--ui-muted)]' }}"></span>
+                                                                    <span class="flex-1 text-left whitespace-nowrap">{{ $type['typ'] }}</span>
+                                                                    @if($type['positions'] > 0)
+                                                                        <span class="text-[0.58rem] text-[var(--ui-muted)]">{{ $type['positions'] }}</span>
+                                                                    @endif
+                                                                </button>
+                                                            @endforeach
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @else
+                                    {{-- Standard-Tab --}}
+                                    <button wire:click="$set('activeTab', '{{ $t['key'] }}')" type="button"
+                                            class="w-full flex items-center gap-2 px-3 py-2 rounded-md transition text-left
+                                                   {{ $activeTab === $t['key']
+                                                      ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-semibold'
+                                                      : 'text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]' }}">
+                                        @svg($t['icon'], 'w-4 h-4 flex-shrink-0')
+                                        <span class="flex-1 whitespace-nowrap">{{ $t['label'] }}</span>
+                                        @if(!empty($t['badge']) && $t['badge'] > 0)
+                                            <span class="text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full {{ $badgeClass($t['badge'], $t['badgeColor'] ?? 'slate') }}">{{ $t['badge'] }}</span>
+                                        @endif
+                                    </button>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
                 @endforeach
             </nav>
         </x-ui-page-sidebar>
     </x-slot>
-
-    @php
-        $hdrPersMin = 0; $hdrPersMax = 0; $hdrPersAny = false;
-        foreach ($days as $d) {
-            $mn = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_von);
-            $mx = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_bis);
-            if ($mn === 0 && $mx === 0) continue;
-            if ($mn === 0) $mn = $mx;
-            if ($mx === 0) $mx = $mn;
-            $hdrPersMin += $mn; $hdrPersMax += $mx; $hdrPersAny = true;
-        }
-    @endphp
 
     <x-slot name="actionbar">
         <x-ui-page-actionbar :breadcrumbs="[
@@ -303,35 +368,6 @@
             ['label' => 'Veranstaltungen', 'route' => 'events.manage'],
             ['label' => $event->name ?: $event->event_number],
         ]">
-            <x-slot name="left">
-                <span class="inline-block w-2 h-2 rounded-full flex-shrink-0 {{ $statusDotClass ?? 'bg-slate-400' }}" title="Status: {{ $currentStatus }}"></span>
-                <div class="flex items-center gap-2.5 text-[0.65rem] text-[var(--ui-muted)] flex-wrap leading-tight">
-                    @if($event->start_date)
-                        <span class="flex items-center gap-1 font-mono">
-                            @svg('heroicon-o-calendar', 'w-3 h-3')
-                            {{ $event->start_date->format('d.m.Y') }}@if($event->end_date && $event->end_date != $event->start_date) – {{ $event->end_date->format('d.m.Y') }}@endif
-                        </span>
-                    @endif
-                    @if($hdrPersAny)
-                        <span class="flex items-center gap-1 font-mono" title="Summe Personen über alle Tage (Min–Max)">
-                            @svg('heroicon-o-users', 'w-3 h-3')
-                            {{ $hdrPersMin === $hdrPersMax ? $hdrPersMax : $hdrPersMin . '–' . $hdrPersMax }}
-                        </span>
-                    @endif
-                    @if($event->customer)
-                        <span class="flex items-center gap-1">
-                            @svg('heroicon-o-user', 'w-3 h-3')
-                            {{ $event->customer }}
-                        </span>
-                    @endif
-                    @if($event->responsible)
-                        <span class="flex items-center gap-1">
-                            @svg('heroicon-o-user-circle', 'w-3 h-3')
-                            {{ $event->responsible }}
-                        </span>
-                    @endif
-                </div>
-            </x-slot>
             <span class="inline-flex items-center px-2.5 py-1 rounded-md border border-[var(--ui-border)] bg-[var(--ui-muted-5)] text-[0.72rem] font-bold font-mono text-[var(--ui-primary)]">
                 {{ $event->event_number }}
             </span>
