@@ -22,7 +22,7 @@
         ];
     @endphp
 
-    <x-ui-page-container>
+    <x-slot name="actionbar">
         <x-ui-page-actionbar :breadcrumbs="[
             ['label' => 'Events', 'route' => 'events.dashboard'],
             ['label' => 'Veranstaltungen'],
@@ -56,9 +56,9 @@
                 </x-ui-button>
             </div>
         </x-ui-page-actionbar>
+    </x-slot>
 
-        {{-- Spacer zur Breadcrumb-Leiste --}}
-        <div aria-hidden="true" style="height:0.625rem;"></div>
+    <x-ui-page-container>
 
         <div class="space-y-6">
 

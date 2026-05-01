@@ -48,7 +48,7 @@
 
     {{-- Event-Detail-Sidebar (Tab-Navigation + Drilldown) --}}
     <x-slot name="sidebar">
-        <x-ui-page-sidebar title="Event-Modul" width="w-fit min-w-[150px] max-w-[260px]" :defaultOpen="true">
+        <x-ui-page-sidebar title="Event-Modul" width="w-fit min-w-[150px] max-w-[260px]" :defaultOpen="true" side="left">
             {{-- Event-Header --}}
             <div class="p-4 border-b border-[var(--ui-border)] flex items-start gap-2">
                 @svg('heroicon-o-calendar-days', 'w-5 h-5 text-[var(--ui-primary)] flex-shrink-0 mt-0.5')
@@ -285,23 +285,24 @@
         </x-ui-page-sidebar>
     </x-slot>
 
-    <x-ui-page-container background="bg-slate-100">
+    @php
+        $hdrPersMin = 0; $hdrPersMax = 0; $hdrPersAny = false;
+        foreach ($days as $d) {
+            $mn = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_von);
+            $mx = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_bis);
+            if ($mn === 0 && $mx === 0) continue;
+            if ($mn === 0) $mn = $mx;
+            if ($mx === 0) $mx = $mn;
+            $hdrPersMin += $mn; $hdrPersMax += $mx; $hdrPersAny = true;
+        }
+    @endphp
+
+    <x-slot name="actionbar">
         <x-ui-page-actionbar :breadcrumbs="[
             ['label' => 'Events', 'route' => 'events.dashboard'],
             ['label' => 'Veranstaltungen', 'route' => 'events.manage'],
             ['label' => $event->name ?: $event->event_number],
         ]">
-            @php
-                $hdrPersMin = 0; $hdrPersMax = 0; $hdrPersAny = false;
-                foreach ($days as $d) {
-                    $mn = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_von);
-                    $mx = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_bis);
-                    if ($mn === 0 && $mx === 0) continue;
-                    if ($mn === 0) $mn = $mx;
-                    if ($mx === 0) $mx = $mn;
-                    $hdrPersMin += $mn; $hdrPersMax += $mx; $hdrPersAny = true;
-                }
-            @endphp
             <x-slot name="left">
                 <span class="inline-block w-2 h-2 rounded-full flex-shrink-0 {{ $statusDotClass ?? 'bg-slate-400' }}" title="Status: {{ $currentStatus }}"></span>
                 <div class="flex items-center gap-2.5 text-[0.65rem] text-[var(--ui-muted)] flex-wrap leading-tight">
@@ -356,7 +357,17 @@
                 </select>
             </div>
         </x-ui-page-actionbar>
+    </x-slot>
 
+    <x-slot name="activity">
+        <x-ui-page-sidebar title="Aktivitäten" width="w-80" :defaultOpen="false" storeKey="activityOpen" side="right">
+            <div class="p-4 space-y-4">
+                <div class="text-sm text-[var(--ui-muted)]">Letzte Aktivitäten</div>
+            </div>
+        </x-ui-page-sidebar>
+    </x-slot>
+
+    <x-ui-page-container background="bg-slate-100">
         <div class="events-detail-page">
 
         {{-- ================= Tab: Basis (4-Spalten-Layout analog Alt) ================= --}}

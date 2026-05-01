@@ -3,7 +3,7 @@
         <x-ui-page-navbar title="Events Dashboard" icon="heroicon-o-calendar-days" />
     </x-slot>
 
-    <x-ui-page-container>
+    <x-slot name="actionbar">
         <x-ui-page-actionbar :breadcrumbs="[
             ['label' => 'Events'],
             ['label' => 'Dashboard'],
@@ -15,7 +15,9 @@
                 </span>
             </x-ui-button>
         </x-ui-page-actionbar>
+    </x-slot>
 
+    <x-ui-page-container>
         <div class="space-y-6">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <x-ui-dashboard-tile
@@ -55,7 +57,7 @@
     </x-ui-page-container>
 
     <x-slot name="sidebar">
-        <x-ui-page-sidebar title="Schnellzugriff" width="w-80" :defaultOpen="true">
+        <x-ui-page-sidebar title="Schnellzugriff" width="w-80" :defaultOpen="true" side="left">
             <div class="p-6 space-y-6">
                 <div>
                     <h3 class="text-sm font-bold text-[var(--ui-secondary)] uppercase tracking-wider mb-3">Aktionen</h3>

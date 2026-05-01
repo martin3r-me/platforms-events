@@ -25,7 +25,7 @@
 
     {{-- Einstellungs-Navigation als zweite Sidebar (vertikal) --}}
     <x-slot name="sidebar">
-        <x-ui-page-sidebar title="Einstellungen" width="w-fit min-w-[200px] max-w-[280px]" :defaultOpen="true">
+        <x-ui-page-sidebar title="Einstellungen" width="w-fit min-w-[200px] max-w-[280px]" :defaultOpen="true" side="left">
             <nav class="p-2 space-y-0.5 text-xs">
                 @foreach($tabs as $key => $meta)
                     <button wire:click="$set('activeTab', '{{ $key }}')" type="button"
@@ -41,14 +41,14 @@
         </x-ui-page-sidebar>
     </x-slot>
 
-    <x-ui-page-container>
+    <x-slot name="actionbar">
         <x-ui-page-actionbar :breadcrumbs="[
             ['label' => 'Events', 'route' => 'events.dashboard'],
             ['label' => 'Einstellungen'],
         ]" />
+    </x-slot>
 
-        {{-- Spacer zur Breadcrumb-Leiste --}}
-        <div aria-hidden="true" style="height:0.625rem;"></div>
+    <x-ui-page-container>
 
         {{-- Konfiguration der einfachen Listen-Sektionen --}}
         @php
