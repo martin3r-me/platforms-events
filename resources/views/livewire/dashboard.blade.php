@@ -4,21 +4,19 @@
     </x-slot>
 
     <x-ui-page-container>
-        <div class="space-y-6">
-            <x-ui-panel title="Events" subtitle="Plane und verwalte deine Veranstaltungen">
-                <div class="p-6 text-center">
-                    <div class="mb-4">
-                        @svg('heroicon-o-calendar-days', 'w-16 h-16 text-[var(--ui-primary)] mx-auto')
-                    </div>
-                    <h2 class="text-xl font-semibold text-[var(--ui-secondary)] mb-2">
-                        Veranstaltungen
-                    </h2>
-                    <p class="text-[var(--ui-muted)]">
-                        Alle Events mit Tagen, Räumen, Ablaufplan und Notizen.
-                    </p>
-                </div>
-            </x-ui-panel>
+        <x-ui-page-actionbar :breadcrumbs="[
+            ['label' => 'Events'],
+            ['label' => 'Dashboard'],
+        ]">
+            <x-ui-button variant="secondary-outline" size="sm" :href="route('events.manage')" wire:navigate>
+                <span class="flex items-center gap-2">
+                    @svg('heroicon-o-list-bullet', 'w-4 h-4')
+                    Veranstaltungen
+                </span>
+            </x-ui-button>
+        </x-ui-page-actionbar>
 
+        <div class="space-y-6">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <x-ui-dashboard-tile
                     title="Events"

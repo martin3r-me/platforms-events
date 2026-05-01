@@ -286,96 +286,78 @@
     </x-slot>
 
     <x-ui-page-container background="bg-slate-100">
-        <div class="events-detail-page">
-        {{-- Abstand zur Navbar --}}
-        <div aria-hidden="true" style="height: 0.375rem;"></div>
-
-        {{-- Header --}}
-        <div class="mb-4 bg-white border border-[var(--ui-border)] rounded-lg px-4 py-3.5"
-             style="margin-top: 0;">
-            <div class="flex items-center justify-between gap-4 flex-wrap">
-                <div class="min-w-0 flex-1 flex items-center gap-3">
-                    <span class="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 {{ $statusDotClass ?? 'bg-slate-400' }}"
-                          title="Status: {{ $currentStatus }}"></span>
-                    <div class="min-w-0">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <h1 class="text-base font-bold text-[var(--ui-secondary)] truncate m-0 leading-tight">{{ $event->name ?: $event->event_number }}</h1>
-                        </div>
-                        <div class="mt-0.5 flex items-center gap-2.5 text-[0.65rem] text-[var(--ui-muted)] flex-wrap leading-tight">
-                            @if($event->start_date)
-                                <span class="flex items-center gap-1 font-mono">
-                                    @svg('heroicon-o-calendar', 'w-3 h-3')
-                                    {{ $event->start_date->format('d.m.Y') }}@if($event->end_date && $event->end_date != $event->start_date) – {{ $event->end_date->format('d.m.Y') }}@endif
-                                </span>
-                            @endif
-                            @php
-                                $hdrPersMin = 0; $hdrPersMax = 0; $hdrPersAny = false;
-                                foreach ($days as $d) {
-                                    $mn = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_von);
-                                    $mx = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_bis);
-                                    if ($mn === 0 && $mx === 0) continue;
-                                    if ($mn === 0) $mn = $mx;
-                                    if ($mx === 0) $mx = $mn;
-                                    $hdrPersMin += $mn; $hdrPersMax += $mx; $hdrPersAny = true;
-                                }
-                            @endphp
-                            @if($hdrPersAny)
-                                <span class="flex items-center gap-1 font-mono" title="Summe Personen über alle Tage (Min–Max)">
-                                    @svg('heroicon-o-users', 'w-3 h-3')
-                                    {{ $hdrPersMin === $hdrPersMax ? $hdrPersMax : $hdrPersMin . '–' . $hdrPersMax }}
-                                </span>
-                            @endif
-                            @if($event->customer)
-                                <span class="flex items-center gap-1">
-                                    @svg('heroicon-o-user', 'w-3 h-3')
-                                    {{ $event->customer }}
-                                </span>
-                            @endif
-                            @if($event->responsible)
-                                <span class="flex items-center gap-1">
-                                    @svg('heroicon-o-user-circle', 'w-3 h-3')
-                                    {{ $event->responsible }}
-                                </span>
-                            @endif
-                            @if($event->status_changed_at)
-                                <span class="flex items-center gap-1 text-slate-400">
-                                    @svg('heroicon-o-arrow-path', 'w-3 h-3')
-                                    {{ $event->status_changed_at->diffForHumans() }} – {{ $event->status_changed_at->format('d.m.Y') }}
-                                </span>
-                            @endif
-                        </div>
-                    </div>
+        <x-ui-page-actionbar :breadcrumbs="[
+            ['label' => 'Events', 'route' => 'events.dashboard'],
+            ['label' => 'Veranstaltungen', 'route' => 'events.manage'],
+            ['label' => $event->name ?: $event->event_number],
+        ]">
+            @php
+                $hdrPersMin = 0; $hdrPersMax = 0; $hdrPersAny = false;
+                foreach ($days as $d) {
+                    $mn = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_von);
+                    $mx = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_bis);
+                    if ($mn === 0 && $mx === 0) continue;
+                    if ($mn === 0) $mn = $mx;
+                    if ($mx === 0) $mx = $mn;
+                    $hdrPersMin += $mn; $hdrPersMax += $mx; $hdrPersAny = true;
+                }
+            @endphp
+            <x-slot name="left">
+                <span class="inline-block w-2 h-2 rounded-full flex-shrink-0 {{ $statusDotClass ?? 'bg-slate-400' }}" title="Status: {{ $currentStatus }}"></span>
+                <div class="flex items-center gap-2.5 text-[0.65rem] text-[var(--ui-muted)] flex-wrap leading-tight">
+                    @if($event->start_date)
+                        <span class="flex items-center gap-1 font-mono">
+                            @svg('heroicon-o-calendar', 'w-3 h-3')
+                            {{ $event->start_date->format('d.m.Y') }}@if($event->end_date && $event->end_date != $event->start_date) – {{ $event->end_date->format('d.m.Y') }}@endif
+                        </span>
+                    @endif
+                    @if($hdrPersAny)
+                        <span class="flex items-center gap-1 font-mono" title="Summe Personen über alle Tage (Min–Max)">
+                            @svg('heroicon-o-users', 'w-3 h-3')
+                            {{ $hdrPersMin === $hdrPersMax ? $hdrPersMax : $hdrPersMin . '–' . $hdrPersMax }}
+                        </span>
+                    @endif
+                    @if($event->customer)
+                        <span class="flex items-center gap-1">
+                            @svg('heroicon-o-user', 'w-3 h-3')
+                            {{ $event->customer }}
+                        </span>
+                    @endif
+                    @if($event->responsible)
+                        <span class="flex items-center gap-1">
+                            @svg('heroicon-o-user-circle', 'w-3 h-3')
+                            {{ $event->responsible }}
+                        </span>
+                    @endif
                 </div>
-                <div class="flex items-center gap-3 flex-shrink-0">
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-md border border-[var(--ui-border)] bg-[var(--ui-muted-5)] text-[0.72rem] font-bold font-mono text-[var(--ui-primary)]">
-                        {{ $event->event_number }}
-                    </span>
-                    {{-- Highlight-Toggle: besondere Veranstaltungen markieren (Foto-Termin, vor Ort sein). --}}
-                    <button type="button"
-                            wire:click="toggleHighlight"
-                            class="inline-flex items-center justify-center w-8 h-8 rounded-md border transition
-                                   {{ $event->is_highlight
-                                       ? 'bg-amber-50 border-amber-300 text-amber-500 hover:bg-amber-100'
-                                       : 'bg-white border-[var(--ui-border)] text-slate-300 hover:text-amber-400 hover:border-amber-200' }}"
-                            title="{{ $event->is_highlight ? 'Highlight entfernen' : 'Als Highlight markieren (besonders sehenswert)' }}">
-                        @if($event->is_highlight)
-                            @svg('heroicon-s-star', 'w-4 h-4')
-                        @else
-                            @svg('heroicon-o-star', 'w-4 h-4')
-                        @endif
-                    </button>
-                    <div class="flex items-center gap-2">
-                        <span class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Status</span>
-                        <select wire:change="setStatus($event.target.value); $event.target.blur()"
-                                class="border border-[var(--ui-border)] rounded-md px-2.5 py-1 text-[0.72rem] font-semibold bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30 {{ $statusClass }}">
-                            @foreach($statusOptions as $s)
-                                <option value="{{ $s }}" @if($currentStatus === $s) selected @endif>{{ $s }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
+            </x-slot>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-md border border-[var(--ui-border)] bg-[var(--ui-muted-5)] text-[0.72rem] font-bold font-mono text-[var(--ui-primary)]">
+                {{ $event->event_number }}
+            </span>
+            <button type="button"
+                    wire:click="toggleHighlight"
+                    class="inline-flex items-center justify-center w-7 h-7 rounded-md border transition
+                           {{ $event->is_highlight
+                               ? 'bg-amber-50 border-amber-300 text-amber-500 hover:bg-amber-100'
+                               : 'bg-white border-[var(--ui-border)] text-slate-300 hover:text-amber-400 hover:border-amber-200' }}"
+                    title="{{ $event->is_highlight ? 'Highlight entfernen' : 'Als Highlight markieren (besonders sehenswert)' }}">
+                @if($event->is_highlight)
+                    @svg('heroicon-s-star', 'w-3.5 h-3.5')
+                @else
+                    @svg('heroicon-o-star', 'w-3.5 h-3.5')
+                @endif
+            </button>
+            <div class="flex items-center gap-2">
+                <select wire:change="setStatus($event.target.value); $event.target.blur()"
+                        class="border border-[var(--ui-border)] rounded-md px-2 py-0.5 text-[0.72rem] font-semibold bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30 {{ $statusClass }}">
+                    @foreach($statusOptions as $s)
+                        <option value="{{ $s }}" @if($currentStatus === $s) selected @endif>{{ $s }}</option>
+                    @endforeach
+                </select>
             </div>
-        </div>
+        </x-ui-page-actionbar>
+
+        <div class="events-detail-page">
 
         {{-- ================= Tab: Basis (4-Spalten-Layout analog Alt) ================= --}}
         @if($activeTab === 'basis')
