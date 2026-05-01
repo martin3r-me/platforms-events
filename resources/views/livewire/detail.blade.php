@@ -46,94 +46,9 @@
         ];
     @endphp
 
-    {{-- Event-Detail-Sidebar (Infos + gruppierte Navigation) --}}
+    {{-- Event-Detail-Sidebar (Navigation) --}}
     <x-slot name="sidebar">
         <x-ui-page-sidebar title="{{ $event->name }}" width="w-80" :defaultOpen="true" side="left">
-
-            @php
-                $sidebarPersMin = 0; $sidebarPersMax = 0; $sidebarPersAny = false;
-                foreach ($days as $d) {
-                    $mn = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_von);
-                    $mx = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_bis);
-                    if ($mn === 0 && $mx === 0) continue;
-                    if ($mn === 0) $mn = $mx;
-                    if ($mx === 0) $mx = $mn;
-                    $sidebarPersMin += $mn; $sidebarPersMax += $mx; $sidebarPersAny = true;
-                }
-            @endphp
-
-            {{-- ===== Event-Informationen ===== --}}
-            <div class="p-4 space-y-5 border-b border-[var(--ui-border)]">
-
-                {{-- Status --}}
-                <div>
-                    <div class="text-[0.65rem] font-medium text-[var(--ui-muted)] uppercase tracking-wider mb-2">Status</div>
-                    <select wire:change="setStatus($event.target.value); $event.target.blur()"
-                            class="w-full border border-[var(--ui-border)] rounded-md px-3 py-1.5 text-xs font-semibold bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30 {{ $statusClass }}">
-                        @foreach($statusOptions as $s)
-                            <option value="{{ $s }}" @if($currentStatus === $s) selected @endif>{{ $s }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                {{-- Details --}}
-                <div>
-                    <div class="text-[0.65rem] font-medium text-[var(--ui-muted)] uppercase tracking-wider mb-2">Details</div>
-                    <div class="space-y-2">
-                        @if($event->start_date)
-                            <div class="py-2.5 px-3 bg-[var(--ui-muted-5)] rounded-lg border border-[var(--ui-border)]/40">
-                                <span class="text-[0.65rem] text-[var(--ui-muted)]">Zeitraum</span>
-                                <div class="text-xs font-medium text-[var(--ui-secondary)] font-mono">
-                                    {{ $event->start_date->format('d.m.Y') }}@if($event->end_date && $event->end_date != $event->start_date) – {{ $event->end_date->format('d.m.Y') }}@endif
-                                </div>
-                            </div>
-                        @endif
-
-                        @if($event->customer)
-                            <div class="py-2.5 px-3 bg-[var(--ui-muted-5)] rounded-lg border border-[var(--ui-border)]/40">
-                                <span class="text-[0.65rem] text-[var(--ui-muted)]">Kunde</span>
-                                <div class="text-xs font-medium text-[var(--ui-secondary)]">{{ $event->customer }}</div>
-                            </div>
-                        @endif
-
-                        @if($event->responsible)
-                            <div class="py-2.5 px-3 bg-[var(--ui-muted-5)] rounded-lg border border-[var(--ui-border)]/40">
-                                <span class="text-[0.65rem] text-[var(--ui-muted)]">Verantwortlich</span>
-                                <div class="text-xs font-medium text-[var(--ui-secondary)]">{{ $event->responsible }}</div>
-                            </div>
-                        @endif
-
-                        @if($sidebarPersAny)
-                            <div class="py-2.5 px-3 bg-[var(--ui-muted-5)] rounded-lg border border-[var(--ui-border)]/40">
-                                <span class="text-[0.65rem] text-[var(--ui-muted)]">Personen</span>
-                                <div class="text-xs font-medium text-[var(--ui-secondary)] font-mono">
-                                    {{ $sidebarPersMin === $sidebarPersMax ? $sidebarPersMax : $sidebarPersMin . '–' . $sidebarPersMax }}
-                                </div>
-                            </div>
-                        @endif
-
-                        <div class="flex items-center gap-2">
-                            <div class="flex-1 py-2.5 px-3 bg-[var(--ui-muted-5)] rounded-lg border border-[var(--ui-border)]/40">
-                                <span class="text-[0.65rem] text-[var(--ui-muted)]">Event-Nr.</span>
-                                <div class="text-xs font-bold text-[var(--ui-primary)] font-mono">{{ $event->event_number }}</div>
-                            </div>
-                            <button type="button"
-                                    wire:click="toggleHighlight"
-                                    class="flex-shrink-0 inline-flex items-center justify-center w-10 h-full min-h-[3rem] rounded-lg border transition
-                                           {{ $event->is_highlight
-                                               ? 'bg-amber-50 border-amber-300 text-amber-500 hover:bg-amber-100'
-                                               : 'bg-[var(--ui-muted-5)] border-[var(--ui-border)]/40 text-slate-300 hover:text-amber-400 hover:border-amber-200' }}"
-                                    title="{{ $event->is_highlight ? 'Highlight entfernen' : 'Als Highlight markieren' }}">
-                                @if($event->is_highlight)
-                                    @svg('heroicon-s-star', 'w-4 h-4')
-                                @else
-                                    @svg('heroicon-o-star', 'w-4 h-4')
-                                @endif
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             {{-- ===== Gruppierte Navigation ===== --}}
             @php
@@ -392,6 +307,43 @@
                     @endforeach
                 </select>
             </div>
+            @php
+                $persMin = 0; $persMax = 0; $persAny = false;
+                foreach ($days as $d) {
+                    $mn = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_von);
+                    $mx = (int) preg_replace('/[^0-9]/', '', (string) $d->pers_bis);
+                    if ($mn === 0 && $mx === 0) continue;
+                    if ($mn === 0) $mn = $mx;
+                    if ($mx === 0) $mx = $mn;
+                    $persMin += $mn; $persMax += $mx; $persAny = true;
+                }
+            @endphp
+
+            @if($event->start_date)
+                <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-[0.68rem] text-[var(--ui-muted)] border-l border-[var(--ui-border)]/50 pl-3">
+                    @svg('heroicon-o-calendar', 'w-3 h-3')
+                    <span class="font-medium text-[var(--ui-secondary)] font-mono">{{ $event->start_date->format('d.m.Y') }}@if($event->end_date && $event->end_date != $event->start_date) – {{ $event->end_date->format('d.m.Y') }}@endif</span>
+                </span>
+            @endif
+            @if($event->customer)
+                <span class="hidden md:inline-flex items-center gap-1 px-2 py-0.5 text-[0.68rem] text-[var(--ui-muted)]">
+                    @svg('heroicon-o-user', 'w-3 h-3')
+                    <span class="font-medium text-[var(--ui-secondary)] max-w-[10rem] truncate">{{ $event->customer }}</span>
+                </span>
+            @endif
+            @if($event->responsible)
+                <span class="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 text-[0.68rem] text-[var(--ui-muted)]">
+                    @svg('heroicon-o-user-circle', 'w-3 h-3')
+                    <span class="font-medium text-[var(--ui-secondary)] max-w-[8rem] truncate">{{ $event->responsible }}</span>
+                </span>
+            @endif
+            @if($persAny)
+                <span class="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 text-[0.68rem] text-[var(--ui-muted)]">
+                    @svg('heroicon-o-user-group', 'w-3 h-3')
+                    <span class="font-medium text-[var(--ui-secondary)] font-mono">{{ $persMin === $persMax ? $persMax : $persMin . '–' . $persMax }}</span>
+                </span>
+            @endif
+
             @if($activeTab === 'basis')
                 <button type="button" wire:click="createBoardSlot"
                         class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-[var(--ui-border)] bg-white text-[0.72rem] font-medium text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)] hover:border-[var(--ui-primary)]/40 transition">

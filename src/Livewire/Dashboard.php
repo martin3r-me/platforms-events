@@ -53,12 +53,38 @@ class Dashboard extends Component
             ->count();
         $past        = (clone $base)->where('end_date', '<', $today)->count();
 
+        // Anstehende Veranstaltungen: laufende + zukünftige, nach Startdatum sortiert
+        $upcomingEvents = (clone $base)
+            ->where(function ($q) use ($today) {
+                $q->where('end_date', '>=', $today)->orWhereNull('end_date');
+            })
+            ->with(['days' => fn ($q) => $q->select('id', 'event_id', 'pers_von', 'pers_bis')])
+            ->orderBy('start_date')
+            ->limit(20)
+            ->get();
+
+        // CRM-Resolver für Kunden-Labels
+        $crmResolver = app()->bound(\Platform\Core\Contracts\CrmCompanyResolverInterface::class)
+            ? app(\Platform\Core\Contracts\CrmCompanyResolverInterface::class)
+            : null;
+
+        $customerLabels = [];
+        foreach ($upcomingEvents as $e) {
+            $label = null;
+            if ($e->crm_company_id && $crmResolver) {
+                $label = $crmResolver->displayName($e->crm_company_id);
+            }
+            $customerLabels[$e->id] = $label ?: ($e->customer ?: null);
+        }
+
         return view('events::livewire.dashboard', [
-            'currentDate' => now()->format('d.m.Y'),
-            'totalEvents' => $totalEvents,
-            'upcoming'    => $upcoming,
-            'running'     => $running,
-            'past'        => $past,
+            'currentDate'    => now()->format('d.m.Y'),
+            'totalEvents'    => $totalEvents,
+            'upcoming'       => $upcoming,
+            'running'        => $running,
+            'past'           => $past,
+            'upcomingEvents' => $upcomingEvents,
+            'customerLabels' => $customerLabels,
         ])->layout('platform::layouts.app');
     }
 }
