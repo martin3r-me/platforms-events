@@ -42,12 +42,12 @@ return [
             ],
         ],
         [
-            'group' => 'Stammdaten',
+            'group' => 'Vorlagen',
             'items' => [
                 [
-                    'label' => 'Artikel',
+                    'label' => 'Pakete',
                     'route' => 'events.articles',
-                    'icon'  => 'heroicon-o-squares-2x2',
+                    'icon'  => 'heroicon-o-archive-box',
                 ],
             ],
         ],

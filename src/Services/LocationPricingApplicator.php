@@ -5,7 +5,7 @@ namespace Platform\Events\Services;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Platform\Events\Models\Article;
+use Platform\Core\Contracts\CatalogArticleResolverInterface;
 use Platform\Events\Models\LocationPricingApplication;
 use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\QuotePosition;
@@ -400,10 +400,10 @@ class LocationPricingApplicator
     }
 
     /**
-     * Loest eine optionale Artikelnummer (am LocationPricing) im Events-
-     * Artikelstamm des aktuellen Teams auf. Liefert ein Array mit den
-     * fuer die QuotePosition relevanten Stammdaten oder null, wenn kein
-     * Artikel verknuepft ist bzw. nicht gefunden wurde.
+     * Loest eine optionale Artikelnummer (am LocationPricing) ueber den
+     * Commerce-Artikelstamm auf. Liefert ein Array mit den fuer die
+     * QuotePosition relevanten Stammdaten oder null, wenn kein Artikel
+     * verknuepft ist bzw. nicht gefunden wurde.
      *
      * @return array{name:string, gruppe:string, mwst:string, ek:float, procurement_type:?string, inhalt:string, gebinde:string}|null
      */
@@ -413,25 +413,22 @@ class LocationPricingApplicator
             return null;
         }
 
-        $article = Article::where('team_id', $teamId)
-            ->where('article_number', $articleNumber)
-            ->where('is_active', true)
-            ->with('group:id,name')
-            ->first();
+        $article = app(CatalogArticleResolverInterface::class)
+            ->resolveByArticleNumber($articleNumber, $teamId);
 
         if (!$article) {
-            $warnings[] = "Artikelnummer '{$articleNumber}' nicht im Events-Stamm gefunden — Default-Gruppe/MwSt verwendet.";
+            $warnings[] = "Artikelnummer '{$articleNumber}' nicht im Artikelstamm gefunden — Default-Gruppe/MwSt verwendet.";
             return null;
         }
 
         return [
-            'name'             => (string) $article->name,
-            'gruppe'           => (string) ($article->group?->name ?? ''),
-            'mwst'             => (string) $article->mwst,
-            'ek'               => (float) $article->ek,
-            'procurement_type' => $article->procurement_type,
-            'inhalt'           => (string) ($article->offer_text ?: ($article->description ?: '')),
-            'gebinde'          => (string) ($article->gebinde ?? ''),
+            'name'             => (string) $article['name'],
+            'gruppe'           => (string) ($article['category_name'] ?? ''),
+            'mwst'             => (string) ($article['mwst'] ?? ''),
+            'ek'               => (float) ($article['ek'] ?? 0),
+            'procurement_type' => $article['procurement_type'] ?? null,
+            'inhalt'           => (string) ($article['offer_text'] ?: ($article['description'] ?? '')),
+            'gebinde'          => (string) ($article['gebinde'] ?? ''),
         ];
     }
 

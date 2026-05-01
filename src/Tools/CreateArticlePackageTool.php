@@ -6,7 +6,7 @@ use Platform\Core\Contracts\ToolContract;
 use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
-use Platform\Events\Models\ArticleGroup;
+use Platform\Core\Contracts\CatalogArticleResolverInterface;
 use Platform\Events\Models\ArticlePackage;
 use Platform\Events\Models\ArticlePackageItem;
 use Platform\Events\Tools\Concerns\CollectsValidationErrors;
@@ -27,7 +27,7 @@ class CreateArticlePackageTool implements ToolContract, ToolMetadataContract
     {
         return 'POST /events/article-packages - Legt eine Artikel-Vorlage (Paket) an. Pflicht: name. '
             . 'Felder: description, color (#RGB | #RRGGBB | #RRGGBBAA; wenn nicht gesetzt: erbt von '
-            . 'article_group_id.color, sonst DB-Default), article_group_id (FK), is_active (default true), sort_order. '
+            . 'DB-Default), is_active (default true), sort_order. '
             . 'Optional: items[] = Liste von Package-Items, die direkt mit angelegt werden – '
             . 'jedes Item: { article_id?, name, gruppe?, quantity (int, default 1), gebinde?, vk (decimal), gesamt (decimal optional) }. '
             . 'Wenn article_id angegeben ist, werden name/gebinde/vk aus dem Stammartikel uebernommen, sofern leer.';
@@ -42,7 +42,6 @@ class CreateArticlePackageTool implements ToolContract, ToolMetadataContract
                 'name'             => ['type' => 'string'],
                 'description'      => ['type' => 'string'],
                 'color'            => ['type' => 'string'],
-                'article_group_id' => ['type' => 'integer'],
                 'is_active'        => ['type' => 'boolean'],
                 'sort_order'       => ['type' => 'integer'],
                 'items'            => [
@@ -93,36 +92,22 @@ class CreateArticlePackageTool implements ToolContract, ToolMetadataContract
                 );
             }
 
-            $group = null;
-            if (!empty($arguments['article_group_id'])) {
-                $group = ArticleGroup::where('team_id', $teamId)->find((int) $arguments['article_group_id']);
-                if (!$group) {
-                    $errors[] = $this->validationError('article_group_id', 'article_group_id gehoert nicht zum Team.');
-                }
-            }
             if (!empty($errors)) {
                 return $this->validationFailure($errors);
             }
 
             $maxSort = (int) ArticlePackage::where('team_id', $teamId)->max('sort_order');
 
-            // Color-Resolution: explizit > group.color > DB-Default (Spalte einfach weglassen).
-            $colorSource = 'db_default';
             $payload = [
-                'team_id'          => $teamId,
-                'user_id'          => $context->user->id,
-                'article_group_id' => $group?->id,
-                'name'             => $arguments['name'],
-                'description'      => $arguments['description'] ?? null,
-                'is_active'        => array_key_exists('is_active', $arguments) ? (bool) $arguments['is_active'] : true,
-                'sort_order'       => $arguments['sort_order']  ?? $maxSort + 1,
+                'team_id'     => $teamId,
+                'user_id'     => $context->user->id,
+                'name'        => $arguments['name'],
+                'description' => $arguments['description'] ?? null,
+                'is_active'   => array_key_exists('is_active', $arguments) ? (bool) $arguments['is_active'] : true,
+                'sort_order'  => $arguments['sort_order'] ?? $maxSort + 1,
             ];
             if ($hasColor) {
                 $payload['color'] = (string) $arguments['color'];
-                $colorSource = 'explicit';
-            } elseif ($group && $group->color) {
-                $payload['color'] = $group->color;
-                $colorSource = 'inherited_from_group';
             }
 
             $package = ArticlePackage::create($payload);
@@ -142,11 +127,11 @@ class CreateArticlePackageTool implements ToolContract, ToolMetadataContract
 
                     // Stammartikel-Defaults uebernehmen
                     if ($articleId) {
-                        $article = \Platform\Events\Models\Article::where('team_id', $teamId)->find($articleId);
+                        $article = app(CatalogArticleResolverInterface::class)->resolve($articleId, $teamId);
                         if ($article) {
-                            if ($name === '')    $name    = (string) $article->name;
-                            if ($gebinde === '') $gebinde = (string) $article->gebinde;
-                            if ($vk === null)    $vk      = (float)  $article->vk;
+                            if ($name === '')    $name    = (string) $article['name'];
+                            if ($gebinde === '') $gebinde = (string) ($article['gebinde'] ?? '');
+                            if ($vk === null)    $vk      = (float)  ($article['vk'] ?? 0);
                         }
                     }
                     if ($name === '') {
@@ -173,15 +158,12 @@ class CreateArticlePackageTool implements ToolContract, ToolMetadataContract
             }
 
             $known = [
-                'team_id', 'name', 'description', 'color', 'article_group_id',
+                'team_id', 'name', 'description', 'color',
                 'is_active', 'sort_order', 'items',
             ];
             $ignored = array_values(array_diff(array_keys($arguments), $known));
 
             $emptyRecommended = [];
-            if (!$package->article_group_id) {
-                $emptyRecommended['article_group_id'] = 'Artikelgruppe (FK) – ohne Gruppe greifen Vererbungen wie Erloeskonto/color nicht.';
-            }
             if (!$package->description) {
                 $emptyRecommended['description'] = 'Kurzbeschreibung der Vorlage (intern).';
             }
@@ -192,8 +174,6 @@ class CreateArticlePackageTool implements ToolContract, ToolMetadataContract
                 'name'              => $package->name,
                 'description'       => $package->description,
                 'color'             => $package->color,
-                'color_source'      => $colorSource,
-                'article_group_id'  => $package->article_group_id,
                 'is_active'         => (bool) $package->is_active,
                 'sort_order'        => (int) $package->sort_order,
                 'items_created'     => count($createdItems),
@@ -202,7 +182,7 @@ class CreateArticlePackageTool implements ToolContract, ToolMetadataContract
                 'ignored_fields'    => $ignored,
                 'empty_recommended_fields' => $emptyRecommended,
                 '_field_hints'      => [
-                    'color' => 'Hex-Format. Wenn weggelassen: erbt von article_group_id.color, sonst DB-Default.',
+                    'color' => 'Hex-Format (#RGB | #RRGGBB | #RRGGBBAA).',
                     'items' => 'Bulk-Anlage von Package-Items moeglich. Einzeln auch via events.article-package-items.POST.',
                 ],
                 'message'           => "Paket '{$package->name}' angelegt" . (count($createdItems) ? " (mit " . count($createdItems) . " Items)" : "") . ".",

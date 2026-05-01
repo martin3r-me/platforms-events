@@ -6,7 +6,6 @@ use Platform\Core\Contracts\ToolContract;
 use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
-use Platform\Events\Models\ArticleGroup;
 use Platform\Events\Models\ArticlePackage;
 use Platform\Events\Tools\Concerns\CollectsValidationErrors;
 
@@ -16,7 +15,7 @@ class UpdateArticlePackageTool implements ToolContract, ToolMetadataContract
 
     protected const STRING_FIELDS = ['name', 'description', 'color'];
 
-    /** Aliases analog ArticleGroup-Tool (Naming-Bridge zur restlichen API). */
+    /** Aliases (Naming-Bridge zur restlichen API). */
     protected const FIELD_ALIASES = [
         'article_package_id' => 'package_id',
     ];
@@ -33,7 +32,7 @@ class UpdateArticlePackageTool implements ToolContract, ToolMetadataContract
     {
         return 'PATCH /events/article-packages/{id} - Aktualisiert ein Paket. '
             . 'Identifikation: package_id (Alias article_package_id) ODER uuid. '
-            . 'Felder: name, description, color (#RGB | #RRGGBB | #RRGGBBAA), article_group_id, is_active, sort_order.';
+            . 'Felder: name, description, color (#RGB | #RRGGBB | #RRGGBBAA), is_active, sort_order.';
     }
 
     public function getSchema(): array
@@ -42,7 +41,6 @@ class UpdateArticlePackageTool implements ToolContract, ToolMetadataContract
             'package_id'         => ['type' => 'integer'],
             'article_package_id' => ['type' => 'integer', 'description' => 'Alias fuer package_id.'],
             'uuid'               => ['type' => 'string'],
-            'article_group_id'   => ['type' => 'integer'],
             'is_active'          => ['type' => 'boolean'],
             'sort_order'         => ['type' => 'integer'],
         ];
@@ -110,19 +108,6 @@ class UpdateArticlePackageTool implements ToolContract, ToolMetadataContract
             }
             if (array_key_exists('is_active', $arguments)) $update['is_active'] = (bool) $arguments['is_active'];
             if (array_key_exists('sort_order', $arguments)) $update['sort_order'] = (int) $arguments['sort_order'];
-            if (array_key_exists('article_group_id', $arguments)) {
-                $gid = $arguments['article_group_id'];
-                if ($gid === null || $gid === '' || (int) $gid === 0) {
-                    $update['article_group_id'] = null;
-                } else {
-                    $group = ArticleGroup::where('team_id', $package->team_id)->find((int) $gid);
-                    if (!$group) {
-                        $errors[] = $this->validationError('article_group_id', 'article_group_id gehoert nicht zum Team.');
-                    } else {
-                        $update['article_group_id'] = $group->id;
-                    }
-                }
-            }
 
             if (!empty($errors)) {
                 return $this->validationFailure($errors);
@@ -132,7 +117,7 @@ class UpdateArticlePackageTool implements ToolContract, ToolMetadataContract
             }
 
             $known = array_merge(
-                ['package_id', 'uuid', 'article_group_id', 'is_active', 'sort_order'],
+                ['package_id', 'uuid', 'is_active', 'sort_order'],
                 self::STRING_FIELDS,
                 array_keys(self::FIELD_ALIASES),
             );
@@ -146,7 +131,6 @@ class UpdateArticlePackageTool implements ToolContract, ToolMetadataContract
                 'name'             => $package->name,
                 'description'      => $package->description,
                 'color'            => $package->color,
-                'article_group_id' => $package->article_group_id,
                 'is_active'        => (bool) $package->is_active,
                 'sort_order'       => (int) $package->sort_order,
                 'updated_fields'   => array_keys($update),

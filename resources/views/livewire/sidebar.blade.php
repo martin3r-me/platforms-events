@@ -20,11 +20,11 @@
         </x-ui-sidebar-item>
     </x-ui-sidebar-list>
 
-    {{-- Abschnitt: Stammdaten --}}
-    <x-ui-sidebar-list label="Stammdaten">
+    {{-- Abschnitt: Vorlagen --}}
+    <x-ui-sidebar-list label="Vorlagen">
         <x-ui-sidebar-item :href="route('events.articles')">
-            @svg('heroicon-o-squares-2x2', 'w-4 h-4 text-[var(--ui-secondary)]')
-            <span class="ml-2 text-sm">Artikel</span>
+            @svg('heroicon-o-archive-box', 'w-4 h-4 text-[var(--ui-secondary)]')
+            <span class="ml-2 text-sm">Pakete</span>
         </x-ui-sidebar-item>
     </x-ui-sidebar-list>
 
@@ -45,8 +45,8 @@
             <a href="{{ route('events.manage') }}" wire:navigate class="flex items-center justify-center p-2 rounded-md text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]" title="Veranstaltungen">
                 @svg('heroicon-o-calendar-days', 'w-5 h-5')
             </a>
-            <a href="{{ route('events.articles') }}" wire:navigate class="flex items-center justify-center p-2 rounded-md text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]" title="Artikel">
-                @svg('heroicon-o-squares-2x2', 'w-5 h-5')
+            <a href="{{ route('events.articles') }}" wire:navigate class="flex items-center justify-center p-2 rounded-md text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]" title="Pakete">
+                @svg('heroicon-o-archive-box', 'w-5 h-5')
             </a>
             <a href="{{ route('events.settings') }}" wire:navigate class="flex items-center justify-center p-2 rounded-md text-[var(--ui-secondary)] hover:bg-[var(--ui-muted-5)]" title="Einstellungen">
                 @svg('heroicon-o-cog-6-tooth', 'w-5 h-5')

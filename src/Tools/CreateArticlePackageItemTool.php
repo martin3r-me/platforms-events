@@ -6,7 +6,7 @@ use Platform\Core\Contracts\ToolContract;
 use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
-use Platform\Events\Models\Article;
+use Platform\Core\Contracts\CatalogArticleResolverInterface;
 use Platform\Events\Models\ArticlePackage;
 use Platform\Events\Models\ArticlePackageItem;
 
@@ -90,13 +90,13 @@ class CreateArticlePackageItemTool implements ToolContract, ToolMetadataContract
             $vk = isset($arguments['vk']) ? (float) $arguments['vk'] : null;
 
             if ($articleId) {
-                $article = Article::where('team_id', $package->team_id)->find($articleId);
+                $article = app(CatalogArticleResolverInterface::class)->resolve($articleId, $package->team_id);
                 if (!$article) {
-                    return ToolResult::error('VALIDATION_ERROR', 'article_id gehoert nicht zum Team.');
+                    return ToolResult::error('VALIDATION_ERROR', 'article_id nicht gefunden oder gehoert nicht zum Team.');
                 }
-                if ($name === '')    $name    = (string) $article->name;
-                if ($gebinde === '') $gebinde = (string) $article->gebinde;
-                if ($vk === null)    $vk      = (float)  $article->vk;
+                if ($name === '')    $name    = (string) $article['name'];
+                if ($gebinde === '') $gebinde = (string) ($article['gebinde'] ?? '');
+                if ($vk === null)    $vk      = (float)  ($article['vk'] ?? 0);
             }
             if ($name === '') {
                 return ToolResult::error('VALIDATION_ERROR', 'name ist erforderlich (oder article_id setzen, damit der Name aus dem Stammartikel uebernommen wird).');

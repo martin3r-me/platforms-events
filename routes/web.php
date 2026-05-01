@@ -15,7 +15,7 @@ use Platform\Events\Livewire\Settings;
 Route::get('/', Dashboard::class)->name('events.dashboard');
 Route::get('/liste', Manage::class)->name('events.manage');
 Route::get('/va/{slug}', Detail::class)->name('events.show');
-Route::get('/artikel', Articles::class)->name('events.articles');
+Route::get('/pakete', Articles::class)->name('events.articles');
 Route::get('/einstellungen', Settings::class)->name('events.settings');
 
 // Contract-Editor Asset-Upload (TinyMCE)

@@ -2,7 +2,7 @@
 
 namespace Platform\Events\Services;
 
-use Platform\Events\Models\ArticleGroup;
+use Platform\Core\Contracts\CatalogArticleCategoryListProviderInterface;
 
 /**
  * Zentrale Validierung fuer Quote-/Order-Positionen beim Anlegen.
@@ -45,7 +45,7 @@ class PositionValidator
         }
 
         if ($allowedGruppen !== null && !in_array($gruppe, $allowedGruppen, true)) {
-            return 'Gruppe "' . $gruppe . '" existiert nicht im Artikelstamm. Bitte aus der Vorschlagsliste wählen oder unter Artikel → Gruppen anlegen.';
+            return 'Gruppe "' . $gruppe . '" existiert nicht im Artikelstamm. Bitte aus der Vorschlagsliste wählen oder im Commerce-Modul anlegen.';
         }
 
         return null;
@@ -66,24 +66,20 @@ class PositionValidator
     }
 
     /**
-     * Alle fuer ein Team zugelassenen Gruppen-Namen: aktive ArticleGroups
-     * (mit Erloeskonten) + frei konfigurierte Bausteine (Text-Zeilen).
+     * Alle fuer ein Team zugelassenen Gruppen-Namen: Artikel-Kategorien
+     * aus dem Commerce-Modul + frei konfigurierte Bausteine (Text-Zeilen).
      *
      * @return array<string>
      */
     public static function allowedGruppen(?int $teamId): array
     {
-        $articleGroups = ArticleGroup::where('team_id', $teamId)
-            ->where('is_active', true)
-            ->orderBy('sort_order')->orderBy('name')
-            ->pluck('name')
-            ->all();
+        $categories = app(CatalogArticleCategoryListProviderInterface::class)->list($teamId);
 
         $bausteine = array_map(
             fn ($b) => (string) ($b['name'] ?? ''),
             SettingsService::bausteine($teamId)
         );
 
-        return array_values(array_unique(array_filter(array_merge($articleGroups, $bausteine))));
+        return array_values(array_unique(array_filter(array_merge($categories, $bausteine))));
     }
 }

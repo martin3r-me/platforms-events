@@ -3,7 +3,6 @@
 namespace Platform\Events\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Symfony\Component\Uid\UuidV7;
@@ -18,7 +17,7 @@ class ArticlePackage extends Model
     protected $table = 'events_article_packages';
 
     protected $fillable = [
-        'uuid', 'user_id', 'team_id', 'article_group_id',
+        'uuid', 'user_id', 'team_id',
         'name', 'description', 'color', 'is_active', 'sort_order',
     ];
 
@@ -37,11 +36,6 @@ class ArticlePackage extends Model
                 $model->uuid = $uuid;
             }
         });
-    }
-
-    public function group(): BelongsTo
-    {
-        return $this->belongsTo(ArticleGroup::class, 'article_group_id');
     }
 
     public function items(): HasMany

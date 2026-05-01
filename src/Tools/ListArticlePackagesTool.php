@@ -18,7 +18,7 @@ class ListArticlePackagesTool implements ToolContract, ToolMetadataContract
     public function getDescription(): string
     {
         return 'GET /events/article-packages - Listet Artikel-Vorlagen (Pakete) eines Teams. '
-            . 'Optional: search (string), article_group_id, is_active (default true), include_items (bool, default false).';
+            . 'Optional: search (string), is_active (default true), include_items (bool, default false).';
     }
 
     public function getSchema(): array
@@ -28,7 +28,6 @@ class ListArticlePackagesTool implements ToolContract, ToolMetadataContract
             'properties' => [
                 'team_id'          => ['type' => 'integer'],
                 'search'           => ['type' => 'string'],
-                'article_group_id' => ['type' => 'integer'],
                 'is_active'        => ['type' => 'boolean'],
                 'include_items'    => ['type' => 'boolean', 'description' => 'Default false. true = Items pro Paket mitliefern.'],
             ],
@@ -55,9 +54,6 @@ class ListArticlePackagesTool implements ToolContract, ToolMetadataContract
             } else {
                 $query->where('is_active', true);
             }
-            if (!empty($arguments['article_group_id'])) {
-                $query->where('article_group_id', (int) $arguments['article_group_id']);
-            }
             if (!empty($arguments['search'])) {
                 $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], (string) $arguments['search']) . '%';
                 $query->where(function ($q) use ($like) {
@@ -79,7 +75,6 @@ class ListArticlePackagesTool implements ToolContract, ToolMetadataContract
                     'name'             => $p->name,
                     'description'      => $p->description,
                     'color'            => $p->color,
-                    'article_group_id' => $p->article_group_id,
                     'is_active'        => (bool) $p->is_active,
                     'sort_order'       => $p->sort_order,
                     'items_count'      => (int) ($p->items_count ?? 0),
