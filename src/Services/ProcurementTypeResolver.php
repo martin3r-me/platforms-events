@@ -2,12 +2,12 @@
 
 namespace Platform\Events\Services;
 
-use Platform\Events\Models\Article;
+use Platform\Core\Contracts\CatalogArticleProcurementMapProviderInterface;
 
 /**
  * Ermittelt den effektiven Beschaffungs-Typ einer Position:
  *  1. Position-Override (procurement_type auf der Position selbst)
- *  2. Artikel aus Stamm (per Name-Match, team-gefiltert)
+ *  2. Artikel aus Katalog (per Name-Match, team-gefiltert)
  *  3. null  = unklassifiziert
  */
 class ProcurementTypeResolver
@@ -38,17 +38,12 @@ class ProcurementTypeResolver
 
     /**
      * Baut eine Name(lower) -> procurement_type-Map fuer ein Team auf.
-     * Zum wiederholten Aufloesen in Schleifen weitergereicht, um N+1 zu vermeiden.
+     * Delegiert an den CatalogArticleProcurementMapProvider.
      */
     public static function buildArticleLookup(int $teamId): array
     {
-        return Article::where('team_id', $teamId)
-            ->select('name', 'procurement_type')
-            ->get()
-            ->mapWithKeys(fn ($a) => [
-                mb_strtolower(trim((string) $a->name)) => $a->procurement_type ?: 'stock',
-            ])
-            ->all();
+        return app(CatalogArticleProcurementMapProviderInterface::class)
+            ->buildMap($teamId);
     }
 
     /**

@@ -5,7 +5,7 @@ namespace Platform\Events\Livewire\Detail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Component;
-use Platform\Events\Models\Article;
+use Platform\Core\Contracts\CatalogArticleResolverInterface;
 use Platform\Events\Models\ArticlePackage;
 use Platform\Events\Models\Event;
 use Platform\Events\Models\FlatRateApplication;
@@ -782,17 +782,17 @@ class Quotes extends Component
     public function pickArticle(int $articleId): void
     {
         $event = $this->event();
-        $article = Article::with('group:id,name')->where('team_id', $event->team_id)->find($articleId);
+        $article = app(CatalogArticleResolverInterface::class)->resolve($articleId, $event->team_id);
         if (!$article) return;
 
-        $this->newPosition['name']     = (string) $article->name;
-        $this->newPosition['gruppe']   = (string) ($article->group?->name ?? $this->newPosition['gruppe'] ?? '');
-        $this->newPosition['inhalt']   = (string) ($article->description ?? $article->offer_text ?? '');
-        $this->newPosition['gebinde']  = (string) ($article->gebinde ?? '');
-        $this->newPosition['ek']       = (float) ($article->ek ?? 0);
-        $this->newPosition['basis_ek'] = (float) ($article->ek ?? 0);
-        $this->newPosition['preis']    = (float) ($article->vk ?? 0);
-        if (!empty($article->mwst)) $this->newPosition['mwst'] = (string) $article->mwst;
+        $this->newPosition['name']     = (string) $article['name'];
+        $this->newPosition['gruppe']   = (string) ($article['category_name'] ?? $this->newPosition['gruppe'] ?? '');
+        $this->newPosition['inhalt']   = (string) ($article['description'] ?? $article['offer_text'] ?? '');
+        $this->newPosition['gebinde']  = (string) ($article['gebinde'] ?? '');
+        $this->newPosition['ek']       = (float) ($article['ek'] ?? 0);
+        $this->newPosition['basis_ek'] = (float) ($article['ek'] ?? 0);
+        $this->newPosition['preis']    = (float) ($article['vk'] ?? 0);
+        if (!empty($article['mwst'])) $this->newPosition['mwst'] = (string) $article['mwst'];
     }
 
     public function addPosition(): void

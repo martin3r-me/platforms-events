@@ -4,7 +4,7 @@ namespace Platform\Events\Services;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
-use Platform\Events\Models\Article;
+use Platform\Core\Contracts\CatalogArticleResolverInterface;
 use Platform\Events\Models\ArticlePackage;
 use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\QuotePosition;
@@ -29,19 +29,21 @@ class ArticlePackageApplicator
         $maxSort = (int) QuotePosition::where('quote_item_id', $target->id)->max('sort_order');
         $created = collect();
 
+        $resolver = app(CatalogArticleResolverInterface::class);
+
         foreach ($package->items as $pi) {
             $article = $pi->article_id
-                ? Article::with('group:id,name')->where('team_id', $teamId)->find($pi->article_id)
+                ? $resolver->resolve($pi->article_id, $teamId)
                 : null;
 
             $payload = [
-                'name'    => (string) ($pi->name ?? $article?->name ?? ''),
-                'gruppe'  => (string) ($pi->gruppe ?? $article?->group?->name ?? ''),
-                'gebinde' => (string) ($pi->gebinde ?? $article?->gebinde ?? ''),
+                'name'    => (string) ($pi->name ?? ($article['name'] ?? '')),
+                'gruppe'  => (string) ($pi->gruppe ?? ($article['category_name'] ?? '')),
+                'gebinde' => (string) ($pi->gebinde ?? ($article['gebinde'] ?? '')),
                 'anz'     => (string) ($pi->quantity ?? 1),
-                'ek'      => (float)  ($article->ek ?? 0),
-                'preis'   => (float)  ($pi->vk ?? $article?->vk ?? 0),
-                'mwst'    => (string) ($article?->mwst ?? '7%'),
+                'ek'      => (float)  ($article['ek'] ?? 0),
+                'preis'   => (float)  ($pi->vk ?? ($article['vk'] ?? 0)),
+                'mwst'    => (string) ($article['mwst'] ?? '7%'),
             ];
             $payload['gesamt'] = (float) ($pi->gesamt ?: ((float) $payload['anz']) * $payload['preis']);
 
