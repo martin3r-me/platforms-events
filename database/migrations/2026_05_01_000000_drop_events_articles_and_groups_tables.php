@@ -21,6 +21,25 @@ return new class extends Migration
             });
         }
 
+        // article_id-FKs auf events_articles loesen (Spalten bleiben erhalten:
+        // sie zeigen jetzt auf Commerce-Article-IDs, ohne harte FK-Constraint).
+        // Reihenfolge ist egal, alle drei muessen vor dem Drop weg.
+        foreach ([
+            'events_article_package_items',
+            'events_invoice_items',
+            'events_pick_items',
+        ] as $tbl) {
+            if (Schema::hasTable($tbl) && Schema::hasColumn($tbl, 'article_id')) {
+                Schema::table($tbl, function (Blueprint $table) {
+                    try {
+                        $table->dropForeign(['article_id']);
+                    } catch (\Throwable $e) {
+                        // Constraint koennte schon weg sein – ok.
+                    }
+                });
+            }
+        }
+
         // Articles depend on groups, drop articles first
         Schema::dropIfExists('events_articles');
         Schema::dropIfExists('events_article_groups');
