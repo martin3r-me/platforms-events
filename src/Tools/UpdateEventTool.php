@@ -7,6 +7,7 @@ use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\Event;
+use Platform\Events\Tools\Concerns\HintsIgnoredFields;
 use Platform\Events\Tools\Concerns\RecommendsMissingFields;
 use Platform\Events\Tools\Concerns\ValidatesMrData;
 
@@ -15,6 +16,7 @@ use Platform\Events\Tools\Concerns\ValidatesMrData;
  */
 class UpdateEventTool implements ToolContract, ToolMetadataContract
 {
+    use HintsIgnoredFields;
     use RecommendsMissingFields;
     use ValidatesMrData;
 
@@ -193,6 +195,10 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
             ];
             if (!empty($ignored)) {
                 $response['allowed_top_level_fields'] = array_values(array_unique($known));
+                $hints = $this->hintsForIgnored($ignored);
+                if (!empty($hints)) {
+                    $response['ignored_hints'] = $hints;
+                }
             }
 
             return ToolResult::success($response);
