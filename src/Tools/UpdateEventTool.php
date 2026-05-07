@@ -8,6 +8,7 @@ use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\Event;
 use Platform\Events\Tools\Concerns\RecommendsMissingFields;
+use Platform\Events\Tools\Concerns\ValidatesMrData;
 
 /**
  * Aktualisiert ein Event. Nur übergebene Felder werden geändert.
@@ -15,6 +16,7 @@ use Platform\Events\Tools\Concerns\RecommendsMissingFields;
 class UpdateEventTool implements ToolContract, ToolMetadataContract
 {
     use RecommendsMissingFields;
+    use ValidatesMrData;
 
     protected const UPDATABLE_STRING_FIELDS = [
         'name', 'customer', 'group', 'location', 'status', 'event_type',
@@ -52,7 +54,10 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
     {
         return 'PATCH /events/{id} - Aktualisiert ein Event. Identifikation: event_id ODER uuid ODER event_number. '
             . 'Alle übrigen Felder aus dem Event-Model sind optional (siehe events.event.GET für verfügbare Felder). '
-            . 'Nur übergebene Werte werden geändert. mr_data wird komplett ersetzt (merge bitte clientseitig).';
+            . 'Nur übergebene Werte werden geändert. mr_data wird komplett ersetzt (merge bitte clientseitig). '
+            . 'mr_data ist STRIKT validiert: Keys müssen dem Label aus Einstellungen → Management Report entsprechen '
+            . '(z.B. "Speisenform") oder der kanonischen ID ("mrf_<id>"); Werte müssen aus den konfigurierten '
+            . 'Optionen stammen. Unbekannte Keys oder Werte führen zu VALIDATION_ERROR mit Liste der erlaubten Werte.';
     }
 
     public function getSchema(): array
@@ -76,7 +81,7 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
                 'event_id'             => ['type' => 'integer'],
                 'uuid'                 => ['type' => 'string'],
                 'event_number'         => ['type' => 'string'],
-                'mr_data'              => ['type' => 'object', 'description' => 'Management-Report als Key/Value-Map (ersetzt den gesamten Inhalt).'],
+                'mr_data'              => ['type' => 'object', 'description' => 'Management-Report als Key/Value-Map (ersetzt den gesamten Inhalt). STRIKT: Keys = Feld-Label aus Einstellungen → MR (z.B. "Speisenform") oder "mrf_<id>"; Werte nur aus konfigurierten Optionen.'],
                 'forwarded'            => ['type' => 'boolean'],
                 'is_highlight'         => ['type' => 'boolean', 'description' => '[Highlight] Veranstaltung als „besonders sehenswert" markieren (Foto-Termin, vor Ort sein).'],
             ], $stringFields, $dateFields, $fkFields),
@@ -146,7 +151,15 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
                 }
             }
             if (array_key_exists('mr_data', $arguments)) {
-                $update['mr_data'] = is_array($arguments['mr_data']) ? $arguments['mr_data'] : null;
+                if (!is_array($arguments['mr_data'])) {
+                    $update['mr_data'] = null;
+                } else {
+                    $validation = $this->normalizeAndValidateMrData($arguments['mr_data'], (int) $event->team_id);
+                    if ($validation['ok'] === false) {
+                        return ToolResult::error('VALIDATION_ERROR', $validation['message']);
+                    }
+                    $update['mr_data'] = $validation['normalized'];
+                }
             }
 
             if (empty($update)) {
@@ -163,7 +176,7 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
 
             $event->update($update);
 
-            return ToolResult::success([
+            $response = [
                 'id'             => $event->id,
                 'uuid'           => $event->uuid,
                 'slug'           => $event->slug,
@@ -177,7 +190,12 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
                 'empty_recommended_fields'        => $this->emptyRecommendedFields($event),
                 'empty_recommended_field_options' => $this->recommendedFieldOptions($event->team_id),
                 'message'        => "Event '{$event->name}' erfolgreich aktualisiert.",
-            ]);
+            ];
+            if (!empty($ignored)) {
+                $response['allowed_top_level_fields'] = array_values(array_unique($known));
+            }
+
+            return ToolResult::success($response);
         } catch (\Throwable $e) {
             return ToolResult::error('EXECUTION_ERROR', 'Fehler beim Aktualisieren des Events: ' . $e->getMessage());
         }

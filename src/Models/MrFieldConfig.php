@@ -64,6 +64,7 @@ class MrFieldConfig extends Model
             ['group_label' => 'Logistik & Personal', 'label' => 'Getränkelogistik',      'options' => ['fehlende Eingabe', 'in Bearbeitung', 'OK', 'abgeschlossen', 'nicht benötigt']],
             ['group_label' => 'Logistik & Personal', 'label' => 'Personaldienstleister', 'options' => ['fehlende Eingabe', 'in Bearbeitung', 'OK', 'abgeschlossen', 'nicht benötigt']],
             ['group_label' => 'Logistik & Personal', 'label' => 'Küchenpersonal',        'options' => ['fehlende Eingabe', 'Bedarf', 'kein Bedarf', 'OK', 'abgeschlossen']],
+            ['group_label' => 'Produktion',          'label' => 'Speisenform',           'options' => []],
             ['group_label' => 'Produktion',          'label' => 'Küchenproduktion',      'options' => ['fehlende Eingabe', 'in Bearbeitung', 'OK', 'abgeschlossen', 'nicht benötigt']],
             ['group_label' => 'Produktion',          'label' => 'Ort Küchenproduktion',  'options' => ['fehlende Eingabe', 'in Klärung', 'bestätigt', 'nicht benötigt']],
             ['group_label' => 'Rechnungen',          'label' => 'A-Conto (Location)',    'options' => ['noch nicht erstellt', 'erstellt', 'versandt', 'bezahlt', 'keine Rechnung']],

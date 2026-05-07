@@ -8,6 +8,7 @@ use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Services\EventFactory;
 use Platform\Events\Tools\Concerns\RecommendsMissingFields;
+use Platform\Events\Tools\Concerns\ValidatesMrData;
 
 /**
  * Erstellt ein neues Event. Pflicht: name. Empfohlen: start_date + end_date.
@@ -18,6 +19,29 @@ use Platform\Events\Tools\Concerns\RecommendsMissingFields;
 class CreateEventTool implements ToolContract, ToolMetadataContract
 {
     use RecommendsMissingFields;
+    use ValidatesMrData;
+
+    /** Top-Level-Felder, die das Tool akzeptiert (fuer ignored_fields-Diff). */
+    protected const KNOWN_FIELDS = [
+        'name', 'team_id', 'auto_create_days', 'pax', 'default_pax',
+        'customer', 'group', 'location', 'start_date', 'end_date', 'event_type', 'status',
+        'organizer_contact', 'organizer_contact_onsite', 'organizer_for_whom',
+        'orderer_company', 'orderer_contact', 'orderer_via',
+        'invoice_to', 'invoice_contact', 'invoice_date_type',
+        'responsible', 'responsible_onsite', 'cost_center', 'cost_carrier', 'quote_price_mode',
+        'sign_left', 'sign_right',
+        'follow_up_date', 'follow_up_note',
+        'delivery_address', 'delivery_note',
+        'inquiry_date', 'inquiry_time', 'potential',
+        'forwarding_date', 'forwarding_time', 'forwarded',
+        'is_highlight',
+        'mr_data',
+        'crm_company_id',
+        'organizer_crm_contact_id', 'organizer_onsite_crm_contact_id',
+        'orderer_crm_company_id', 'orderer_crm_contact_id',
+        'invoice_crm_company_id', 'invoice_crm_contact_id',
+        'delivery_address_crm_company_id', 'delivery_location_id',
+    ];
 
     /** Strikt erlaubte Werte fuer event.potential (LLM-Schutz vor Freitext). */
     public const POTENTIAL_OPTIONS = [
@@ -48,7 +72,8 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
             . 'genau eine der drei Quellen befuellen, abhaengig vom Lieferadress-Typ; '
             . '[Eingang] inquiry_date, inquiry_time, potential; '
             . '[Weiterleitung] forwarded, forwarding_date, forwarding_time; '
-            . '[Management Report] mr_data (object); '
+            . '[Management Report] mr_data (object) – STRIKT validiert gegen Einstellungen → Management Report: Keys = Label '
+            . '(z.B. "Speisenform") oder mrf_<id>, Werte aus konfigurierten Optionen, sonst VALIDATION_ERROR; '
             . '[Auto-Days] auto_create_days (boolean, default true) erzeugt EventDays aus start_date..end_date; '
             . 'pax / default_pax (int|string) wird in pers_von/pers_bis aller Tage gesetzt.';
     }
@@ -103,7 +128,7 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 'sign_right'         => ['type' => 'string', 'description' => '[Zustaendigkeit] Rechte Unterschrift.'],
 
                 // [Management Report]
-                'mr_data' => ['type' => 'object', 'description' => '[Management Report] Werte als Key/Value-Map.'],
+                'mr_data' => ['type' => 'object', 'description' => '[Management Report] Key/Value-Map. STRIKT: Keys = Feld-Label aus Einstellungen → MR (z.B. "Speisenform") oder kanonische ID "mrf_<id>"; Werte ausschliesslich aus den dort konfigurierten Optionen. Andere Keys/Werte → VALIDATION_ERROR.'],
 
                 // [Follow-Up]
                 'follow_up_date' => ['type' => 'string', 'description' => '[Follow-Up] YYYY-MM-DD.'],
@@ -214,7 +239,11 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 $data['is_highlight'] = (bool) $arguments['is_highlight'];
             }
             if (array_key_exists('mr_data', $arguments) && is_array($arguments['mr_data'])) {
-                $data['mr_data'] = $arguments['mr_data'];
+                $validation = $this->normalizeAndValidateMrData($arguments['mr_data'], (int) $teamId);
+                if ($validation['ok'] === false) {
+                    return ToolResult::error('VALIDATION_ERROR', $validation['message']);
+                }
+                $data['mr_data'] = $validation['normalized'];
             }
 
             // pax / default_pax: KEIN Event-Feld, wird in EventFactory extrahiert und
@@ -234,7 +263,9 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
 
             $event->refresh()->load('days');
 
-            return ToolResult::success([
+            $ignored = array_values(array_diff(array_keys($arguments), self::KNOWN_FIELDS));
+
+            $response = [
                 'id'             => $event->id,
                 'uuid'           => $event->uuid,
                 'slug'           => $event->slug,
@@ -245,10 +276,16 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 'end_date'       => $event->end_date?->toDateString(),
                 'team_id'        => $event->team_id,
                 'days_created'   => $event->days->count(),
+                'ignored_fields' => $ignored,
                 'empty_recommended_fields'         => $this->emptyRecommendedFields($event),
                 'empty_recommended_field_options'  => $this->recommendedFieldOptions($event->team_id),
                 'message'        => "Event '{$event->name}' erfolgreich erstellt (#{$event->event_number}).",
-            ]);
+            ];
+            if (!empty($ignored)) {
+                $response['allowed_top_level_fields'] = self::KNOWN_FIELDS;
+            }
+
+            return ToolResult::success($response);
         } catch (\Throwable $e) {
             return ToolResult::error('EXECUTION_ERROR', 'Fehler beim Erstellen des Events: ' . $e->getMessage());
         }
