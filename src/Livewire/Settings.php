@@ -60,9 +60,13 @@ class Settings extends Component
     public array $mrForm = [
         'group_label' => '',
         'label'       => '',
-        'options'     => '', // textarea, eine option pro Zeile
+        'options'     => [], // [['label' => '...', 'color' => 'red|yellow|green|gray'], ...]
         'is_active'   => true,
     ];
+    public string $mrNewOptionLabel = '';
+
+    /** Erlaubte Farben fuer MR-Optionen (passt zur Detail-Cockpit-Anzeige). */
+    public const MR_OPTION_COLORS = ['red', 'yellow', 'green', 'gray'];
 
     // ========== Pauschal-Kalkulations-Regeln ==========
     public bool $flatRateModal = false;
@@ -226,24 +230,85 @@ class Settings extends Component
     public function openMrModal(?int $id = null): void
     {
         $this->mrEditingId = $id;
+        $this->mrNewOptionLabel = '';
         if ($id) {
             $cfg = MrFieldConfig::where('team_id', $this->teamId())->find($id);
             if (!$cfg) return;
             $this->mrForm = [
                 'group_label' => $cfg->group_label,
                 'label'       => $cfg->label,
-                'options'     => collect($cfg->options ?? [])->pluck('label')->implode("\n"),
+                'options'     => $this->normalizeMrOptions($cfg->options ?? []),
                 'is_active'   => (bool) $cfg->is_active,
             ];
         } else {
+            $defaults = ['fehlende Eingabe', 'in Bearbeitung', 'OK', 'abgeschlossen', 'nicht benötigt'];
+            $total = count($defaults);
+            $opts = [];
+            foreach ($defaults as $i => $l) {
+                $opts[] = ['label' => $l, 'color' => MrFieldConfig::deriveOptionColor($i, $total, $l)];
+            }
             $this->mrForm = [
                 'group_label' => '',
                 'label'       => '',
-                'options'     => "fehlende Eingabe\nin Bearbeitung\nOK\nabgeschlossen\nnicht benötigt",
+                'options'     => $opts,
                 'is_active'   => true,
             ];
         }
         $this->mrModal = true;
+    }
+
+    /** @param  array<int,mixed>  $options */
+    protected function normalizeMrOptions(array $options): array
+    {
+        $out = [];
+        foreach ($options as $o) {
+            if (is_array($o)) {
+                $l = trim((string) ($o['label'] ?? ''));
+                $c = in_array($o['color'] ?? '', self::MR_OPTION_COLORS, true) ? $o['color'] : 'gray';
+            } else {
+                $l = trim((string) $o);
+                $c = 'gray';
+            }
+            if ($l === '') continue;
+            $out[] = ['label' => $l, 'color' => $c];
+        }
+        return $out;
+    }
+
+    public function addMrOption(): void
+    {
+        $label = trim((string) $this->mrNewOptionLabel);
+        if ($label === '') return;
+        $i = count($this->mrForm['options']);
+        $this->mrForm['options'][] = [
+            'label' => $label,
+            'color' => MrFieldConfig::deriveOptionColor($i, $i + 1, $label),
+        ];
+        $this->mrNewOptionLabel = '';
+    }
+
+    public function removeMrOption(int $i): void
+    {
+        if (!isset($this->mrForm['options'][$i])) return;
+        unset($this->mrForm['options'][$i]);
+        $this->mrForm['options'] = array_values($this->mrForm['options']);
+    }
+
+    public function setMrOptionColor(int $i, string $color): void
+    {
+        if (!in_array($color, self::MR_OPTION_COLORS, true)) return;
+        if (!isset($this->mrForm['options'][$i])) return;
+        $this->mrForm['options'][$i]['color'] = $color;
+    }
+
+    public function moveMrOption(int $i, int $direction): void
+    {
+        if ($direction !== -1 && $direction !== 1) return;
+        $arr = $this->mrForm['options'];
+        $j = $i + $direction;
+        if (!isset($arr[$i]) || !isset($arr[$j])) return;
+        [$arr[$i], $arr[$j]] = [$arr[$j], $arr[$i]];
+        $this->mrForm['options'] = $arr;
     }
 
     public function saveMrField(): void
@@ -255,12 +320,7 @@ class Settings extends Component
         $group = trim((string) $this->mrForm['group_label']);
         if ($label === '' || $group === '') return;
 
-        $rawOptions = array_values(array_filter(array_map('trim', preg_split('/\r?\n/', (string) $this->mrForm['options']))));
-        $total = count($rawOptions);
-        $options = [];
-        foreach ($rawOptions as $i => $opt) {
-            $options[] = ['label' => $opt, 'color' => MrFieldConfig::deriveOptionColor($i, $total, $opt)];
-        }
+        $options = $this->normalizeMrOptions($this->mrForm['options'] ?? []);
 
         if ($this->mrEditingId) {
             $cfg = MrFieldConfig::where('team_id', $teamId)->find($this->mrEditingId);

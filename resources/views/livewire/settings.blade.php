@@ -510,10 +510,60 @@
                                class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs">
                     </div>
                     <div>
-                        <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Optionen (eine pro Zeile)</label>
-                        <textarea wire:model="mrForm.options" rows="6"
-                                  class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono"></textarea>
-                        <p class="text-[0.56rem] text-[var(--ui-muted)] mt-1">Farben werden automatisch vergeben: erste Option rot, letzte grün, „nicht benötigt"/„keine Rechnung" grau, dazwischen gelb.</p>
+                        <label class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] block mb-1">Optionen</label>
+                        @php
+                            $colorPalette = [
+                                'red'    => ['bg' => 'bg-red-400',    'label' => 'Rot'],
+                                'yellow' => ['bg' => 'bg-yellow-400', 'label' => 'Gelb'],
+                                'green'  => ['bg' => 'bg-green-500',  'label' => 'Grün'],
+                                'gray'   => ['bg' => 'bg-slate-400',  'label' => 'Grau'],
+                            ];
+                            $optsCount = count($mrForm['options'] ?? []);
+                        @endphp
+                        <div class="space-y-1.5 border border-[var(--ui-border)] rounded-md p-2 bg-[var(--ui-muted-5)]">
+                            @forelse($mrForm['options'] ?? [] as $i => $opt)
+                                <div class="flex items-center gap-2" wire:key="mr-opt-{{ $i }}">
+                                    <div class="flex items-center gap-1 flex-shrink-0">
+                                        @foreach($colorPalette as $colorKey => $meta)
+                                            <button type="button" wire:click="setMrOptionColor({{ $i }}, '{{ $colorKey }}')"
+                                                    title="{{ $meta['label'] }}"
+                                                    class="w-4 h-4 rounded-full {{ $meta['bg'] }} border-2 {{ ($opt['color'] ?? 'gray') === $colorKey ? 'border-[var(--ui-secondary)]' : 'border-transparent hover:border-[var(--ui-muted)]' }} transition-colors">
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                    <input wire:model="mrForm.options.{{ $i }}.label" type="text"
+                                           class="flex-1 min-w-0 border border-[var(--ui-border)] rounded-md px-2 py-1 text-xs bg-white">
+                                    <div class="flex items-center gap-0.5 flex-shrink-0">
+                                        <button type="button" wire:click="moveMrOption({{ $i }}, -1)" @disabled($i === 0)
+                                                title="Nach oben"
+                                                class="text-[var(--ui-muted)] hover:text-[var(--ui-primary)] p-1 disabled:opacity-30 disabled:cursor-not-allowed">
+                                            @svg('heroicon-o-chevron-up', 'w-3 h-3')
+                                        </button>
+                                        <button type="button" wire:click="moveMrOption({{ $i }}, 1)" @disabled($i === $optsCount - 1)
+                                                title="Nach unten"
+                                                class="text-[var(--ui-muted)] hover:text-[var(--ui-primary)] p-1 disabled:opacity-30 disabled:cursor-not-allowed">
+                                            @svg('heroicon-o-chevron-down', 'w-3 h-3')
+                                        </button>
+                                        <button type="button" wire:click="removeMrOption({{ $i }})"
+                                                title="Entfernen"
+                                                class="text-[var(--ui-muted)] hover:text-red-600 p-1 ml-0.5">
+                                            @svg('heroicon-o-trash', 'w-3 h-3')
+                                        </button>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="text-[0.62rem] text-[var(--ui-muted)] py-2 text-center italic">Noch keine Optionen.</div>
+                            @endforelse
+                            <div class="flex items-center gap-2 pt-1.5 border-t border-[var(--ui-border)]/40">
+                                <input wire:model="mrNewOptionLabel" wire:keydown.enter.prevent="addMrOption" type="text"
+                                       placeholder="Neue Option hinzufügen …"
+                                       class="flex-1 border border-[var(--ui-border)] rounded-md px-2 py-1 text-xs bg-white">
+                                <x-ui-button type="button" variant="primary" size="sm" wire:click="addMrOption">
+                                    @svg('heroicon-o-plus', 'w-3 h-3 inline') Hinzufügen
+                                </x-ui-button>
+                            </div>
+                        </div>
+                        <p class="text-[0.56rem] text-[var(--ui-muted)] mt-1">Farb-Kugeln klicken, um die Farbe der Option im Status-Cockpit festzulegen (rot · gelb · grün · grau). Reihenfolge per ↑/↓ aendern.</p>
                     </div>
                     <label class="flex items-center gap-2 text-[0.68rem]">
                         <input type="checkbox" wire:model="mrForm.is_active">
