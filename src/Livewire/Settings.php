@@ -147,6 +147,32 @@ class Settings extends Component
     public function addBeverageMode(): void          { $this->pushSimple('beverageModes', 'newBeverageMode'); SettingsService::setBeverageModes($this->teamId(), $this->beverageModes); }
     public function removeBeverageMode(int $i): void { $this->removeAt('beverageModes', $i); SettingsService::setBeverageModes($this->teamId(), $this->beverageModes); }
 
+    /** Livewire-Property -> SettingsService::set*-Methode (fuer Reorder der Simple-Listen). */
+    protected const SIMPLE_LIST_SETTERS = [
+        'costCenters'          => 'setCostCenters',
+        'costCarriers'         => 'setCostCarriers',
+        'quoteStatuses'        => 'setQuoteStatuses',
+        'orderStatuses'        => 'setOrderStatuses',
+        'eventTypes'           => 'setEventTypes',
+        'bestuhlungOptions'    => 'setBestuhlungOptions',
+        'scheduleDescriptions' => 'setScheduleDescriptions',
+        'dayTypes'             => 'setDayTypes',
+        'beverageModes'        => 'setBeverageModes',
+    ];
+
+    public function moveSimpleItem(string $list, int $i, int $direction): void
+    {
+        if (!isset(self::SIMPLE_LIST_SETTERS[$list])) return;
+        if ($direction !== -1 && $direction !== 1) return;
+        $arr = $this->{$list};
+        $j = $i + $direction;
+        if (!isset($arr[$i]) || !isset($arr[$j])) return;
+        [$arr[$i], $arr[$j]] = [$arr[$j], $arr[$i]];
+        $this->{$list} = $arr;
+        $setter = self::SIMPLE_LIST_SETTERS[$list];
+        SettingsService::{$setter}($this->teamId(), $arr);
+    }
+
     public function saveOrderNumberSchema(): void
     {
         SettingsService::setOrderNumberSchema($this->teamId(), $this->orderNumberSchema);

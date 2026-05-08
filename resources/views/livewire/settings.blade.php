@@ -53,15 +53,15 @@
         {{-- Konfiguration der einfachen Listen-Sektionen --}}
         @php
             $simpleLists = [
-                'cost_centers'  => ['title' => 'Kostenstellen',   'subtitle' => 'Werden im Event-Basis-Tab und in Rechnungen als Auswahl angezeigt.', 'list' => $costCenters,       'new' => 'newCostCenter',    'add' => 'addCostCenter',    'remove' => 'removeCostCenter',    'placeholder' => 'z.B. 4200-Hochzeiten'],
-                'cost_carriers' => ['title' => 'Kostenträger',    'subtitle' => 'Optional: zusätzliche Auswahl im Event-Basis-Tab.',                  'list' => $costCarriers,      'new' => 'newCostCarrier',   'add' => 'addCostCarrier',   'remove' => 'removeCostCarrier',   'placeholder' => 'z.B. Ref-2026'],
-                'quote_status'  => ['title' => 'Angebots-Status', 'subtitle' => 'Wird im Quote-Detail als Dropdown angezeigt.',                      'list' => $quoteStatuses,     'new' => 'newQuoteStatus',   'add' => 'addQuoteStatus',   'remove' => 'removeQuoteStatus',   'placeholder' => 'z.B. Versandt'],
-                'order_status'  => ['title' => 'Bestell-Status',  'subtitle' => 'Wird im Bestell-Detail als Dropdown angezeigt.',                   'list' => $orderStatuses,     'new' => 'newOrderStatus',   'add' => 'addOrderStatus',   'remove' => 'removeOrderStatus',   'placeholder' => 'z.B. In Arbeit'],
-                'event_types'   => ['title' => 'Anlass-Typen',    'subtitle' => 'Wird im Event-Basis-Tab im Anlass-Feld als Auswahl angezeigt.',     'list' => $eventTypes,        'new' => 'newEventType',     'add' => 'addEventType',     'remove' => 'removeEventType',     'placeholder' => 'z.B. Teamevent'],
-                'bestuhlung'    => ['title' => 'Bestuhlungs-Arten','subtitle' => 'Wird im Raumbuchungs-Modal als Dropdown angezeigt.',                'list' => $bestuhlungOptions, 'new' => 'newBestuhlung',    'add' => 'addBestuhlung',    'remove' => 'removeBestuhlung',    'placeholder' => 'z.B. Bankett'],
-                'schedule_desc' => ['title' => 'Ablaufplan-Beschreibungen','subtitle' => 'Vorschlaege im Beschreibung-Feld des Ablaufplans. Freitext bleibt weiterhin moeglich.', 'list' => $scheduleDescriptions, 'new' => 'newScheduleDescription', 'add' => 'addScheduleDescription', 'remove' => 'removeScheduleDescription', 'placeholder' => 'z.B. Empfang'],
-                'day_types'     => ['title' => 'Tages-Typen',     'subtitle' => 'Auswahl im Tag-Modal (Veranstaltungstag, Aufbautag, Abbautag, Rüsttag, …).', 'list' => $dayTypes, 'new' => 'newDayType', 'add' => 'addDayType', 'remove' => 'removeDayType', 'placeholder' => 'z.B. Probentag'],
-                'beverage_modes'=> ['title' => 'Getränke-Modi',   'subtitle' => 'Auswahl am Vorgang/an Positionen für Getränke. „Auf Anfrage" (oder Varianten davon) blendet im Angebot den Preis aus.', 'list' => $beverageModes, 'new' => 'newBeverageMode', 'add' => 'addBeverageMode', 'remove' => 'removeBeverageMode', 'placeholder' => 'z.B. Open Bar'],
+                'cost_centers'  => ['title' => 'Kostenstellen',   'subtitle' => 'Werden im Event-Basis-Tab und in Rechnungen als Auswahl angezeigt.', 'list' => $costCenters,       'prop' => 'costCenters',          'new' => 'newCostCenter',    'add' => 'addCostCenter',    'remove' => 'removeCostCenter',    'placeholder' => 'z.B. 4200-Hochzeiten'],
+                'cost_carriers' => ['title' => 'Kostenträger',    'subtitle' => 'Optional: zusätzliche Auswahl im Event-Basis-Tab.',                  'list' => $costCarriers,      'prop' => 'costCarriers',         'new' => 'newCostCarrier',   'add' => 'addCostCarrier',   'remove' => 'removeCostCarrier',   'placeholder' => 'z.B. Ref-2026'],
+                'quote_status'  => ['title' => 'Angebots-Status', 'subtitle' => 'Wird im Quote-Detail als Dropdown angezeigt.',                      'list' => $quoteStatuses,     'prop' => 'quoteStatuses',        'new' => 'newQuoteStatus',   'add' => 'addQuoteStatus',   'remove' => 'removeQuoteStatus',   'placeholder' => 'z.B. Versandt'],
+                'order_status'  => ['title' => 'Bestell-Status',  'subtitle' => 'Wird im Bestell-Detail als Dropdown angezeigt.',                   'list' => $orderStatuses,     'prop' => 'orderStatuses',        'new' => 'newOrderStatus',   'add' => 'addOrderStatus',   'remove' => 'removeOrderStatus',   'placeholder' => 'z.B. In Arbeit'],
+                'event_types'   => ['title' => 'Anlass-Typen',    'subtitle' => 'Wird im Event-Basis-Tab im Anlass-Feld als Auswahl angezeigt.',     'list' => $eventTypes,        'prop' => 'eventTypes',           'new' => 'newEventType',     'add' => 'addEventType',     'remove' => 'removeEventType',     'placeholder' => 'z.B. Teamevent'],
+                'bestuhlung'    => ['title' => 'Bestuhlungs-Arten','subtitle' => 'Wird im Raumbuchungs-Modal als Dropdown angezeigt.',                'list' => $bestuhlungOptions, 'prop' => 'bestuhlungOptions',    'new' => 'newBestuhlung',    'add' => 'addBestuhlung',    'remove' => 'removeBestuhlung',    'placeholder' => 'z.B. Bankett'],
+                'schedule_desc' => ['title' => 'Ablaufplan-Beschreibungen','subtitle' => 'Vorschlaege im Beschreibung-Feld des Ablaufplans. Freitext bleibt weiterhin moeglich.', 'list' => $scheduleDescriptions, 'prop' => 'scheduleDescriptions', 'new' => 'newScheduleDescription', 'add' => 'addScheduleDescription', 'remove' => 'removeScheduleDescription', 'placeholder' => 'z.B. Empfang'],
+                'day_types'     => ['title' => 'Tages-Typen',     'subtitle' => 'Auswahl im Tag-Modal (Veranstaltungstag, Aufbautag, Abbautag, Rüsttag, …).', 'list' => $dayTypes, 'prop' => 'dayTypes', 'new' => 'newDayType', 'add' => 'addDayType', 'remove' => 'removeDayType', 'placeholder' => 'z.B. Probentag'],
+                'beverage_modes'=> ['title' => 'Getränke-Modi',   'subtitle' => 'Auswahl am Vorgang/an Positionen für Getränke. „Auf Anfrage" (oder Varianten davon) blendet im Angebot den Preis aus.', 'list' => $beverageModes, 'prop' => 'beverageModes', 'new' => 'newBeverageMode', 'add' => 'addBeverageMode', 'remove' => 'removeBeverageMode', 'placeholder' => 'z.B. Open Bar'],
             ];
         @endphp
 
@@ -83,13 +83,29 @@
                             </div>
                         @else
                             <ul class="divide-y divide-[var(--ui-border)]/40">
+                                @php $lastIdx = count($cfg['list']) - 1; @endphp
                                 @foreach($cfg['list'] as $i => $item)
-                                    <li class="p-3 flex items-center justify-between">
-                                        <span class="text-xs text-[var(--ui-secondary)]">{{ $item }}</span>
-                                        <button wire:click="{{ $cfg['remove'] }}({{ $i }})" wire:confirm="Eintrag entfernen?"
-                                                class="text-[var(--ui-muted)] hover:text-red-600 p-1">
-                                            @svg('heroicon-o-trash', 'w-3.5 h-3.5')
-                                        </button>
+                                    <li class="p-3 flex items-center justify-between gap-2">
+                                        <span class="text-xs text-[var(--ui-secondary)] flex-1">{{ $item }}</span>
+                                        <div class="flex items-center gap-0.5">
+                                            <button wire:click="moveSimpleItem('{{ $cfg['prop'] }}', {{ $i }}, -1)"
+                                                    @disabled($i === 0)
+                                                    title="Nach oben"
+                                                    class="text-[var(--ui-muted)] hover:text-[var(--ui-primary)] p-1 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-[var(--ui-muted)]">
+                                                @svg('heroicon-o-chevron-up', 'w-3.5 h-3.5')
+                                            </button>
+                                            <button wire:click="moveSimpleItem('{{ $cfg['prop'] }}', {{ $i }}, 1)"
+                                                    @disabled($i === $lastIdx)
+                                                    title="Nach unten"
+                                                    class="text-[var(--ui-muted)] hover:text-[var(--ui-primary)] p-1 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-[var(--ui-muted)]">
+                                                @svg('heroicon-o-chevron-down', 'w-3.5 h-3.5')
+                                            </button>
+                                            <button wire:click="{{ $cfg['remove'] }}({{ $i }})" wire:confirm="Eintrag entfernen?"
+                                                    title="Entfernen"
+                                                    class="text-[var(--ui-muted)] hover:text-red-600 p-1 ml-1">
+                                                @svg('heroicon-o-trash', 'w-3.5 h-3.5')
+                                            </button>
+                                        </div>
                                     </li>
                                 @endforeach
                             </ul>
