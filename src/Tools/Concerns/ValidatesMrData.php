@@ -76,17 +76,24 @@ trait ValidatesMrData
             $allowedByLabel[$keyToLabel[$k]] = $opts;
         }
 
+        $allowedKeysList = array_keys($allowedByLabel);
+        $allowedKeysStr  = empty($allowedKeysList)
+            ? '<noch keine Felder konfiguriert>'
+            : implode(' | ', array_map(fn ($v) => '"' . $v . '"', $allowedKeysList));
+
         $msgParts = [];
         if (!empty($unknownKeys)) {
-            $msgParts[] = 'Unbekannte mr_data-Felder: "' . implode('", "', $unknownKeys) . '". '
-                . 'Erlaubt sind nur die in Einstellungen → Management Report konfigurierten Felder: "'
-                . implode('", "', array_keys($allowedByLabel)) . '".';
+            foreach ($unknownKeys as $uk) {
+                $msgParts[] = 'mr_data-Feld "' . $uk . '" ist nicht erlaubt. Erlaubt: '
+                    . $allowedKeysStr . '. Erweiterbar in Einstellungen → Management Report.';
+            }
         }
         foreach ($invalidValues as $label => $info) {
             $allowedStr = empty($info['allowed'])
-                ? '<keine Optionen konfiguriert – bitte erst in Einstellungen anlegen>'
-                : '"' . implode('", "', $info['allowed']) . '"';
-            $msgParts[] = "Feld '{$label}': Wert '{$info['received']}' nicht erlaubt. Erlaubte Optionen: {$allowedStr}.";
+                ? '<keine Optionen konfiguriert>'
+                : implode(' | ', array_map(fn ($v) => '"' . $v . '"', $info['allowed']));
+            $msgParts[] = 'mr_data["' . $label . '"] = "' . $info['received'] . '" ist nicht erlaubt. Erlaubt: '
+                . $allowedStr . '. Erweiterbar in Einstellungen → Management Report.';
         }
 
         return [

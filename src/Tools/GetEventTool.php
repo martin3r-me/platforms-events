@@ -7,6 +7,7 @@ use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\Event;
+use Platform\Events\Models\MrFieldConfig;
 use Platform\Events\Tools\Concerns\HydratesEventReferences;
 use Platform\Events\Tools\Concerns\RecommendsMissingFields;
 
@@ -155,6 +156,18 @@ class GetEventTool implements ToolContract, ToolMetadataContract
                 'delivery_address_crm_company_id' => $event->delivery_address_crm_company_id,
                 'delivery_location_id'            => $event->delivery_location_id,
             ];
+
+            // mr_data zusaetzlich mit Klartext-Labels: mrf_<id>-Keys -> MR-Feld-Label.
+            $mrConfigsForLabels = MrFieldConfig::where('team_id', $event->team_id)->get(['id', 'label']);
+            $mrKeyToLabel = [];
+            foreach ($mrConfigsForLabels as $cfg) {
+                $mrKeyToLabel['mrf_' . $cfg->id] = $cfg->label;
+            }
+            $mrDataLabels = [];
+            foreach ((array) ($event->mr_data ?? []) as $k => $v) {
+                $mrDataLabels[$mrKeyToLabel[$k] ?? $k] = $v;
+            }
+            $payload['mr_data_labels'] = $mrDataLabels;
 
             // Hydratisierte Refs ({id, name, ...} statt nur ID).
             $payload = array_merge($payload, $this->hydrateEventReferences($event));

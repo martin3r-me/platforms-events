@@ -166,6 +166,9 @@ class EventsServiceProvider extends ServiceProvider
             $registry->register(new \Platform\Events\Tools\ListPickListsTool());
             $registry->register(new \Platform\Events\Tools\ListFeedbackEntriesTool());
             $registry->register(new \Platform\Events\Tools\ListEmailLogsTool());
+
+            // --- Settings / Management Report ---
+            $registry->register(new \Platform\Events\Tools\GetMrFieldConfigTool());
         } catch (\Throwable $e) {
             // Silent fail – Tool-Registry ggf. noch nicht verfügbar
         }

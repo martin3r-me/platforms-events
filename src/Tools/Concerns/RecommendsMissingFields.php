@@ -3,6 +3,7 @@
 namespace Platform\Events\Tools\Concerns;
 
 use Platform\Events\Models\Event;
+use Platform\Events\Models\MrFieldConfig;
 use Platform\Events\Services\SettingsService;
 
 /**
@@ -125,6 +126,36 @@ trait RecommendsMissingFields
             'values' => ['netto', 'brutto'],
             'strict' => true,
             'note'   => 'Hardcoded.',
+        ];
+
+        // mr_data – verschachtelt: pro Feld-Label die in den Settings konfigurierten Optionen.
+        $mrConfigs = $teamId
+            ? MrFieldConfig::where('team_id', $teamId)
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get()
+            : collect();
+
+        $mrFields = [];
+        foreach ($mrConfigs as $cfg) {
+            $values = array_values(array_map(
+                fn ($o) => is_array($o) ? ($o['label'] ?? '') : (string) $o,
+                $cfg->options ?? []
+            ));
+            $mrFields[$cfg->label] = [
+                'mrf_key'     => 'mrf_' . $cfg->id,
+                'group_label' => $cfg->group_label,
+                'values'      => $values,
+                'strict'      => true,
+                'note'        => empty($values)
+                    ? 'Noch keine Optionen konfiguriert. Pflegen in Einstellungen → Management Report.'
+                    : 'STRIKT. Erweiterbar in Einstellungen → Management Report.',
+            ];
+        }
+        $opts['mr_data'] = [
+            'fields' => $mrFields,
+            'strict' => true,
+            'note'   => 'Keys = Feld-Label (z.B. "Speisenform") oder mrf_<id>; Werte aus den jeweils konfigurierten Optionen. Pflegen in Einstellungen → Management Report.',
         ];
 
         return $opts;
