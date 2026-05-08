@@ -128,6 +128,13 @@ trait RecommendsMissingFields
             'note'   => 'Hardcoded.',
         ];
 
+        // orderer_via – strikt, hardcoded (mit Auto-Alias-Toleranz im Tool).
+        $opts['orderer_via'] = [
+            'values' => ['Mail', 'Telefon', 'Web'],
+            'strict' => true,
+            'note'   => 'Hardcoded Enum. Wie wurde das Event bestellt / wo kam die Anfrage rein? Auto-Alias akzeptiert E-Mail/Email->Mail, Phone/Tel->Telefon, Website/Online/Formular/Kontaktformular->Web; Diagnose via aliases_applied[].',
+        ];
+
         // mr_data – verschachtelt: pro Feld-Label die in den Settings konfigurierten Optionen.
         $mrConfigs = $teamId
             ? MrFieldConfig::where('team_id', $teamId)

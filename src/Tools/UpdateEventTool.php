@@ -10,6 +10,7 @@ use Platform\Events\Models\Event;
 use Platform\Events\Tools\Concerns\HintsIgnoredFields;
 use Platform\Events\Tools\Concerns\RecommendsMissingFields;
 use Platform\Events\Tools\Concerns\ResolvesLocationRefInput;
+use Platform\Events\Tools\Concerns\ResolvesOrdererVia;
 use Platform\Events\Tools\Concerns\ValidatesMrData;
 
 /**
@@ -20,6 +21,7 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
     use HintsIgnoredFields;
     use RecommendsMissingFields;
     use ResolvesLocationRefInput;
+    use ResolvesOrdererVia;
     use ValidatesMrData;
 
     protected const UPDATABLE_STRING_FIELDS = [
@@ -61,7 +63,9 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
             . 'Nur übergebene Werte werden geändert. mr_data wird komplett ersetzt (merge bitte clientseitig). '
             . 'mr_data ist STRIKT validiert: Keys müssen dem Label aus Einstellungen → Management Report entsprechen '
             . '(z.B. "Speisenform") oder der kanonischen ID ("mrf_<id>"); Werte müssen aus den konfigurierten '
-            . 'Optionen stammen. Unbekannte Keys oder Werte führen zu VALIDATION_ERROR mit Liste der erlaubten Werte.';
+            . 'Optionen stammen. Unbekannte Keys oder Werte führen zu VALIDATION_ERROR mit Liste der erlaubten Werte. '
+            . 'orderer_via ist STRIKT-Enum: nur "Mail"|"Telefon"|"Web"; Auto-Alias: E-Mail/Email->Mail, Phone/Tel->Telefon, '
+            . 'Website/Online/Formular/Kontaktformular->Web. Aliase werden via aliases_applied[] gemeldet.';
     }
 
     public function getSchema(): array
@@ -70,6 +74,12 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
         foreach (self::UPDATABLE_STRING_FIELDS as $f) {
             $stringFields[$f] = ['type' => 'string'];
         }
+        // Strict-Enum-Felder mit Discovery in der Schema-Description.
+        $stringFields['orderer_via'] = [
+            'type' => 'string',
+            'enum' => self::ORDERER_VIA_OPTIONS,
+            'description' => '[Besteller] Eingangskanal. STRIKT: nur "Mail" | "Telefon" | "Web". Auto-Alias: "E-Mail"/"Email"->"Mail", "Phone"/"Tel"->"Telefon", "Website"/"Online"/"Formular"/"Kontaktformular"->"Web". Andere Werte werden mit VALIDATION_ERROR abgelehnt.',
+        ];
         $dateFields = [];
         foreach (self::UPDATABLE_DATE_FIELDS as $f) {
             $dateFields[$f] = ['type' => 'string', 'description' => 'YYYY-MM-DD'];
@@ -149,6 +159,21 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
                 }
             }
 
+            // orderer_via – Strict-Enum + Auto-Alias.
+            $ordererViaAliases = [];
+            if (array_key_exists('orderer_via', $arguments)) {
+                $resolved = $this->resolveOrdererVia($arguments['orderer_via'] === null ? null : (string) $arguments['orderer_via']);
+                if (isset($resolved['error'])) {
+                    return ToolResult::error('VALIDATION_ERROR', $resolved['error']);
+                }
+                if (empty($resolved['skip'])) {
+                    $arguments['orderer_via'] = $resolved['value'];
+                    if ($resolved['alias'] !== null) {
+                        $ordererViaAliases[] = $resolved['alias'];
+                    }
+                }
+            }
+
             $update = [];
             foreach (array_merge(self::UPDATABLE_STRING_FIELDS, self::UPDATABLE_DATE_FIELDS) as $f) {
                 if (array_key_exists($f, $arguments)) {
@@ -205,7 +230,7 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
                 'team_id'        => $event->team_id,
                 'updated_at'     => $event->updated_at?->toIso8601String(),
                 'updated_fields' => array_keys($update),
-                'aliases_applied' => $deliveryLocationAliases,
+                'aliases_applied' => array_values(array_merge($deliveryLocationAliases, $ordererViaAliases)),
                 'ignored_fields' => $ignored,
                 'empty_recommended_fields'        => $this->emptyRecommendedFields($event),
                 'empty_recommended_field_options' => $this->recommendedFieldOptions($event->team_id),

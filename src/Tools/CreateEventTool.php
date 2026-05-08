@@ -10,6 +10,7 @@ use Platform\Events\Services\EventFactory;
 use Platform\Events\Tools\Concerns\HintsIgnoredFields;
 use Platform\Events\Tools\Concerns\RecommendsMissingFields;
 use Platform\Events\Tools\Concerns\ResolvesLocationRefInput;
+use Platform\Events\Tools\Concerns\ResolvesOrdererVia;
 use Platform\Events\Tools\Concerns\ValidatesMrData;
 
 /**
@@ -23,6 +24,7 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
     use HintsIgnoredFields;
     use RecommendsMissingFields;
     use ResolvesLocationRefInput;
+    use ResolvesOrdererVia;
     use ValidatesMrData;
 
     /** Top-Level-Felder, die das Tool akzeptiert (fuer ignored_fields-Diff). */
@@ -69,7 +71,7 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
             . '[Stammdaten] name, event_type, status, start_date, end_date, group, location (Legacy-Freitext); '
             . '[Kunde] customer (Legacy), crm_company_id (FK CRM-Firma); '
             . '[Veranstalter] organizer_contact, organizer_crm_contact_id, organizer_contact_onsite, organizer_onsite_crm_contact_id, organizer_for_whom; '
-            . '[Besteller] orderer_company, orderer_contact, orderer_via, orderer_crm_company_id, orderer_crm_contact_id; '
+            . '[Besteller] orderer_company, orderer_contact, orderer_via (Strict-Enum: "Mail"|"Telefon"|"Web"; Auto-Alias E-Mail/Email->Mail, Phone/Tel->Telefon, Website/Online/Formular->Web), orderer_crm_company_id, orderer_crm_contact_id; '
             . '[Rechnung] invoice_to, invoice_contact, invoice_date_type (Default: erster Tag), invoice_crm_company_id, invoice_crm_contact_id; '
             . '[Zustaendigkeit] responsible, responsible_onsite, cost_center, cost_carrier, quote_price_mode (netto|brutto), sign_left, sign_right; '
             . '[Follow-Up] follow_up_date, follow_up_note; '
@@ -112,7 +114,7 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 // [Besteller]
                 'orderer_company'        => ['type' => 'string',  'description' => '[Besteller] Firma (freitext).'],
                 'orderer_contact'        => ['type' => 'string',  'description' => '[Besteller] Ansprechpartner (freitext).'],
-                'orderer_via'            => ['type' => 'string',  'description' => '[Besteller] Eingangskanal: mail|phone|meeting|referral|other.'],
+                'orderer_via'            => ['type' => 'string',  'enum' => self::ORDERER_VIA_OPTIONS, 'description' => '[Besteller] Eingangskanal. STRIKT: nur "Mail" | "Telefon" | "Web". Auto-Alias: "E-Mail"/"Email"->"Mail", "Phone"/"Tel"->"Telefon", "Website"/"Online"/"Formular"/"Kontaktformular"->"Web". Andere Werte werden mit VALIDATION_ERROR abgelehnt.'],
                 'orderer_crm_company_id' => ['type' => 'integer', 'description' => '[Besteller] FK crm_companies.id.'],
                 'orderer_crm_contact_id' => ['type' => 'integer', 'description' => '[Besteller] FK crm_contacts.id.'],
 
@@ -217,6 +219,23 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 }
             }
 
+            // orderer_via – Strict-Enum + Auto-Alias.
+            $ordererViaAliases = [];
+            if (array_key_exists('orderer_via', $arguments)) {
+                $resolved = $this->resolveOrdererVia($arguments['orderer_via'] === null ? null : (string) $arguments['orderer_via']);
+                if (isset($resolved['error'])) {
+                    return ToolResult::error('VALIDATION_ERROR', $resolved['error']);
+                }
+                if (!empty($resolved['skip'])) {
+                    // null/"" durchreichen – Feld leeren.
+                } else {
+                    $arguments['orderer_via'] = $resolved['value'];
+                    if ($resolved['alias'] !== null) {
+                        $ordererViaAliases[] = $resolved['alias'];
+                    }
+                }
+            }
+
             $data = [
                 'name' => $arguments['name'],
             ];
@@ -295,7 +314,7 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 'end_date'       => $event->end_date?->toDateString(),
                 'team_id'        => $event->team_id,
                 'days_created'   => $event->days->count(),
-                'aliases_applied' => $deliveryLocationAliases,
+                'aliases_applied' => array_values(array_merge($deliveryLocationAliases, $ordererViaAliases)),
                 'ignored_fields' => $ignored,
                 'empty_recommended_fields'         => $this->emptyRecommendedFields($event),
                 'empty_recommended_field_options'  => $this->recommendedFieldOptions($event->team_id),
