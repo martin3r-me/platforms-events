@@ -401,16 +401,26 @@
                 </div>
                 <div>
                     <label class="{{ $lbl }}">Bestellt über</label>
+                    @php
+                        // Strict-Enum: "Mail" | "Telefon" | "Web" (s. ResolvesOrdererVia-Trait).
+                        // Tolerant gegen Alt-Werte (mail/phone/web/E-Mail/Email/Tel/Phone/Website/...) fuer die Anzeige.
+                        $currentVia = match (mb_strtolower(trim((string) ($event->orderer_via ?? '')))) {
+                            'mail', 'e-mail', 'email', 'mails', 'mailing'                                                  => 'Mail',
+                            'telefon', 'tel', 'tel.', 'phone', 'anruf', 'fon'                                              => 'Telefon',
+                            'web', 'website', 'webseite', 'homepage', 'online', 'formular', 'kontaktformular', 'web-formular' => 'Web',
+                            default                                                                                        => null,
+                        };
+                    @endphp
                     <div class="flex gap-0.5 bg-[var(--ui-muted-5)] rounded-md p-0.5 w-fit">
                         @foreach([
-                            'mail' => ['icon' => 'heroicon-o-envelope',         'label' => 'E-Mail'],
-                            'phone' => ['icon' => 'heroicon-o-phone',           'label' => 'Telefon'],
-                            'web' => ['icon' => 'heroicon-o-computer-desktop',  'label' => 'Web'],
+                            'Mail'    => ['icon' => 'heroicon-o-envelope',         'label' => 'Mail'],
+                            'Telefon' => ['icon' => 'heroicon-o-phone',            'label' => 'Telefon'],
+                            'Web'     => ['icon' => 'heroicon-o-computer-desktop', 'label' => 'Web'],
                         ] as $via => $meta)
                             <button type="button" wire:click="$set('event.orderer_via', '{{ $via }}')"
                                     title="{{ $meta['label'] }}"
                                     class="p-1 rounded transition
-                                           {{ ($event->orderer_via ?? 'mail') === $via
+                                           {{ $currentVia === $via
                                               ? 'bg-white shadow-sm text-sky-600'
                                               : 'text-[var(--ui-muted)] hover:text-[var(--ui-secondary)]' }}">
                                 @svg($meta['icon'], 'w-3 h-3')
