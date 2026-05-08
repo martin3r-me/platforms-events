@@ -11,6 +11,7 @@ use Platform\Events\Models\EventDay;
 use Platform\Events\Tools\Concerns\CollectsValidationErrors;
 use Platform\Events\Tools\Concerns\NormalizesTimeFields;
 use Platform\Events\Tools\Concerns\ResolvesEvent;
+use Platform\Events\Tools\Concerns\ResolvesLocationRefInput;
 use Platform\Locations\Models\Location;
 
 /**
@@ -25,6 +26,7 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
     use ResolvesEvent;
     use CollectsValidationErrors;
     use NormalizesTimeFields;
+    use ResolvesLocationRefInput;
 
     public function getName(): string
     {
@@ -58,7 +60,10 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
             'type' => 'object',
             'properties' => array_merge($this->eventSelectorSchema(), [
                 'location_id'        => ['type' => 'integer', 'description' => 'FK auf locations_locations.id – bevorzugt gegenueber raum.'],
-                'raum'               => ['type' => 'string',  'description' => 'Legacy-Fallback-Kürzel.'],
+                'location_uuid'      => ['type' => 'string',  'description' => 'Location-UUID. Alternative zu location_id/_kuerzel/_ref.'],
+                'location_kuerzel'   => ['type' => 'string',  'description' => 'Location-Kuerzel (per Team eindeutig, TRIM+UPPER). Wird auf location_id aufgeloest.'],
+                'location_ref'       => ['description' => 'Generischer Location-Resolver: numerisch->ID, UUID-Format->uuid, sonst Kuerzel. Bei Mehrfach-Identifikatoren VALIDATION_ERROR wenn inkonsistent.'],
+                'raum'               => ['type' => 'string',  'description' => 'Legacy-Fallback-Kürzel (Freitext am Booking). Empfohlen: stattdessen location_kuerzel verwenden.'],
                 'datum'              => ['type' => 'string',  'description' => 'YYYY-MM-DD oder freitext (nur Single-Modus; bei Bulk wird datum aus EventDay übernommen).'],
                 'beginn'             => ['type' => 'string',  'description' => 'HH:MM. Alias: "von" (Tag-Feldname).'],
                 'ende'               => ['type' => 'string',  'description' => 'HH:MM. Alias: "bis" (Tag-Feldname).'],
@@ -92,27 +97,28 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
             // Bekannte Felder zur Erkennung von ignored_fields
             $known = array_merge([
                 'event_id', 'event_uuid', 'event_number',
-                'location_id', 'raum', 'datum', 'beginn', 'ende', 'pers', 'bestuhlung', 'optionsrang', 'absprache',
+                'raum', 'datum', 'beginn', 'ende', 'pers', 'bestuhlung', 'optionsrang', 'absprache',
                 'apply_to_all_days', 'day_ids',
-            ], $this->timeFieldAliases());
+            ], $this->locationRefInputFields(), $this->timeFieldAliases());
             $ignored = array_values(array_diff(array_keys($arguments), $known));
 
             $errors = [];
 
-            $locationId = !empty($arguments['location_id']) ? (int) $arguments['location_id'] : null;
+            // Location-Identifikatoren aufloesen (id/uuid/kuerzel/ref).
+            $locResolve = $this->resolveLocationRefInput($arguments, (int) $event->team_id);
+            if ($locResolve['error']) {
+                return $locResolve['error'];
+            }
+            $loc = $locResolve['location'];
+            $locationId = $loc?->id;
+            $aliases = array_merge($aliases, $locResolve['aliases_applied']);
+
             $raum = $arguments['raum'] ?? null;
             if (!$locationId && empty($raum)) {
-                $errors[] = $this->validationError('location_id|raum', 'location_id oder raum ist erforderlich.');
+                $errors[] = $this->validationError('location_id|raum', 'location_id, location_uuid, location_kuerzel, location_ref oder raum ist erforderlich.');
             }
-
-            $loc = null;
-            if ($locationId) {
-                $loc = Location::find($locationId);
-                if (!$loc) {
-                    $errors[] = $this->validationError('location_id', "Location-ID {$locationId} existiert nicht.");
-                } elseif ($loc->team_id !== $event->team_id) {
-                    $errors[] = $this->validationError('location_id', 'Location gehoert einem anderen Team als das Event.');
-                }
+            if ($loc && $loc->team_id !== $event->team_id) {
+                $errors[] = $this->validationError('location_id', 'Location gehoert einem anderen Team als das Event.');
             }
 
             // Bulk-Modus auswerten

@@ -9,6 +9,7 @@ use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\Event;
 use Platform\Events\Tools\Concerns\HintsIgnoredFields;
 use Platform\Events\Tools\Concerns\RecommendsMissingFields;
+use Platform\Events\Tools\Concerns\ResolvesLocationRefInput;
 use Platform\Events\Tools\Concerns\ValidatesMrData;
 
 /**
@@ -18,6 +19,7 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
 {
     use HintsIgnoredFields;
     use RecommendsMissingFields;
+    use ResolvesLocationRefInput;
     use ValidatesMrData;
 
     protected const UPDATABLE_STRING_FIELDS = [
@@ -86,6 +88,9 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
                 'mr_data'              => ['type' => 'object', 'description' => 'Management-Report als Key/Value-Map (ersetzt den gesamten Inhalt). STRIKT: Keys = Feld-Label aus Einstellungen → MR (z.B. "Speisenform") oder "mrf_<id>"; Werte nur aus konfigurierten Optionen.'],
                 'forwarded'            => ['type' => 'boolean'],
                 'is_highlight'         => ['type' => 'boolean', 'description' => '[Highlight] Veranstaltung als „besonders sehenswert" markieren (Foto-Termin, vor Ort sein).'],
+                'delivery_location_uuid'    => ['type' => 'string',  'description' => '[Lieferung] Location-UUID (alternativ zu delivery_location_id).'],
+                'delivery_location_kuerzel' => ['type' => 'string',  'description' => '[Lieferung] Location-Kuerzel (per Team eindeutig, TRIM+UPPER).'],
+                'delivery_location_ref'     => ['description' => '[Lieferung] Generischer Resolver: numerisch->ID, UUID->uuid, sonst Kuerzel.'],
             ], $stringFields, $dateFields, $fkFields),
         ];
     }
@@ -120,6 +125,17 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
             $userHasAccess = $context->user->teams()->where('teams.id', $event->team_id)->exists();
             if (!$userHasAccess) {
                 return ToolResult::error('ACCESS_DENIED', 'Du hast keinen Zugriff auf dieses Event.');
+            }
+
+            // delivery_location_* (uuid/kuerzel/ref) -> delivery_location_id aufloesen.
+            $deliveryLocationAliases = [];
+            $deliveryLocResolve = $this->resolveLocationRefInput($arguments, (int) $event->team_id, 'delivery_');
+            if ($deliveryLocResolve['error']) {
+                return $deliveryLocResolve['error'];
+            }
+            if ($deliveryLocResolve['location']) {
+                $arguments['delivery_location_id'] = $deliveryLocResolve['location']->id;
+                $deliveryLocationAliases = $deliveryLocResolve['aliases_applied'];
             }
 
             // potential ist ein Enum – nur vordefinierte Werte zulassen.
@@ -170,6 +186,7 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
 
             $known = array_merge(
                 ['event_id', 'uuid', 'event_number', 'mr_data', 'forwarded', 'is_highlight'],
+                $this->locationRefInputFields('delivery_'),
                 self::UPDATABLE_STRING_FIELDS,
                 self::UPDATABLE_DATE_FIELDS,
                 self::UPDATABLE_FK_FIELDS,
@@ -188,6 +205,7 @@ class UpdateEventTool implements ToolContract, ToolMetadataContract
                 'team_id'        => $event->team_id,
                 'updated_at'     => $event->updated_at?->toIso8601String(),
                 'updated_fields' => array_keys($update),
+                'aliases_applied' => $deliveryLocationAliases,
                 'ignored_fields' => $ignored,
                 'empty_recommended_fields'        => $this->emptyRecommendedFields($event),
                 'empty_recommended_field_options' => $this->recommendedFieldOptions($event->team_id),

@@ -7,10 +7,13 @@ use Platform\Core\Contracts\ToolContext;
 use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\Booking;
+use Platform\Events\Tools\Concerns\ResolvesLocationRefInput;
 use Platform\Locations\Models\Location;
 
 class UpdateBookingTool implements ToolContract, ToolMetadataContract
 {
+    use ResolvesLocationRefInput;
+
     protected const STRING_FIELDS = [
         'raum', 'datum', 'beginn', 'ende', 'pers',
         'bestuhlung', 'optionsrang', 'absprache',
@@ -34,10 +37,13 @@ class UpdateBookingTool implements ToolContract, ToolMetadataContract
     public function getSchema(): array
     {
         $props = [
-            'booking_id'  => ['type' => 'integer'],
-            'uuid'        => ['type' => 'string'],
-            'location_id' => ['type' => 'integer', 'description' => 'null setzen, um auf raum-Fallback zurueck zu wechseln.'],
-            'sort_order'  => ['type' => 'integer'],
+            'booking_id'       => ['type' => 'integer'],
+            'uuid'             => ['type' => 'string'],
+            'location_id'      => ['type' => 'integer', 'description' => 'null setzen, um auf raum-Fallback zurueck zu wechseln. Alternative: location_uuid/_kuerzel/_ref.'],
+            'location_uuid'    => ['type' => 'string', 'description' => 'Location-UUID. Alternative zu location_id/_kuerzel/_ref.'],
+            'location_kuerzel' => ['type' => 'string', 'description' => 'Location-Kuerzel (per Team eindeutig, TRIM+UPPER).'],
+            'location_ref'     => ['description' => 'Generischer Resolver: numerisch->ID, UUID->uuid, sonst Kuerzel.'],
+            'sort_order'       => ['type' => 'integer'],
         ];
         foreach (self::STRING_FIELDS as $f) {
             $props[$f] = ['type' => 'string'];
@@ -100,20 +106,25 @@ class UpdateBookingTool implements ToolContract, ToolMetadataContract
             if (array_key_exists('sort_order', $arguments)) {
                 $update['sort_order'] = (int) $arguments['sort_order'];
             }
-            if (array_key_exists('location_id', $arguments)) {
-                $locId = $arguments['location_id'];
-                if ($locId !== null && $locId !== '') {
-                    $loc = Location::find((int) $locId);
-                    if (!$loc) {
-                        return ToolResult::error('LOCATION_NOT_FOUND', "Location-ID {$locId} existiert nicht.");
-                    }
-                    if ($loc->team_id !== $booking->team_id) {
-                        return ToolResult::error('VALIDATION_ERROR', 'Die Location gehört einem anderen Team.');
-                    }
-                    $update['location_id'] = (int) $locId;
-                } else {
-                    $update['location_id'] = null;
+
+            // location_id explizit auf null setzen, um auf raum-Fallback zurueckzuwechseln.
+            $aliases = [];
+            $explicitNull = array_key_exists('location_id', $arguments)
+                && ($arguments['location_id'] === null || $arguments['location_id'] === '');
+
+            $locResolve = $this->resolveLocationRefInput($arguments, (int) $booking->team_id);
+            if ($locResolve['error']) {
+                return $locResolve['error'];
+            }
+            if ($locResolve['location']) {
+                $loc = $locResolve['location'];
+                if ($loc->team_id !== $booking->team_id) {
+                    return ToolResult::error('VALIDATION_ERROR', 'Die Location gehört einem anderen Team.');
                 }
+                $update['location_id'] = $loc->id;
+                $aliases = array_merge($aliases, $locResolve['aliases_applied']);
+            } elseif ($explicitNull && empty($locResolve['fields_seen'])) {
+                $update['location_id'] = null;
             }
 
             if (empty($update)) {
@@ -121,7 +132,8 @@ class UpdateBookingTool implements ToolContract, ToolMetadataContract
             }
 
             $known = array_merge(
-                ['booking_id', 'uuid', 'location_id', 'sort_order'],
+                ['booking_id', 'uuid', 'sort_order'],
+                $this->locationRefInputFields(),
                 self::STRING_FIELDS,
                 ['von', 'bis', 'pers_von', 'pers_bis', 'start_time', 'end_time', 'pax'],
             );
@@ -144,6 +156,7 @@ class UpdateBookingTool implements ToolContract, ToolMetadataContract
                 'absprache'      => $booking->absprache,
                 'sort_order'     => $booking->sort_order,
                 'updated_fields' => array_keys($update),
+                'aliases_applied' => $aliases,
                 'ignored_fields' => $ignored,
                 'message'        => 'Buchung aktualisiert.',
             ]);

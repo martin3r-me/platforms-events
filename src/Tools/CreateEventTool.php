@@ -9,6 +9,7 @@ use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Services\EventFactory;
 use Platform\Events\Tools\Concerns\HintsIgnoredFields;
 use Platform\Events\Tools\Concerns\RecommendsMissingFields;
+use Platform\Events\Tools\Concerns\ResolvesLocationRefInput;
 use Platform\Events\Tools\Concerns\ValidatesMrData;
 
 /**
@@ -21,6 +22,7 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
 {
     use HintsIgnoredFields;
     use RecommendsMissingFields;
+    use ResolvesLocationRefInput;
     use ValidatesMrData;
 
     /** Top-Level-Felder, die das Tool akzeptiert (fuer ignored_fields-Diff). */
@@ -42,7 +44,8 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
         'organizer_crm_contact_id', 'organizer_onsite_crm_contact_id',
         'orderer_crm_company_id', 'orderer_crm_contact_id',
         'invoice_crm_company_id', 'invoice_crm_contact_id',
-        'delivery_address_crm_company_id', 'delivery_location_id',
+        'delivery_address_crm_company_id',
+        'delivery_location_id', 'delivery_location_uuid', 'delivery_location_kuerzel', 'delivery_location_ref',
     ];
 
     /** Strikt erlaubte Werte fuer event.potential (LLM-Schutz vor Freitext). */
@@ -139,7 +142,10 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 // [Lieferung] – exakt EINE der drei Quellen befuellen
                 'delivery_address'                => ['type' => 'string',  'description' => '[Lieferung] Freitext-Adresse, wenn weder CRM-Firma noch eigene Location passt.'],
                 'delivery_address_crm_company_id' => ['type' => 'integer', 'description' => '[Lieferung] FK crm_companies.id (Lieferadresse aus CRM).'],
-                'delivery_location_id'            => ['type' => 'integer', 'description' => '[Lieferung] FK locations_locations.id (eigene Location).'],
+                'delivery_location_id'            => ['type' => 'integer', 'description' => '[Lieferung] FK locations_locations.id (eigene Location). Alternativen: delivery_location_uuid/_kuerzel/_ref.'],
+                'delivery_location_uuid'          => ['type' => 'string',  'description' => '[Lieferung] Location-UUID (alternativ zu _id).'],
+                'delivery_location_kuerzel'       => ['type' => 'string',  'description' => '[Lieferung] Location-Kuerzel (per Team eindeutig, TRIM+UPPER).'],
+                'delivery_location_ref'           => ['description' => '[Lieferung] Generischer Resolver: numerisch->ID, UUID->uuid, sonst Kuerzel.'],
                 'delivery_note'                   => ['type' => 'string',  'description' => '[Lieferung] Hinweis (z.B. "Haupteingang").'],
 
                 // [Eingang]
@@ -188,6 +194,17 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
             $userHasAccess = $context->user->teams()->where('teams.id', $teamId)->exists();
             if (!$userHasAccess) {
                 return ToolResult::error('ACCESS_DENIED', "Du hast keinen Zugriff auf Team-ID {$teamId}.");
+            }
+
+            // delivery_location_* Aliases (uuid/kuerzel/ref) -> delivery_location_id aufloesen.
+            $deliveryLocationAliases = [];
+            $deliveryLocResolve = $this->resolveLocationRefInput($arguments, (int) $teamId, 'delivery_');
+            if ($deliveryLocResolve['error']) {
+                return $deliveryLocResolve['error'];
+            }
+            if ($deliveryLocResolve['location']) {
+                $arguments['delivery_location_id'] = $deliveryLocResolve['location']->id;
+                $deliveryLocationAliases = $deliveryLocResolve['aliases_applied'];
             }
 
             // potential ist ein Enum – nur vordefinierte Werte zulassen.
@@ -278,6 +295,7 @@ class CreateEventTool implements ToolContract, ToolMetadataContract
                 'end_date'       => $event->end_date?->toDateString(),
                 'team_id'        => $event->team_id,
                 'days_created'   => $event->days->count(),
+                'aliases_applied' => $deliveryLocationAliases,
                 'ignored_fields' => $ignored,
                 'empty_recommended_fields'         => $this->emptyRecommendedFields($event),
                 'empty_recommended_field_options'  => $this->recommendedFieldOptions($event->team_id),
