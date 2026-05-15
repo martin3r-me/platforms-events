@@ -489,6 +489,13 @@
                         )"
                      class="bg-white border border-[var(--ui-border)] rounded-lg overflow-hidden">
 
+                    @if(session('eventMoved'))
+                        <div class="px-4 py-2 bg-blue-50 border-b border-blue-200 text-[0.7rem] text-blue-800 flex items-center gap-2">
+                            @svg('heroicon-o-information-circle', 'w-3.5 h-3.5')
+                            {{ session('eventMoved') }}
+                        </div>
+                    @endif
+
                     {{-- Header: Navigation + View-Toggle + Color-Mode + iCal --}}
                     <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--ui-border)] flex-wrap gap-3">
                         <div class="flex items-center gap-2">
@@ -996,8 +1003,9 @@
                         if (movedEv.start_date === targetDate) { this.draggedId = null; return; }
                         var ok = confirm(
                             'Veranstaltung „' + movedEv.name + '" auf ' + targetDate + ' verschieben?\n\n' +
-                            'Hinweis: Das aendert nur das Veranstaltungs-Datum am Event selbst.\n' +
-                            'Einzelne Event-Tage (Bookings, Schedule-Items) muessen ggf. separat geprueft werden.'
+                            'Alle Event-Tage, Raumbuchungen und Ablaufplan-Eintraege werden um die gleiche\n' +
+                            'Tages-Differenz mitgezogen. Uhrzeiten, Personenzahlen und Raumzuordnungen\n' +
+                            'bleiben unveraendert.'
                         );
                         if (!ok) { this.draggedId = null; return; }
                         // Optimistic UI: lokal verschieben, damit es sofort sichtbar ist.

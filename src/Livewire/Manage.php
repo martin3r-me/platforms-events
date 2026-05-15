@@ -9,7 +9,9 @@ use Livewire\Attributes\Url;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Platform\Events\Models\Event;
+use Platform\Events\Services\ActivityLogger;
 use Platform\Events\Services\EventFactory;
+use Platform\Events\Services\EventMover;
 
 class Manage extends Component
 {
@@ -106,8 +108,8 @@ class Manage extends Component
     }
 
     /**
-     * Verschiebt eine Veranstaltung auf ein neues Start-/End-Datum.
-     * Erhaelt die bisherige Dauer (Differenz zwischen end_date und start_date).
+     * Verschiebt eine Veranstaltung auf ein neues Startdatum. EventMover zieht
+     * EventDays, Bookings und ScheduleItems mit dem gleichen Offset mit.
      * Wird vom Kalender-Drag&Drop nach Confirm aufgerufen.
      */
     public function moveEvent(int $id, string $newStart): void
@@ -116,23 +118,24 @@ class Manage extends Component
         $event = Event::where('team_id', $team->id)->find($id);
         if (!$event || !$event->start_date) return;
 
-        try {
-            $newStartCarbon = Carbon::createFromFormat('Y-m-d', $newStart);
-        } catch (\Throwable $e) {
-            return;
-        }
+        $oldStart = $event->start_date->format('d.m.Y');
+        $result = EventMover::move($event, $newStart);
 
-        $oldStart = $event->start_date;
-        $oldEnd   = $event->end_date ?: $oldStart;
-        $durationDays = $oldStart->diffInDays($oldEnd);
-
-        $event->start_date = $newStartCarbon->toDateString();
-        $event->end_date   = $newStartCarbon->copy()->addDays($durationDays)->toDateString();
-        $event->save();
-
-        // EventDays mitziehen, sofern die Service-Methode existiert.
-        if (method_exists(EventFactory::class, 'syncDaysFor')) {
-            EventFactory::syncDaysFor($event);
+        if ($result['offset_days'] !== 0) {
+            $event->refresh();
+            $msg = sprintf(
+                'Veranstaltung %s → %s (%+d Tage, %d Tage / %d Bookings / %d Ablauf-Items mitgezogen)',
+                $oldStart,
+                $event->start_date->format('d.m.Y'),
+                $result['offset_days'],
+                $result['affected_event_days'],
+                $result['affected_bookings'],
+                $result['affected_schedule_items'],
+            );
+            if (class_exists(ActivityLogger::class)) {
+                ActivityLogger::log($event, 'event', $msg);
+            }
+            session()->flash('eventMoved', $msg);
         }
     }
 
