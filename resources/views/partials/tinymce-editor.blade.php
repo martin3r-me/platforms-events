@@ -9,13 +9,10 @@
     $uid = $uniqueId ?: ('tiny-' . uniqid());
 @endphp
 
-{{-- Script-Definition VOR dem div, damit window.tinymceEditor verfuegbar ist,
-     wenn Alpine das x-data-Attribut evaluiert.
-
-     @assets statt @once: Livewire 3 injiziert den Block einmalig in <head> und
-     haelt ihn ueber wire:navigate-Wechsel persistent. Mit @once wuerde das
-     Script bei SPA-Navigation aus dem DOM verschwinden und das x-data-
-     Attribut zeigt dann „tinymceEditor is not defined". --}}
+{{-- Registrierung als Alpine.data-Component statt window-Global:
+     - vermeidet Race-Condition zwischen Script-Execution und Alpine-Init
+     - @assets sorgt fuer wire:navigate-Persistenz (einmalig im <head>)
+     - Definition liegt zusaetzlich auf window.tinymceEditor (Fallback) --}}
 @assets
 <script src="https://cdn.jsdelivr.net/npm/tinymce@7/tinymce.min.js" referrerpolicy="origin"></script>
 <script>
@@ -32,7 +29,7 @@
  * die View-Transition den DOM-Zustand des Containers – ist er weg, wird
  * sauber neu gebootet.
  */
-window.tinymceEditor = function (opts) {
+function _tinymceEditorFactory(opts) {
     return {
         uid: opts.uid,
         wireProperty: opts.wireProperty,
@@ -215,7 +212,25 @@ window.tinymceEditor = function (opts) {
             } catch (e) {}
         },
     };
-};
+}
+
+// 1) Window-Fallback fuer Code, der die Funktion direkt aufruft.
+window.tinymceEditor = _tinymceEditorFactory;
+
+// 2) Alpine-Registrierung — `x-data="tinymceEditor({...})"` wird so robust
+//    aufgeloest, auch wenn Alpine bereits initialisiert war als das Script
+//    nachtraeglich (z.B. via wire:navigate) injiziert wurde.
+function _registerTinymceWithAlpine() {
+    if (!window.Alpine || typeof window.Alpine.data !== 'function') return false;
+    if (window.Alpine.__tinymceRegistered) return true;
+    window.Alpine.data('tinymceEditor', _tinymceEditorFactory);
+    window.Alpine.__tinymceRegistered = true;
+    return true;
+}
+if (!_registerTinymceWithAlpine()) {
+    document.addEventListener('alpine:init', _registerTinymceWithAlpine);
+    document.addEventListener('alpine:initialized', _registerTinymceWithAlpine);
+}
 </script>
 @endassets
 
