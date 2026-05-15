@@ -1,4 +1,7 @@
-@once
+{{-- @assets statt @once: Livewire 3 injiziert den Block einmalig in <head> und
+     haelt ihn ueber wire:navigate-Wechsel persistent. @once wuerde das Script
+     bei SPA-Navigation aus dem DOM entfernen und Sortable laeuft danach nicht. --}}
+@assets
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <style>
 .events-sortable-ghost {
@@ -92,4 +95,4 @@
     });
 })();
 </script>
-@endonce
+@endassets

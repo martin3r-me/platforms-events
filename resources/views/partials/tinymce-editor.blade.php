@@ -10,8 +10,13 @@
 @endphp
 
 {{-- Script-Definition VOR dem div, damit window.tinymceEditor verfuegbar ist,
-     wenn Alpine das x-data-Attribut evaluiert. --}}
-@once
+     wenn Alpine das x-data-Attribut evaluiert.
+
+     @assets statt @once: Livewire 3 injiziert den Block einmalig in <head> und
+     haelt ihn ueber wire:navigate-Wechsel persistent. Mit @once wuerde das
+     Script bei SPA-Navigation aus dem DOM verschwinden und das x-data-
+     Attribut zeigt dann „tinymceEditor is not defined". --}}
+@assets
 <script src="https://cdn.jsdelivr.net/npm/tinymce@7/tinymce.min.js" referrerpolicy="origin"></script>
 <script>
 /**
@@ -212,7 +217,7 @@ window.tinymceEditor = function (opts) {
     };
 };
 </script>
-@endonce
+@endassets
 
 <style>
     .tox-tinymce {
