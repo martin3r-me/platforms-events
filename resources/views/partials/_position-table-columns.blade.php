@@ -58,7 +58,7 @@
         <th class="text-center {{ $thBase }}">MwSt.</th>
         <th class="text-right {{ $thBase }}">Gesamt €</th>
         @if($isQuote)
-            <th class="text-left {{ $thBase }}" title="Getränke-Modus (Override pro Position)">Modus</th>
+            <th class="text-left {{ $thBase }}" title="Positions-Modus (Override pro Position)">Modus</th>
         @endif
         <th class="text-left {{ $thBase }}">Bemerkung</th>
         <th></th>

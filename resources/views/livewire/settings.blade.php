@@ -14,7 +14,7 @@
             'bestuhlung'    => ['label' => 'Bestuhlung',     'icon' => 'heroicon-o-table-cells'],
             'schedule_desc' => ['label' => 'Ablaufplan-Beschreibungen', 'icon' => 'heroicon-o-list-bullet'],
             'day_types'     => ['label' => 'Tages-Typen',    'icon' => 'heroicon-o-calendar'],
-            'beverage_modes'=> ['label' => 'Getränke-Modi',  'icon' => 'heroicon-o-beaker'],
+            'beverage_modes'=> ['label' => 'Positions-Modi', 'icon' => 'heroicon-o-beaker'],
             'order_number'  => ['label' => 'Ordernummer',    'icon' => 'heroicon-o-hashtag'],
             'flat_rates'    => ['label' => 'Pauschalen',     'icon' => 'heroicon-o-calculator'],
             'bausteine'     => ['label' => 'Text-Bausteine',    'icon' => 'heroicon-o-puzzle-piece'],
@@ -114,10 +114,10 @@
             @endif
         @endforeach
 
-        {{-- ===== Getränke-Modi (mit Preis-Anzeige-Flags) ===== --}}
+        {{-- ===== Positions-Modi (mit Preis-Anzeige-Flags) ===== --}}
         @if($activeTab === 'beverage_modes')
             <div class="pt-6 space-y-4">
-                <x-ui-panel title="Getränke-Modi"
+                <x-ui-panel title="Positions-Modi"
                             subtitle="Auswahl am Vorgang/an Positionen. Pro Modus festlegen, ob Einzel- und/oder Gesamtpreis im Angebots-PDF ausgeblendet werden. Sind beide ausgeblendet, fließt die Position auch NICHT in die Summe ein (z.B. weil eine Pauschal-Position separat darunter steht).">
                     <div class="p-4 border-b border-[var(--ui-border)] flex items-center gap-2">
                         <input wire:model="newBeverageMode" wire:keydown.enter.prevent="addBeverageMode" type="text"

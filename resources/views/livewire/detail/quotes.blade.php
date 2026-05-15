@@ -36,7 +36,7 @@
             </div>
             <div class="flex items-center gap-2 flex-wrap">
                 <div class="flex items-center gap-1.5">
-                    <span class="text-[0.6rem] uppercase tracking-wide text-[var(--ui-muted)] font-semibold">Getränke-Modus</span>
+                    <span class="text-[0.6rem] uppercase tracking-wide text-[var(--ui-muted)] font-semibold">Positions-Modus</span>
                     <select wire:change="setItemBeverageMode({{ $activeItem->id }}, $event.target.value)"
                             class="text-[0.65rem] border border-slate-200 rounded px-1.5 py-1 bg-white">
                         <option value="__none__" @selected(empty($activeItem->beverage_mode))>— kein Modus —</option>
@@ -525,7 +525,7 @@
                 </div>
             </div>
             <div>
-                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Getränke-Modus <span class="text-[var(--ui-muted)] font-normal">(optional, gilt für alle Positionen ohne Override)</span></label>
+                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Positions-Modus <span class="text-[var(--ui-muted)] font-normal">(optional, gilt für alle Positionen ohne Override)</span></label>
                 <select wire:model="itemBeverageMode" class="w-full border border-slate-200 rounded-md px-3 py-2 text-xs bg-white">
                     <option value="">— kein Modus —</option>
                     @foreach(($beverageModes ?? []) as $mode)
