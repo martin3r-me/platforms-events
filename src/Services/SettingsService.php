@@ -36,7 +36,12 @@ class SettingsService
             self::KEY_BESTUHLUNG      => ['Reihen', 'Bankett', 'U-Form', 'Block', 'Stehtische', 'Parlamentarisch', 'Classroom'],
             self::KEY_SCHEDULE_DESCRIPTIONS => ['Aufbau', 'Anlieferung', 'Empfang', 'Begrüßung', 'Vortrag', 'Pause', 'Dinner', 'Abbau'],
             self::KEY_DAY_TYPES       => ['Veranstaltungstag', 'Aufbautag', 'Abbautag', 'Rüsttag'],
-            self::KEY_BEVERAGE_MODES  => ['Verbrauch', 'Alternativ', 'Auf Anfrage'],
+            self::KEY_BEVERAGE_MODES  => [
+                ['name' => 'Verbrauch',   'hide_unit_price' => false, 'hide_total_price' => false],
+                ['name' => 'Alternativ',  'hide_unit_price' => false, 'hide_total_price' => false],
+                ['name' => 'Auf Anfrage', 'hide_unit_price' => true,  'hide_total_price' => true],
+                ['name' => 'In Pauschale','hide_unit_price' => true,  'hide_total_price' => true],
+            ],
             self::KEY_POSITION_BAUSTEINE => [
                 ['name' => 'Headline',     'bg' => '#d1fae5', 'text' => '#065f46'],
                 ['name' => 'Trenntext',    'bg' => '#f8fafc', 'text' => '#64748b'],
@@ -69,7 +74,100 @@ class SettingsService
     public static function bestuhlungOptions(?int $teamId): array{ return self::getArray($teamId, self::KEY_BESTUHLUNG,      self::defaults()[self::KEY_BESTUHLUNG]); }
     public static function scheduleDescriptions(?int $teamId): array { return self::getArray($teamId, self::KEY_SCHEDULE_DESCRIPTIONS, self::defaults()[self::KEY_SCHEDULE_DESCRIPTIONS]); }
     public static function dayTypes(?int $teamId): array         { return self::getArray($teamId, self::KEY_DAY_TYPES,       self::defaults()[self::KEY_DAY_TYPES]); }
-    public static function beverageModes(?int $teamId): array    { return self::getArray($teamId, self::KEY_BEVERAGE_MODES,  self::defaults()[self::KEY_BEVERAGE_MODES]); }
+    /**
+     * Liefert die Getraenke-Modi als reine Namen-Liste (String-Array).
+     * Fuer abwaertskompatible Konsumenten wie die Modus-Dropdowns im Editor.
+     */
+    public static function beverageModes(?int $teamId): array
+    {
+        return array_map(
+            static fn (array $m) => $m['name'],
+            self::beverageModesFull($teamId)
+        );
+    }
+
+    /**
+     * Liefert die Getraenke-Modi als Vollobjekte
+     *   [{ name: string, hide_unit_price: bool, hide_total_price: bool }, ...].
+     *
+     * Alte String-Eintraege werden beim Lesen normalisiert. Modi, deren Name
+     * 'anfrage' enthaelt, bekommen beide Hide-Flags implizit gesetzt (damit
+     * vorhandene „Auf Anfrage"-Modi ohne Migration weiterhin korrekt blenden).
+     */
+    public static function beverageModesFull(?int $teamId): array
+    {
+        $raw = self::getArray($teamId, self::KEY_BEVERAGE_MODES, self::defaults()[self::KEY_BEVERAGE_MODES]);
+        $out = [];
+        foreach ($raw as $entry) {
+            $normalized = self::normalizeBeverageMode($entry);
+            if ($normalized !== null) {
+                $out[] = $normalized;
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Wandelt einen Eintrag (String oder Teil-Objekt) in das volle Schema um.
+     * Liefert null bei leerem Namen.
+     */
+    public static function normalizeBeverageMode(mixed $entry): ?array
+    {
+        if (is_string($entry)) {
+            $name = trim($entry);
+            if ($name === '') return null;
+            $onRequest = self::isOnRequestBeverageMode($name);
+            return [
+                'name'             => $name,
+                'hide_unit_price'  => $onRequest,
+                'hide_total_price' => $onRequest,
+            ];
+        }
+        if (is_array($entry)) {
+            $name = trim((string) ($entry['name'] ?? ''));
+            if ($name === '') return null;
+            return [
+                'name'             => $name,
+                'hide_unit_price'  => (bool) ($entry['hide_unit_price']  ?? false),
+                'hide_total_price' => (bool) ($entry['hide_total_price'] ?? false),
+            ];
+        }
+        return null;
+    }
+
+    /**
+     * Liefert die Hide-Flags fuer einen konkreten Modus-Namen.
+     *   hide_unit_price       → Einzelpreis-Spalte im Angebot leer lassen
+     *   hide_total_price      → Gesamtpreis-Spalte im Angebot leer lassen
+     *   exclude_from_totals   → wenn beide Hide-Flags gesetzt sind, fliesst
+     *                           die Position nicht in die Summen ein (sonst
+     *                           gibt es Doppelzaehlung mit einer Pauschale).
+     */
+    public static function beverageModeFlags(?int $teamId, ?string $mode): array
+    {
+        $off = ['hide_unit_price' => false, 'hide_total_price' => false, 'exclude_from_totals' => false];
+        if ($mode === null || trim($mode) === '') {
+            return $off;
+        }
+        $needle = mb_strtolower(trim($mode));
+        foreach (self::beverageModesFull($teamId) as $m) {
+            if (mb_strtolower($m['name']) === $needle) {
+                $hideUnit  = (bool) $m['hide_unit_price'];
+                $hideTotal = (bool) $m['hide_total_price'];
+                return [
+                    'hide_unit_price'     => $hideUnit,
+                    'hide_total_price'    => $hideTotal,
+                    'exclude_from_totals' => $hideUnit && $hideTotal,
+                ];
+            }
+        }
+        // Modus existiert nicht (mehr) in Settings → Fallback ueber den
+        // 'anfrage'-Substring, damit Bestandsdaten weiterhin korrekt blenden.
+        if (self::isOnRequestBeverageMode($mode)) {
+            return ['hide_unit_price' => true, 'hide_total_price' => true, 'exclude_from_totals' => true];
+        }
+        return $off;
+    }
     public static function bausteine(?int $teamId): array        { return self::getArray($teamId, self::KEY_POSITION_BAUSTEINE, self::defaults()[self::KEY_POSITION_BAUSTEINE]); }
 
     public static function orderNumberSchema(?int $teamId): string
@@ -109,7 +207,22 @@ class SettingsService
     public static function setBestuhlungOptions(?int $teamId, array $items): void { self::setArray($teamId, self::KEY_BESTUHLUNG, array_values(array_filter(array_map('trim', $items)))); }
     public static function setScheduleDescriptions(?int $teamId, array $items): void { self::setArray($teamId, self::KEY_SCHEDULE_DESCRIPTIONS, array_values(array_filter(array_map('trim', $items)))); }
     public static function setDayTypes(?int $teamId, array $items): void          { self::setArray($teamId, self::KEY_DAY_TYPES, array_values(array_filter(array_map('trim', $items)))); }
-    public static function setBeverageModes(?int $teamId, array $items): void     { self::setArray($teamId, self::KEY_BEVERAGE_MODES, array_values(array_filter(array_map('trim', $items)))); }
+    /**
+     * Akzeptiert sowohl Legacy-String-Arrays als auch Voll-Objekte
+     *   [{ name, hide_unit_price, hide_total_price }, ...].
+     * Speichert intern immer im Voll-Format, damit die Flags persistent sind.
+     */
+    public static function setBeverageModes(?int $teamId, array $items): void
+    {
+        $normalized = [];
+        foreach ($items as $entry) {
+            $m = self::normalizeBeverageMode($entry);
+            if ($m !== null) {
+                $normalized[] = $m;
+            }
+        }
+        self::setArray($teamId, self::KEY_BEVERAGE_MODES, $normalized);
+    }
     public static function setBausteine(?int $teamId, array $items): void         { self::setArray($teamId, self::KEY_POSITION_BAUSTEINE, $items); }
 
     /**

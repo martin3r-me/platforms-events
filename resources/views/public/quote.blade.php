@@ -48,6 +48,27 @@
 
             @php
                 $totalNetto = 0; $totalMwst7 = 0; $totalMwst19 = 0;
+
+                // Getraenke-Modi-Lookup einmal pro Render bauen — siehe PDF-Template.
+                $bevModes = \Platform\Events\Services\SettingsService::beverageModesFull($event->team_id ?? null);
+                $bevLookup = [];
+                foreach ($bevModes as $bm) {
+                    $bevLookup[mb_strtolower($bm['name'])] = $bm;
+                }
+                $flagsFor = function (?string $mode) use ($bevLookup) {
+                    $off = ['hide_unit_price' => false, 'hide_total_price' => false, 'exclude_from_totals' => false];
+                    if ($mode === null || trim($mode) === '') return $off;
+                    $entry = $bevLookup[mb_strtolower(trim($mode))] ?? null;
+                    if ($entry) {
+                        $hu = (bool) $entry['hide_unit_price'];
+                        $ht = (bool) $entry['hide_total_price'];
+                        return ['hide_unit_price' => $hu, 'hide_total_price' => $ht, 'exclude_from_totals' => $hu && $ht];
+                    }
+                    if (\Platform\Events\Services\SettingsService::isOnRequestBeverageMode($mode)) {
+                        return ['hide_unit_price' => true, 'hide_total_price' => true, 'exclude_from_totals' => true];
+                    }
+                    return $off;
+                };
             @endphp
 
             @foreach($event->days->sortBy('sort_order') as $day)
@@ -87,10 +108,15 @@
                                     @foreach($item->posList as $pos)
                                         @php
                                             $posMode = !empty($pos->beverage_mode) ? $pos->beverage_mode : $itemMode;
-                                            $onRequest = \Platform\Events\Services\SettingsService::isOnRequestBeverageMode($posMode);
+                                            $f = $flagsFor($posMode);
+                                            $hideUnit  = $f['hide_unit_price'];
+                                            $hideTotal = $f['hide_total_price'];
+                                            $exclude   = $f['exclude_from_totals'];
+                                            $isOnRequest = $exclude
+                                                && \Platform\Events\Services\SettingsService::isOnRequestBeverageMode($posMode);
                                             $g = (float) $pos->gesamt;
                                             $rate = (int) $pos->mwst;
-                                            if (!$onRequest) {
+                                            if (!$exclude) {
                                                 if ($rate === 7) { $totalMwst7 += $g; } else { $totalMwst19 += $g; }
                                                 $totalNetto += $g;
                                             }
@@ -102,11 +128,15 @@
                                             @if($showModeColumn)
                                                 <td style="font-size: 0.72rem; color: #64748b;">{{ $posMode ?? '' }}</td>
                                             @endif
-                                            @if($onRequest)
+                                            @if($isOnRequest)
                                                 <td class="num" colspan="2" style="color: #64748b; font-style: italic;">auf Anfrage</td>
                                             @else
-                                                <td class="num">{{ number_format((float) $pos->preis, 2, ',', '.') }} €</td>
-                                                <td class="num">{{ number_format($g, 2, ',', '.') }} €</td>
+                                                <td class="num">
+                                                    @if(!$hideUnit){{ number_format((float) $pos->preis, 2, ',', '.') }} €@endif
+                                                </td>
+                                                <td class="num">
+                                                    @if(!$hideTotal){{ number_format($g, 2, ',', '.') }} €@endif
+                                                </td>
                                             @endif
                                         </tr>
                                     @endforeach

@@ -61,7 +61,6 @@
                 'bestuhlung'    => ['title' => 'Bestuhlungs-Arten','subtitle' => 'Wird im Raumbuchungs-Modal als Dropdown angezeigt.',                'list' => $bestuhlungOptions, 'prop' => 'bestuhlungOptions',    'new' => 'newBestuhlung',    'add' => 'addBestuhlung',    'remove' => 'removeBestuhlung',    'placeholder' => 'z.B. Bankett'],
                 'schedule_desc' => ['title' => 'Ablaufplan-Beschreibungen','subtitle' => 'Vorschlaege im Beschreibung-Feld des Ablaufplans. Freitext bleibt weiterhin moeglich.', 'list' => $scheduleDescriptions, 'prop' => 'scheduleDescriptions', 'new' => 'newScheduleDescription', 'add' => 'addScheduleDescription', 'remove' => 'removeScheduleDescription', 'placeholder' => 'z.B. Empfang'],
                 'day_types'     => ['title' => 'Tages-Typen',     'subtitle' => 'Auswahl im Tag-Modal (Veranstaltungstag, Aufbautag, Abbautag, Rüsttag, …).', 'list' => $dayTypes, 'prop' => 'dayTypes', 'new' => 'newDayType', 'add' => 'addDayType', 'remove' => 'removeDayType', 'placeholder' => 'z.B. Probentag'],
-                'beverage_modes'=> ['title' => 'Getränke-Modi',   'subtitle' => 'Auswahl am Vorgang/an Positionen für Getränke. „Auf Anfrage" (oder Varianten davon) blendet im Angebot den Preis aus.', 'list' => $beverageModes, 'prop' => 'beverageModes', 'new' => 'newBeverageMode', 'add' => 'addBeverageMode', 'remove' => 'removeBeverageMode', 'placeholder' => 'z.B. Open Bar'],
             ];
         @endphp
 
@@ -114,6 +113,91 @@
                 </div>
             @endif
         @endforeach
+
+        {{-- ===== Getränke-Modi (mit Preis-Anzeige-Flags) ===== --}}
+        @if($activeTab === 'beverage_modes')
+            <div class="pt-6 space-y-4">
+                <x-ui-panel title="Getränke-Modi"
+                            subtitle="Auswahl am Vorgang/an Positionen. Pro Modus festlegen, ob Einzel- und/oder Gesamtpreis im Angebots-PDF ausgeblendet werden. Sind beide ausgeblendet, fließt die Position auch NICHT in die Summe ein (z.B. weil eine Pauschal-Position separat darunter steht).">
+                    <div class="p-4 border-b border-[var(--ui-border)] flex items-center gap-2">
+                        <input wire:model="newBeverageMode" wire:keydown.enter.prevent="addBeverageMode" type="text"
+                               placeholder="z.B. Open Bar"
+                               class="flex-1 border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        <x-ui-button variant="primary" size="sm" wire:click="addBeverageMode">
+                            @svg('heroicon-o-plus', 'w-3.5 h-3.5 inline') Hinzufügen
+                        </x-ui-button>
+                    </div>
+                    @if(empty($beverageModes))
+                        <div class="p-8 text-xs text-[var(--ui-muted)] text-center">
+                            Noch keine Einträge.
+                        </div>
+                    @else
+                        <ul class="divide-y divide-[var(--ui-border)]/40">
+                            @php $lastIdx = count($beverageModes) - 1; @endphp
+                            @foreach($beverageModes as $i => $mode)
+                                @php
+                                    $hideUnit  = (bool) ($mode['hide_unit_price']  ?? false);
+                                    $hideTotal = (bool) ($mode['hide_total_price'] ?? false);
+                                    $excludes  = $hideUnit && $hideTotal;
+                                @endphp
+                                <li class="p-3 flex items-center gap-3 flex-wrap" wire:key="bev-mode-{{ $i }}">
+                                    <span class="text-xs font-semibold text-[var(--ui-secondary)] flex-1 min-w-[140px]">{{ $mode['name'] }}</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <button type="button"
+                                                wire:click="toggleBeverageModeFlag({{ $i }}, 'hide_unit_price')"
+                                                title="Einzelpreis im Angebot ausblenden"
+                                                class="flex items-center gap-1.5 px-2 py-1 rounded-md border text-[0.62rem] font-semibold cursor-pointer
+                                                       {{ $hideUnit ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50' }}">
+                                            <span class="w-3 h-3 rounded-full flex items-center justify-center text-white text-[0.5rem]
+                                                         {{ $hideUnit ? 'bg-amber-500' : 'bg-slate-300' }}">
+                                                @if($hideUnit) ✓ @endif
+                                            </span>
+                                            Einzelpreis aus
+                                        </button>
+                                        <button type="button"
+                                                wire:click="toggleBeverageModeFlag({{ $i }}, 'hide_total_price')"
+                                                title="Gesamtpreis im Angebot ausblenden"
+                                                class="flex items-center gap-1.5 px-2 py-1 rounded-md border text-[0.62rem] font-semibold cursor-pointer
+                                                       {{ $hideTotal ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50' }}">
+                                            <span class="w-3 h-3 rounded-full flex items-center justify-center text-white text-[0.5rem]
+                                                         {{ $hideTotal ? 'bg-amber-500' : 'bg-slate-300' }}">
+                                                @if($hideTotal) ✓ @endif
+                                            </span>
+                                            Gesamtpreis aus
+                                        </button>
+                                        @if($excludes)
+                                            <span class="text-[0.55rem] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-rose-50 border border-rose-200 text-rose-600"
+                                                  title="Position fließt nicht in die Angebots-Summe ein.">
+                                                ohne Summe
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <div class="flex items-center gap-0.5">
+                                        <button wire:click="moveSimpleItem('beverageModes', {{ $i }}, -1)"
+                                                @disabled($i === 0)
+                                                title="Nach oben"
+                                                class="text-[var(--ui-muted)] hover:text-[var(--ui-primary)] p-1 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-[var(--ui-muted)]">
+                                            @svg('heroicon-o-chevron-up', 'w-3.5 h-3.5')
+                                        </button>
+                                        <button wire:click="moveSimpleItem('beverageModes', {{ $i }}, 1)"
+                                                @disabled($i === $lastIdx)
+                                                title="Nach unten"
+                                                class="text-[var(--ui-muted)] hover:text-[var(--ui-primary)] p-1 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-[var(--ui-muted)]">
+                                            @svg('heroicon-o-chevron-down', 'w-3.5 h-3.5')
+                                        </button>
+                                        <button wire:click="removeBeverageMode({{ $i }})" wire:confirm="Eintrag entfernen?"
+                                                title="Entfernen"
+                                                class="text-[var(--ui-muted)] hover:text-red-600 p-1 ml-1">
+                                            @svg('heroicon-o-trash', 'w-3.5 h-3.5')
+                                        </button>
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </x-ui-panel>
+            </div>
+        @endif
 
         @if($activeTab === 'quote_options')
             <div class="pt-6 space-y-4">

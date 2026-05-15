@@ -121,7 +121,7 @@ class Settings extends Component
         $this->bestuhlungOptions     = SettingsService::bestuhlungOptions($teamId);
         $this->scheduleDescriptions  = SettingsService::scheduleDescriptions($teamId);
         $this->dayTypes              = SettingsService::dayTypes($teamId);
-        $this->beverageModes         = SettingsService::beverageModes($teamId);
+        $this->beverageModes         = SettingsService::beverageModesFull($teamId);
         $this->bausteine             = SettingsService::bausteine($teamId);
         $this->orderNumberSchema     = SettingsService::orderNumberSchema($teamId);
         $this->attachFloorPlansDefault = SettingsService::attachFloorPlansDefault($teamId);
@@ -148,8 +148,43 @@ class Settings extends Component
     public function removeScheduleDescription(int $i): void { $this->removeAt('scheduleDescriptions', $i); SettingsService::setScheduleDescriptions($this->teamId(), $this->scheduleDescriptions); }
     public function addDayType(): void          { $this->pushSimple('dayTypes', 'newDayType'); SettingsService::setDayTypes($this->teamId(), $this->dayTypes); }
     public function removeDayType(int $i): void { $this->removeAt('dayTypes', $i); SettingsService::setDayTypes($this->teamId(), $this->dayTypes); }
-    public function addBeverageMode(): void          { $this->pushSimple('beverageModes', 'newBeverageMode'); SettingsService::setBeverageModes($this->teamId(), $this->beverageModes); }
-    public function removeBeverageMode(int $i): void { $this->removeAt('beverageModes', $i); SettingsService::setBeverageModes($this->teamId(), $this->beverageModes); }
+    public function addBeverageMode(): void
+    {
+        $name = trim($this->newBeverageMode);
+        if ($name === '') return;
+        // Duplikate per Name (case-insensitive) verhindern.
+        foreach ($this->beverageModes as $existing) {
+            if (mb_strtolower((string) ($existing['name'] ?? '')) === mb_strtolower($name)) {
+                $this->newBeverageMode = '';
+                return;
+            }
+        }
+        // „Auf Anfrage"-Substring setzt die Flags vor, damit bestehende
+        // Bestaetigungslogik weiterhin greift; sonst beide off.
+        $onRequest = SettingsService::isOnRequestBeverageMode($name);
+        $this->beverageModes[] = [
+            'name'             => $name,
+            'hide_unit_price'  => $onRequest,
+            'hide_total_price' => $onRequest,
+        ];
+        $this->newBeverageMode = '';
+        SettingsService::setBeverageModes($this->teamId(), $this->beverageModes);
+    }
+
+    public function removeBeverageMode(int $i): void
+    {
+        $this->removeAt('beverageModes', $i);
+        SettingsService::setBeverageModes($this->teamId(), $this->beverageModes);
+    }
+
+    /** Schaltet 'hide_unit_price' oder 'hide_total_price' fuer einen Modus um. */
+    public function toggleBeverageModeFlag(int $i, string $flag): void
+    {
+        if (!in_array($flag, ['hide_unit_price', 'hide_total_price'], true)) return;
+        if (!isset($this->beverageModes[$i])) return;
+        $this->beverageModes[$i][$flag] = !($this->beverageModes[$i][$flag] ?? false);
+        SettingsService::setBeverageModes($this->teamId(), $this->beverageModes);
+    }
 
     /** Livewire-Property -> SettingsService::set*-Methode (fuer Reorder der Simple-Listen). */
     protected const SIMPLE_LIST_SETTERS = [
