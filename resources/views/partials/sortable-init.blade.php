@@ -57,7 +57,12 @@
                     .map(function (n) { return n.dataset.sortableUuid; });
 
                 // Naechsten Livewire-Component nach oben finden und Action rufen.
-                const wireEl = el.closest('[wire\\:id]');
+                // DOM-Walk statt closest('[wire\\:id]') — Backslash-Escape im
+                // CSS-Selector haelt Alpine/eval-Schichten nicht zuverlaessig.
+                let wireEl = el;
+                while (wireEl && !(wireEl.hasAttribute && wireEl.hasAttribute('wire:id'))) {
+                    wireEl = wireEl.parentElement;
+                }
                 if (!wireEl || !window.Livewire) return;
                 const component = window.Livewire.find(wireEl.getAttribute('wire:id'));
                 if (component && typeof component.call === 'function') {

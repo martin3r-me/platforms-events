@@ -42,7 +42,13 @@ function _tinymceEditorFactory(opts) {
         init() {
             const self = this;
             const rootEl = this.$root;
-            const wireEl = rootEl.closest('[wire\\:id]');
+            // DOM-Walk statt closest('[wire\\:id]') — CSS-Selector mit
+            // Backslash-Escape ueberlebt Alpine's expression-eval nicht
+            // ('[wire\\:id]' → '[wire:id]' → InvalidSelectorError).
+            let wireEl = rootEl;
+            while (wireEl && !(wireEl.hasAttribute && wireEl.hasAttribute('wire:id'))) {
+                wireEl = wireEl.parentElement;
+            }
             this._wireId = wireEl ? wireEl.getAttribute('wire:id') : null;
 
             // Content-Replace aus Livewire (z.B. Modal wird mit anderem
