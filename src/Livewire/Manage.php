@@ -34,9 +34,26 @@ class Manage extends Component
     #[Url(as: 'view', except: 'list')]
     public string $viewMode = 'list';
 
+    /** Sub-Ansicht des Kalenders: month (Default), week, day oder agenda. */
+    #[Url(as: 'cal', except: 'month')]
+    public string $calendarView = 'month';
+
+    /** Faerbung im Kalender: 'status' (Default) oder 'type'. */
+    #[Url(as: 'color', except: 'status')]
+    public string $colorMode = 'status';
+
     /** Filter „Nur Highlights": zeigt nur besonders markierte Veranstaltungen. */
     #[Url(as: 'highlights', except: false)]
     public bool $highlightsOnly = false;
+
+    #[Url(as: 'resp', except: '')]
+    public string $responsibleFilter = '';
+
+    #[Url(as: 'type', except: '')]
+    public string $eventTypeFilter = '';
+
+    #[Url(as: 'loc', except: '')]
+    public string $locationFilter = '';
 
     // Create-Modal
     public bool $showCreateModal = false;
@@ -71,6 +88,52 @@ class Manage extends Component
     public function setViewMode(string $mode): void
     {
         $this->viewMode = in_array($mode, ['list', 'calendar'], true) ? $mode : 'list';
+    }
+
+    public function setCalendarView(string $view): void
+    {
+        $this->calendarView = in_array($view, ['month', 'week', 'day', 'agenda'], true) ? $view : 'month';
+    }
+
+    public function setColorMode(string $mode): void
+    {
+        $this->colorMode = in_array($mode, ['status', 'type'], true) ? $mode : 'status';
+    }
+
+    public function clearCalendarFilters(): void
+    {
+        $this->reset(['search', 'statusFilter', 'responsibleFilter', 'eventTypeFilter', 'locationFilter', 'highlightsOnly', 'dateFrom', 'dateTo']);
+    }
+
+    /**
+     * Verschiebt eine Veranstaltung auf ein neues Start-/End-Datum.
+     * Erhaelt die bisherige Dauer (Differenz zwischen end_date und start_date).
+     * Wird vom Kalender-Drag&Drop nach Confirm aufgerufen.
+     */
+    public function moveEvent(int $id, string $newStart): void
+    {
+        $team = Auth::user()->currentTeam;
+        $event = Event::where('team_id', $team->id)->find($id);
+        if (!$event || !$event->start_date) return;
+
+        try {
+            $newStartCarbon = Carbon::createFromFormat('Y-m-d', $newStart);
+        } catch (\Throwable $e) {
+            return;
+        }
+
+        $oldStart = $event->start_date;
+        $oldEnd   = $event->end_date ?: $oldStart;
+        $durationDays = $oldStart->diffInDays($oldEnd);
+
+        $event->start_date = $newStartCarbon->toDateString();
+        $event->end_date   = $newStartCarbon->copy()->addDays($durationDays)->toDateString();
+        $event->save();
+
+        // EventDays mitziehen, sofern die Service-Methode existiert.
+        if (method_exists(EventFactory::class, 'syncDaysFor')) {
+            EventFactory::syncDaysFor($event);
+        }
     }
 
     public function toggleHighlightsOnly(): void
@@ -208,6 +271,18 @@ class Manage extends Component
             $query->where('status', $this->statusFilter);
         }
 
+        if ($this->responsibleFilter !== '') {
+            $query->where('responsible', $this->responsibleFilter);
+        }
+
+        if ($this->eventTypeFilter !== '') {
+            $query->where('event_type', $this->eventTypeFilter);
+        }
+
+        if ($this->locationFilter !== '') {
+            $query->where('location', $this->locationFilter);
+        }
+
         if ($this->highlightsOnly) {
             $query->where('is_highlight', true);
         }
@@ -283,10 +358,23 @@ class Manage extends Component
             $customerLabels[$e->id] = $label ?: ($e->customer ?: null);
         }
 
+        // Filter-Optionen fuer die Kalender-/Listen-Dropdowns: Distinct-Werte
+        // aus dem Team-Bestand. event_type-Vorschlaege kommen aus Settings.
+        $filterOptions = [
+            'responsibles' => Event::where('team_id', $team->id)
+                ->whereNotNull('responsible')->where('responsible', '!=', '')
+                ->orderBy('responsible')->distinct()->pluck('responsible')->all(),
+            'locations'    => Event::where('team_id', $team->id)
+                ->whereNotNull('location')->where('location', '!=', '')
+                ->orderBy('location')->distinct()->pluck('location')->all(),
+            'eventTypes'   => \Platform\Events\Services\SettingsService::eventTypes($team->id),
+        ];
+
         // Kalender-Dataset: alle Events mit start_date (ohne Pagination), gefiltert
-        // nach Suche/Status (nicht nach Period – die Kalender-Komponente hat eigene
-        // Monats-Navigation). Minimale Felder fuer die Performance.
+        // nach allen aktiven Filtern. Period wird im Kalender ignoriert — die
+        // JS-Komponente navigiert selbst.
         $calendarEvents = [];
+        $typeColorMap   = [];
         if ($this->viewMode === 'calendar') {
             $calQuery = Event::query()
                 ->where('team_id', $team->id)
@@ -302,12 +390,32 @@ class Manage extends Component
             if ($this->statusFilter !== '' && $this->statusFilter !== 'Alle') {
                 $calQuery->where('status', $this->statusFilter);
             }
+            if ($this->responsibleFilter !== '') {
+                $calQuery->where('responsible', $this->responsibleFilter);
+            }
+            if ($this->eventTypeFilter !== '') {
+                $calQuery->where('event_type', $this->eventTypeFilter);
+            }
+            if ($this->locationFilter !== '') {
+                $calQuery->where('location', $this->locationFilter);
+            }
             if ($this->highlightsOnly) {
                 $calQuery->where('is_highlight', true);
             }
+            // Zeitraum-Filter auch im Kalender, sofern explizit gesetzt.
+            if ($periodStart) {
+                $calQuery->where(function ($q) use ($periodStart, $periodEnd) {
+                    $q->where(function ($q2) use ($periodStart, $periodEnd) {
+                        $q2->where('start_date', '<=', $periodEnd)
+                            ->where(function ($q3) use ($periodStart) {
+                                $q3->where('end_date', '>=', $periodStart)->orWhereNull('end_date');
+                            });
+                    });
+                });
+            }
             $calendarEvents = $calQuery
                 ->orderBy('start_date')
-                ->get(['id', 'event_number', 'name', 'customer', 'location', 'status', 'start_date', 'end_date', 'is_highlight'])
+                ->get(['id', 'event_number', 'name', 'customer', 'location', 'status', 'event_type', 'responsible', 'start_date', 'end_date', 'is_highlight'])
                 ->map(fn ($e) => [
                     'id'           => $e->id,
                     'event_number' => $e->event_number,
@@ -317,12 +425,28 @@ class Manage extends Component
                     'customer'     => $e->customer,
                     'location'     => $e->location,
                     'status'       => $e->status,
+                    'event_type'   => $e->event_type,
+                    'responsible'  => $e->responsible,
                     'is_highlight' => (bool) $e->is_highlight,
                     'start_date'   => $e->start_date?->toDateString(),
                     'end_date'     => $e->end_date?->toDateString() ?? $e->start_date?->toDateString(),
                 ])
                 ->values()
                 ->all();
+
+            // Deterministische HSL-Farben pro Event-Typ (auch fuer Typen, die im
+            // Bestand vorkommen aber nicht in den Settings sind).
+            $allTypes = collect($calendarEvents)->pluck('event_type')->filter()->unique()
+                ->merge($filterOptions['eventTypes'])->unique()->values();
+            foreach ($allTypes as $t) {
+                // Hash → Hue 0..359; Saturation/Lightness fix fuer Lesbarkeit.
+                $hue = (int) (hexdec(substr(md5((string) $t), 0, 6)) % 360);
+                $typeColorMap[$t] = [
+                    'bg'    => 'hsl(' . $hue . ', 65%, 92%)',
+                    'color' => 'hsl(' . $hue . ', 55%, 28%)',
+                    'bar'   => 'hsl(' . $hue . ', 60%, 50%)',
+                ];
+            }
         }
 
         return view('events::livewire.manage', [
@@ -337,6 +461,8 @@ class Manage extends Component
             'customerLabels'      => $customerLabels,
             'revenueByEvent'      => $revenueByEvent,
             'calendarEvents'      => $calendarEvents,
+            'filterOptions'       => $filterOptions,
+            'typeColorMap'        => $typeColorMap,
         ])->layout('platform::layouts.app');
     }
 }

@@ -80,7 +80,8 @@
             </div>
             @endif
 
-            {{-- Filter-Panel: in Liste komplett, im Kalender ohne Period-Tabs (Kalender hat eigene Monats-Navigation) --}}
+            {{-- Filter-Panel: gilt fuer Liste UND Kalender. Period-Tabs nur in der Liste
+                 (im Kalender navigiert die JS-Komponente eigenstaendig). --}}
             <x-ui-panel>
                 <div class="flex flex-col gap-4">
                     @if($viewMode === 'list')
@@ -119,6 +120,33 @@
                             @endforeach
                         </select>
 
+                        <select wire:model.live="responsibleFilter"
+                                class="border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30"
+                                title="Verantwortlicher">
+                            <option value="">Alle Verantwortlichen</option>
+                            @foreach(($filterOptions['responsibles'] ?? []) as $r)
+                                <option value="{{ $r }}">{{ $r }}</option>
+                            @endforeach
+                        </select>
+
+                        <select wire:model.live="eventTypeFilter"
+                                class="border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30"
+                                title="Event-Typ">
+                            <option value="">Alle Typen</option>
+                            @foreach(($filterOptions['eventTypes'] ?? []) as $t)
+                                <option value="{{ $t }}">{{ $t }}</option>
+                            @endforeach
+                        </select>
+
+                        <select wire:model.live="locationFilter"
+                                class="border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30"
+                                title="Location">
+                            <option value="">Alle Locations</option>
+                            @foreach(($filterOptions['locations'] ?? []) as $l)
+                                <option value="{{ $l }}">{{ $l }}</option>
+                            @endforeach
+                        </select>
+
                         {{-- Highlight-Filter: nur besonders markierte Veranstaltungen anzeigen --}}
                         <button type="button" wire:click="toggleHighlightsOnly"
                                 class="inline-flex items-center gap-1.5 px-3 py-2 rounded-md border text-[0.7rem] font-semibold transition
@@ -133,6 +161,15 @@
                             @endif
                             Highlights
                         </button>
+
+                        @if($search !== '' || $statusFilter !== '' || $responsibleFilter !== '' || $eventTypeFilter !== '' || $locationFilter !== '' || $highlightsOnly || $dateFrom !== '' || $dateTo !== '')
+                            <button type="button" wire:click="clearCalendarFilters"
+                                    class="inline-flex items-center gap-1 px-2.5 py-2 rounded-md border border-slate-200 bg-white text-[0.65rem] font-semibold text-slate-500 hover:bg-slate-50"
+                                    title="Filter zuruecksetzen">
+                                @svg('heroicon-o-x-mark', 'w-3.5 h-3.5')
+                                Reset
+                            </button>
+                        @endif
                     </div>
                 </div>
             </x-ui-panel>
@@ -429,65 +466,241 @@
                         'Warteliste'    => ['bg' => '#fff7ed', 'color' => '#c2410c', 'bar' => '#f97316'],
                         'Tendenz'       => ['bg' => '#faf5ff', 'color' => '#7c3aed', 'bar' => '#a855f7'],
                     ];
+                    $calendarViews = [
+                        'month'  => 'Monat',
+                        'week'   => 'Woche',
+                        'day'    => 'Tag',
+                        'agenda' => 'Agenda',
+                    ];
+                    $icalUrl = route('events.calendar.ics', [
+                        'status'     => $statusFilter ?: null,
+                        'resp'       => $responsibleFilter ?: null,
+                        'type'       => $eventTypeFilter ?: null,
+                        'loc'        => $locationFilter ?: null,
+                        'highlights' => $highlightsOnly ? 1 : null,
+                    ]);
                 @endphp
-                <div x-data="eventsCalendar({{ json_encode($calendarEvents) }}, {{ json_encode($statusColorsJs) }})"
+                <div x-data="eventsCalendar(
+                            {{ json_encode($calendarEvents) }},
+                            {{ json_encode($statusColorsJs) }},
+                            {{ json_encode($typeColorMap) }},
+                            @js($colorMode),
+                            @js($calendarView)
+                        )"
                      class="bg-white border border-[var(--ui-border)] rounded-lg overflow-hidden">
 
-                    {{-- Header: Monats-Navigation --}}
-                    <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--ui-border)]">
+                    {{-- Header: Navigation + View-Toggle + Color-Mode + iCal --}}
+                    <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--ui-border)] flex-wrap gap-3">
                         <div class="flex items-center gap-2">
-                            <button type="button" @click="prevMonth()"
-                                    class="w-7 h-7 border border-slate-200 rounded-md bg-white hover:bg-slate-50 flex items-center justify-center text-slate-500">
+                            <button type="button" @click="navPrev()"
+                                    class="w-7 h-7 border border-slate-200 rounded-md bg-white hover:bg-slate-50 flex items-center justify-center text-slate-500"
+                                    title="Zurueck">
                                 @svg('heroicon-o-chevron-left', 'w-3.5 h-3.5')
                             </button>
-                            <span class="text-sm font-bold text-[var(--ui-secondary)] min-w-[160px] text-center"
-                                  x-text="monthNames[currentMonth] + ' ' + currentYear"></span>
-                            <button type="button" @click="nextMonth()"
-                                    class="w-7 h-7 border border-slate-200 rounded-md bg-white hover:bg-slate-50 flex items-center justify-center text-slate-500">
+                            <span class="text-sm font-bold text-[var(--ui-secondary)] min-w-[200px] text-center"
+                                  x-text="headerLabel"></span>
+                            <button type="button" @click="navNext()"
+                                    class="w-7 h-7 border border-slate-200 rounded-md bg-white hover:bg-slate-50 flex items-center justify-center text-slate-500"
+                                    title="Vor">
                                 @svg('heroicon-o-chevron-right', 'w-3.5 h-3.5')
                             </button>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-[0.6rem] text-[var(--ui-muted)]">{{ count($calendarEvents) }} Veranstaltung{{ count($calendarEvents) === 1 ? '' : 'en' }}</span>
                             <button type="button" @click="goToday()"
                                     class="px-3 py-1 border border-slate-200 rounded-md bg-white hover:bg-slate-50 text-[0.65rem] font-semibold text-slate-600">
                                 Heute
                             </button>
                         </div>
-                    </div>
 
-                    {{-- Wochentag-Header --}}
-                    <div class="grid grid-cols-7 border-b border-[var(--ui-border)] bg-slate-50">
-                        <template x-for="d in ['Mo','Di','Mi','Do','Fr','Sa','So']" :key="d">
-                            <div class="px-2 py-1.5 text-center text-[0.6rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]"
-                                 x-text="d"></div>
-                        </template>
-                    </div>
+                        <div class="flex items-center gap-3 flex-wrap">
+                            {{-- View-Toggle: Monat / Woche / Tag / Agenda --}}
+                            <div class="inline-flex items-center bg-slate-100 border border-slate-200 rounded-md p-0.5 gap-0.5">
+                                @foreach($calendarViews as $key => $label)
+                                    <button type="button"
+                                            wire:click="setCalendarView('{{ $key }}')"
+                                            @click="view = @js($key)"
+                                            class="px-2.5 py-1 rounded text-[0.65rem] font-semibold transition
+                                                   {{ $calendarView === $key
+                                                       ? 'bg-white text-[var(--ui-secondary)] shadow-sm'
+                                                       : 'text-slate-500 hover:text-[var(--ui-secondary)]' }}">
+                                        {{ $label }}
+                                    </button>
+                                @endforeach
+                            </div>
 
-                    {{-- Kalender-Grid (6 Wochen × 7 Tage = 42 Zellen) --}}
-                    <div class="grid grid-cols-7">
-                        <template x-for="(cell, idx) in calendarCells" :key="idx">
-                            <div class="min-h-[96px] px-1.5 py-1 border-b border-r border-slate-100"
-                                 :class="cell.isToday ? 'bg-blue-50/40' : (cell.isCurrentMonth ? 'bg-white' : 'bg-slate-50/40')">
-                                {{-- Tag-Nummer --}}
-                                <div class="flex items-center justify-between mb-1">
-                                    <span class="text-[0.65rem]"
-                                          :class="cell.isToday
-                                              ? 'font-bold text-blue-600'
-                                              : (cell.isCurrentMonth ? 'font-medium text-slate-700' : 'text-slate-300')"
-                                          x-text="cell.day"></span>
+                            {{-- Color-Mode-Toggle --}}
+                            <div class="inline-flex items-center gap-1 text-[0.6rem] text-[var(--ui-muted)]">
+                                <span class="uppercase tracking-wider font-bold">Farbe</span>
+                                <div class="inline-flex items-center bg-slate-100 border border-slate-200 rounded-md p-0.5 gap-0.5">
+                                    <button type="button"
+                                            wire:click="setColorMode('status')"
+                                            @click="colorMode = 'status'"
+                                            class="px-2 py-0.5 rounded text-[0.6rem] font-semibold transition
+                                                   {{ $colorMode === 'status'
+                                                       ? 'bg-white text-[var(--ui-secondary)] shadow-sm'
+                                                       : 'text-slate-500 hover:text-[var(--ui-secondary)]' }}">
+                                        Status
+                                    </button>
+                                    <button type="button"
+                                            wire:click="setColorMode('type')"
+                                            @click="colorMode = 'type'"
+                                            class="px-2 py-0.5 rounded text-[0.6rem] font-semibold transition
+                                                   {{ $colorMode === 'type'
+                                                       ? 'bg-white text-[var(--ui-secondary)] shadow-sm'
+                                                       : 'text-slate-500 hover:text-[var(--ui-secondary)]' }}">
+                                        Typ
+                                    </button>
                                 </div>
-                                {{-- Events an diesem Tag --}}
-                                <div class="flex flex-col gap-0.5">
-                                    <template x-for="ev in cell.events" :key="ev.id">
+                            </div>
+
+                            <span class="text-[0.6rem] text-[var(--ui-muted)]">{{ count($calendarEvents) }} Veranstaltung{{ count($calendarEvents) === 1 ? '' : 'en' }}</span>
+
+                            <a href="{{ $icalUrl }}"
+                               class="inline-flex items-center gap-1 px-2.5 py-1 border border-slate-200 rounded-md bg-white hover:bg-slate-50 text-[0.62rem] font-semibold text-slate-600 no-underline"
+                               title="Als iCal/ICS-Datei herunterladen">
+                                @svg('heroicon-o-arrow-down-tray', 'w-3.5 h-3.5')
+                                iCal
+                            </a>
+                        </div>
+                    </div>
+
+                    {{-- =================== MONATS-ANSICHT =================== --}}
+                    <div x-show="view === 'month'">
+                        <div class="grid grid-cols-7 border-b border-[var(--ui-border)] bg-slate-50">
+                            <template x-for="d in ['Mo','Di','Mi','Do','Fr','Sa','So']" :key="d">
+                                <div class="px-2 py-1.5 text-center text-[0.6rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]"
+                                     x-text="d"></div>
+                            </template>
+                        </div>
+                        <div class="grid grid-cols-7">
+                            <template x-for="(cell, idx) in monthCells" :key="idx">
+                                <div class="min-h-[96px] px-1.5 py-1 border-b border-r border-slate-100"
+                                     :class="cell.isToday ? 'bg-blue-50/40' : (cell.isCurrentMonth ? 'bg-white' : 'bg-slate-50/40')"
+                                     @dragover.prevent="dragOverDay = cell.date"
+                                     @dragleave="dragOverDay = null"
+                                     @drop.prevent="onDropEvent($event, cell.date)"
+                                     :style="dragOverDay === cell.date ? 'outline: 2px dashed #3b82f6; outline-offset: -2px;' : ''">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-[0.65rem]"
+                                              :class="cell.isToday
+                                                  ? 'font-bold text-blue-600'
+                                                  : (cell.isCurrentMonth ? 'font-medium text-slate-700' : 'text-slate-300')"
+                                              x-text="cell.day"></span>
+                                    </div>
+                                    <div class="flex flex-col gap-0.5">
+                                        <template x-for="ev in cell.events" :key="ev.id + '-' + cell.date">
+                                            <a :href="ev.url"
+                                               wire:navigate
+                                               draggable="true"
+                                               @dragstart="onDragStart($event, ev)"
+                                               class="block px-1.5 py-0.5 rounded text-[0.55rem] font-semibold no-underline truncate border-l-[3px] transition hover:opacity-80 cursor-move"
+                                               :style="eventStyle(ev)"
+                                               :title="eventTooltip(ev)">
+                                                <span x-show="ev.is_highlight" class="mr-0.5">⭐</span><span x-text="ev.name"></span>
+                                            </a>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- =================== WOCHEN-ANSICHT =================== --}}
+                    <div x-show="view === 'week'">
+                        <div class="grid grid-cols-7 border-b border-[var(--ui-border)] bg-slate-50">
+                            <template x-for="cell in weekCells" :key="cell.date">
+                                <div class="px-2 py-1.5 text-center text-[0.6rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">
+                                    <div x-text="cell.dow"></div>
+                                    <div class="text-[0.7rem] mt-0.5"
+                                         :class="cell.isToday ? 'text-blue-600' : 'text-slate-700'"
+                                         x-text="cell.day"></div>
+                                </div>
+                            </template>
+                        </div>
+                        <div class="grid grid-cols-7">
+                            <template x-for="cell in weekCells" :key="cell.date">
+                                <div class="min-h-[260px] px-1.5 py-2 border-b border-r border-slate-100"
+                                     :class="cell.isToday ? 'bg-blue-50/40' : 'bg-white'"
+                                     @dragover.prevent="dragOverDay = cell.date"
+                                     @dragleave="dragOverDay = null"
+                                     @drop.prevent="onDropEvent($event, cell.date)"
+                                     :style="dragOverDay === cell.date ? 'outline: 2px dashed #3b82f6; outline-offset: -2px;' : ''">
+                                    <div class="flex flex-col gap-1">
+                                        <template x-for="ev in cell.events" :key="ev.id + '-' + cell.date">
+                                            <a :href="ev.url"
+                                               wire:navigate
+                                               draggable="true"
+                                               @dragstart="onDragStart($event, ev)"
+                                               class="block px-2 py-1 rounded text-[0.62rem] font-semibold no-underline border-l-[3px] transition hover:opacity-80 cursor-move"
+                                               :style="eventStyle(ev)"
+                                               :title="eventTooltip(ev)">
+                                                <div class="flex items-center gap-1">
+                                                    <span x-show="ev.is_highlight">⭐</span>
+                                                    <span x-text="ev.event_number" class="text-[0.55rem] opacity-70 font-mono"></span>
+                                                </div>
+                                                <div x-text="ev.name" class="truncate"></div>
+                                                <div x-show="ev.customer" x-text="ev.customer" class="text-[0.55rem] opacity-75 truncate"></div>
+                                            </a>
+                                        </template>
+                                        <div x-show="cell.events.length === 0" class="text-[0.55rem] text-slate-300 text-center pt-4">—</div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- =================== TAGES-ANSICHT =================== --}}
+                    <div x-show="view === 'day'" class="p-4">
+                        <template x-if="dayEvents.length === 0">
+                            <div class="text-center py-12 text-[var(--ui-muted)] text-sm">
+                                Keine Veranstaltungen an diesem Tag.
+                            </div>
+                        </template>
+                        <div class="flex flex-col gap-2">
+                            <template x-for="ev in dayEvents" :key="ev.id">
+                                <a :href="ev.url"
+                                   wire:navigate
+                                   class="block p-3 rounded-md border-l-[4px] no-underline transition hover:shadow-sm"
+                                   :style="eventStyle(ev) + '; border-color: #e2e8f0; border-width: 1px; border-left-width: 4px;'"
+                                   :title="eventTooltip(ev)">
+                                    <div class="flex items-center justify-between gap-3 flex-wrap">
+                                        <div class="flex items-center gap-2">
+                                            <span x-show="ev.is_highlight" class="text-amber-500">⭐</span>
+                                            <span class="font-mono text-[0.65rem] opacity-75" x-text="ev.event_number"></span>
+                                            <span class="text-[0.85rem] font-bold" x-text="ev.name"></span>
+                                        </div>
+                                        <div class="flex items-center gap-2 text-[0.65rem] opacity-80">
+                                            <span x-show="ev.customer" x-text="ev.customer"></span>
+                                            <span x-show="ev.location" class="px-1.5 py-0.5 rounded bg-white/40" x-text="ev.location"></span>
+                                            <span class="px-1.5 py-0.5 rounded bg-white/40 font-semibold" x-text="ev.status"></span>
+                                        </div>
+                                    </div>
+                                </a>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- =================== AGENDA-ANSICHT =================== --}}
+                    <div x-show="view === 'agenda'" class="divide-y divide-slate-100">
+                        <template x-if="agendaGroups.length === 0">
+                            <div class="text-center py-12 text-[var(--ui-muted)] text-sm">
+                                Keine Veranstaltungen im aktuellen Filter-Bereich.
+                            </div>
+                        </template>
+                        <template x-for="grp in agendaGroups" :key="grp.date">
+                            <div class="px-4 py-3">
+                                <div class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] mb-2"
+                                     x-text="grp.label"></div>
+                                <div class="flex flex-col gap-1">
+                                    <template x-for="ev in grp.events" :key="ev.id + '-' + grp.date">
                                         <a :href="ev.url"
                                            wire:navigate
-                                           class="block px-1.5 py-0.5 rounded text-[0.55rem] font-semibold no-underline truncate border-l-[3px] transition hover:opacity-80"
-                                           :style="'border-left-color: ' + (statusColors[ev.status]?.bar || '#94a3b8')
-                                               + '; background:' + (statusColors[ev.status]?.bg || '#f1f5f9')
-                                               + '; color:' + (statusColors[ev.status]?.color || '#475569')"
-                                           :title="(ev.is_highlight ? '⭐ ' : '') + ev.event_number + ' · ' + ev.name + (ev.customer ? ' — ' + ev.customer : '')">
-                                            <span x-show="ev.is_highlight" class="mr-0.5">⭐</span><span x-text="ev.name"></span>
+                                           class="flex items-center gap-3 px-3 py-2 rounded-md border-l-[3px] no-underline transition hover:bg-slate-50"
+                                           :style="eventStyle(ev)"
+                                           :title="eventTooltip(ev)">
+                                            <span x-show="ev.is_highlight">⭐</span>
+                                            <span class="font-mono text-[0.6rem] opacity-70" x-text="ev.event_number"></span>
+                                            <span class="text-[0.72rem] font-bold flex-1 truncate" x-text="ev.name"></span>
+                                            <span x-show="ev.customer" class="text-[0.6rem] opacity-75 truncate max-w-[180px]" x-text="ev.customer"></span>
+                                            <span class="text-[0.55rem] font-semibold px-1.5 py-0.5 rounded bg-white/60" x-text="ev.status"></span>
                                         </a>
                                     </template>
                                 </div>
@@ -567,33 +780,38 @@
          Definition bleibt nach wire:navigate erhalten. --}}
     <script>
         if (typeof window.eventsCalendar === 'undefined') {
-            window.eventsCalendar = function (events, statusColors) {
+            window.eventsCalendar = function (events, statusColors, typeColors, colorMode, view) {
                 var now = new Date();
                 return {
                     events: events || [],
                     statusColors: statusColors || {},
-                    currentMonth: now.getMonth(),
-                    currentYear:  now.getFullYear(),
-                    monthNames: ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],
+                    typeColors:   typeColors   || {},
+                    colorMode:    colorMode    || 'status',
+                    view:         view         || 'month',
 
-                    prevMonth() {
-                        if (this.currentMonth === 0) { this.currentMonth = 11; this.currentYear--; }
-                        else { this.currentMonth--; }
-                    },
-                    nextMonth() {
-                        if (this.currentMonth === 11) { this.currentMonth = 0; this.currentYear++; }
-                        else { this.currentMonth++; }
-                    },
-                    goToday() {
-                        var t = new Date();
-                        this.currentMonth = t.getMonth();
-                        this.currentYear  = t.getFullYear();
-                    },
+                    // Cursor — bedeutet je nach view:
+                    //   month  → aktueller Monat
+                    //   week   → ein Tag innerhalb der Woche
+                    //   day    → der angezeigte Tag
+                    //   agenda → Startpunkt der Liste (3 Monate ab Cursor)
+                    cursor:  new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+                    dragOverDay:  null,
+                    draggedId:    null,
+
+                    monthNames: ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],
+                    dowShort:   ['Mo','Di','Mi','Do','Fr','Sa','So'],
 
                     fmtDate(dt) {
                         return dt.getFullYear() + '-'
                             + String(dt.getMonth() + 1).padStart(2, '0') + '-'
                             + String(dt.getDate()).padStart(2, '0');
+                    },
+
+                    fmtDateLong(dt) {
+                        return this.dowShort[(dt.getDay() + 6) % 7] + ', '
+                            + dt.getDate() + '. '
+                            + this.monthNames[dt.getMonth()] + ' '
+                            + dt.getFullYear();
                     },
 
                     eventsForDate(dt) {
@@ -605,58 +823,194 @@
                         });
                     },
 
-                    get calendarCells() {
-                        var year  = this.currentYear;
-                        var month = this.currentMonth;
-                        var firstDay  = new Date(year, month, 1);
-                        var lastDay   = new Date(year, month + 1, 0);
-                        // Mo=0 .. So=6 (Wochenstart: Montag wie im Alt-System).
+                    eventStyle(ev) {
+                        var c = (this.colorMode === 'type')
+                            ? (this.typeColors[ev.event_type] || this.statusColors[ev.status] || {})
+                            : (this.statusColors[ev.status]    || {});
+                        return 'border-left-color:' + (c.bar   || '#94a3b8')
+                             + '; background:'      + (c.bg    || '#f1f5f9')
+                             + '; color:'           + (c.color || '#475569');
+                    },
+
+                    eventTooltip(ev) {
+                        var parts = [];
+                        if (ev.is_highlight) parts.push('⭐');
+                        parts.push(ev.event_number + ' · ' + ev.name);
+                        if (ev.customer)     parts.push('— ' + ev.customer);
+                        if (ev.event_type)   parts.push('· Typ: ' + ev.event_type);
+                        if (ev.responsible)  parts.push('· ' + ev.responsible);
+                        if (ev.location)     parts.push('· ' + ev.location);
+                        return parts.join(' ');
+                    },
+
+                    // ---------- Navigation pro View ----------
+                    navPrev() {
+                        var c = new Date(this.cursor);
+                        if (this.view === 'month')  c.setMonth(c.getMonth() - 1);
+                        if (this.view === 'week')   c.setDate(c.getDate() - 7);
+                        if (this.view === 'day')    c.setDate(c.getDate() - 1);
+                        if (this.view === 'agenda') c.setMonth(c.getMonth() - 1);
+                        this.cursor = c;
+                    },
+                    navNext() {
+                        var c = new Date(this.cursor);
+                        if (this.view === 'month')  c.setMonth(c.getMonth() + 1);
+                        if (this.view === 'week')   c.setDate(c.getDate() + 7);
+                        if (this.view === 'day')    c.setDate(c.getDate() + 1);
+                        if (this.view === 'agenda') c.setMonth(c.getMonth() + 1);
+                        this.cursor = c;
+                    },
+                    goToday() {
+                        var t = new Date();
+                        this.cursor = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+                    },
+
+                    get headerLabel() {
+                        var c = this.cursor;
+                        if (this.view === 'month') {
+                            return this.monthNames[c.getMonth()] + ' ' + c.getFullYear();
+                        }
+                        if (this.view === 'week') {
+                            var start = this.weekStart(c);
+                            var end   = new Date(start); end.setDate(end.getDate() + 6);
+                            return 'KW' + this.isoWeek(start) + ' · '
+                                 + start.getDate() + '.' + (start.getMonth() + 1) + '.'
+                                 + ' – '
+                                 + end.getDate()   + '.' + (end.getMonth() + 1)   + '.' + end.getFullYear();
+                        }
+                        if (this.view === 'day') {
+                            return this.fmtDateLong(c);
+                        }
+                        return 'Agenda ab ' + this.monthNames[c.getMonth()] + ' ' + c.getFullYear();
+                    },
+
+                    weekStart(dt) {
+                        var d = new Date(dt);
+                        var shift = (d.getDay() + 6) % 7; // Mo=0 .. So=6
+                        d.setDate(d.getDate() - shift);
+                        d.setHours(0, 0, 0, 0);
+                        return d;
+                    },
+
+                    isoWeek(dt) {
+                        var d = new Date(Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()));
+                        var dayNum = d.getUTCDay() || 7;
+                        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+                        var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+                        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+                    },
+
+                    // ---------- Monats-View ----------
+                    get monthCells() {
+                        var year  = this.cursor.getFullYear();
+                        var month = this.cursor.getMonth();
+                        var firstDay = new Date(year, month, 1);
+                        var lastDay  = new Date(year, month + 1, 0);
                         var startDow = (firstDay.getDay() + 6) % 7;
                         var daysInMonth = lastDay.getDate();
                         var today = new Date(); today.setHours(0, 0, 0, 0);
 
                         var cells = [];
-
-                        // Vormonat (Padding bis Wochenstart).
                         var prevLast = new Date(year, month, 0).getDate();
                         for (var i = startDow - 1; i >= 0; i--) {
                             var d = prevLast - i;
                             var dt = new Date(year, month - 1, d);
-                            cells.push({
-                                day: d,
-                                date: this.fmtDate(dt),
-                                isCurrentMonth: false,
-                                isToday: false,
-                                events: this.eventsForDate(dt),
-                            });
+                            cells.push({ day: d, date: this.fmtDate(dt), isCurrentMonth: false, isToday: false, events: this.eventsForDate(dt) });
                         }
-
-                        // Aktueller Monat.
                         for (var d = 1; d <= daysInMonth; d++) {
                             var dt = new Date(year, month, d);
+                            cells.push({ day: d, date: this.fmtDate(dt), isCurrentMonth: true, isToday: dt.getTime() === today.getTime(), events: this.eventsForDate(dt) });
+                        }
+                        var remaining = 42 - cells.length;
+                        for (var d = 1; d <= remaining; d++) {
+                            var dt = new Date(year, month + 1, d);
+                            cells.push({ day: d, date: this.fmtDate(dt), isCurrentMonth: false, isToday: false, events: this.eventsForDate(dt) });
+                        }
+                        return cells;
+                    },
+
+                    // ---------- Wochen-View ----------
+                    get weekCells() {
+                        var start = this.weekStart(this.cursor);
+                        var today = new Date(); today.setHours(0, 0, 0, 0);
+                        var cells = [];
+                        for (var i = 0; i < 7; i++) {
+                            var dt = new Date(start); dt.setDate(start.getDate() + i);
                             cells.push({
-                                day: d,
+                                day: dt.getDate(),
+                                dow: this.dowShort[i],
                                 date: this.fmtDate(dt),
-                                isCurrentMonth: true,
                                 isToday: dt.getTime() === today.getTime(),
                                 events: this.eventsForDate(dt),
                             });
                         }
-
-                        // Folgemonat (auf 42 Zellen = 6 Reihen auffuellen).
-                        var remaining = 42 - cells.length;
-                        for (var d = 1; d <= remaining; d++) {
-                            var dt = new Date(year, month + 1, d);
-                            cells.push({
-                                day: d,
-                                date: this.fmtDate(dt),
-                                isCurrentMonth: false,
-                                isToday: false,
-                                events: this.eventsForDate(dt),
-                            });
-                        }
-
                         return cells;
+                    },
+
+                    // ---------- Tages-View ----------
+                    get dayEvents() {
+                        return this.eventsForDate(this.cursor);
+                    },
+
+                    // ---------- Agenda-View: alle Events ab Cursor, gruppiert nach Tag ----------
+                    get agendaGroups() {
+                        var cursor = new Date(this.cursor); cursor.setHours(0, 0, 0, 0);
+                        var horizon = new Date(cursor); horizon.setMonth(horizon.getMonth() + 3);
+                        // Map: date → events
+                        var bucket = {};
+                        for (var i = 0; i < this.events.length; i++) {
+                            var ev = this.events[i];
+                            if (!ev.start_date) continue;
+                            var s = new Date(ev.start_date + 'T00:00:00');
+                            var e = new Date((ev.end_date || ev.start_date) + 'T00:00:00');
+                            // Start frühestens beim Cursor.
+                            var iter = (s < cursor) ? new Date(cursor) : new Date(s);
+                            while (iter <= e && iter <= horizon) {
+                                var key = this.fmtDate(iter);
+                                (bucket[key] = bucket[key] || []).push(ev);
+                                iter.setDate(iter.getDate() + 1);
+                            }
+                        }
+                        var keys = Object.keys(bucket).sort();
+                        var out = [];
+                        for (var k = 0; k < keys.length; k++) {
+                            var dt = new Date(keys[k] + 'T00:00:00');
+                            out.push({ date: keys[k], label: this.fmtDateLong(dt), events: bucket[keys[k]] });
+                        }
+                        return out;
+                    },
+
+                    // ---------- Drag & Drop ----------
+                    onDragStart(ev, payload) {
+                        this.draggedId = payload.id;
+                        ev.dataTransfer.effectAllowed = 'move';
+                        // Identifizierungs-Payload mitgeben (manche Browser brauchen das).
+                        try { ev.dataTransfer.setData('text/plain', String(payload.id)); } catch (e) {}
+                    },
+
+                    onDropEvent(ev, targetDate) {
+                        this.dragOverDay = null;
+                        if (!this.draggedId) return;
+                        var movedEv = this.events.find(function (x) { return x.id === this.draggedId; }.bind(this));
+                        if (!movedEv) { this.draggedId = null; return; }
+                        if (movedEv.start_date === targetDate) { this.draggedId = null; return; }
+                        var ok = confirm(
+                            'Veranstaltung „' + movedEv.name + '" auf ' + targetDate + ' verschieben?\n\n' +
+                            'Hinweis: Das aendert nur das Veranstaltungs-Datum am Event selbst.\n' +
+                            'Einzelne Event-Tage (Bookings, Schedule-Items) muessen ggf. separat geprueft werden.'
+                        );
+                        if (!ok) { this.draggedId = null; return; }
+                        // Optimistic UI: lokal verschieben, damit es sofort sichtbar ist.
+                        var oldStart = new Date(movedEv.start_date + 'T00:00:00');
+                        var oldEnd   = new Date((movedEv.end_date || movedEv.start_date) + 'T00:00:00');
+                        var durationDays = Math.round((oldEnd - oldStart) / 86400000);
+                        var newStart = new Date(targetDate + 'T00:00:00');
+                        var newEnd   = new Date(newStart); newEnd.setDate(newStart.getDate() + durationDays);
+                        movedEv.start_date = this.fmtDate(newStart);
+                        movedEv.end_date   = this.fmtDate(newEnd);
+                        // Server-Round-Trip.
+                        this.$wire.moveEvent(this.draggedId, this.fmtDate(newStart));
+                        this.draggedId = null;
                     },
                 };
             };

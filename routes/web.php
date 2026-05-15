@@ -1,5 +1,6 @@
 <?php
 
+use Platform\Events\Http\Controllers\CalendarIcalController;
 use Platform\Events\Http\Controllers\ContractAssetController;
 use Platform\Events\Http\Controllers\ContractPdfController;
 use Platform\Events\Http\Controllers\InvoicePdfController;
@@ -17,6 +18,9 @@ Route::get('/liste', Manage::class)->name('events.manage');
 Route::get('/va/{slug}', Detail::class)->name('events.show');
 Route::get('/pakete', Articles::class)->name('events.articles');
 Route::get('/einstellungen', Settings::class)->name('events.settings');
+
+// iCal/ICS-Export aller Team-Events (gefiltert per Query-Param).
+Route::get('/calendar.ics', [CalendarIcalController::class, 'download'])->name('events.calendar.ics');
 
 // Contract-Editor Asset-Upload (TinyMCE)
 Route::post('/contract-assets/upload', [ContractAssetController::class, 'upload'])->name('events.contract-assets.upload');
