@@ -802,57 +802,151 @@
             @endif {{-- /viewMode calendar --}}
         </div>
 
-        {{-- Create-Modal --}}
-        <x-ui-modal wire:model="showCreateModal" size="md" :hideFooter="true">
-            <x-slot name="header">Neue Veranstaltung</x-slot>
+        {{-- Create-Modal: strukturierte Erstkontakt-Erfassung (Lastenheft 2.3.1) --}}
+        <x-ui-modal wire:model="showCreateModal" size="lg" :hideFooter="true">
+            <x-slot name="header">Neue Veranstaltung — Erstkontakt</x-slot>
 
-            <form wire:submit.prevent="create" class="space-y-4">
-                <div>
-                    <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Name *</label>
-                    <input wire:model="name" type="text" placeholder="z.B. Sommer-Gala 2026"
-                           class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                    @error('name') <p class="mt-1 text-[0.62rem] text-red-600">{{ $message }}</p> @enderror
-                </div>
+            <form wire:submit.prevent="create" class="space-y-5">
 
-                <div>
-                    <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Kunde</label>
-                    @php $sc = $crmSlots['customer'] ?? []; @endphp
-                    @include('events::partials.crm-company-picker', [
-                        'slot'          => 'customer',
-                        'available'     => $crmCompanyAvailable,
-                        'options'       => $sc['options']   ?? [],
-                        'label'         => $sc['label']     ?? null,
-                        'url'           => $sc['url']       ?? null,
-                        'currentId'     => $sc['currentId'] ?? null,
-                        'fallbackField' => 'customer',
-                        'placeholder'   => '— CRM-Firma wählen —',
-                    ])
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Start *</label>
-                        <input wire:model.blur="start_date" type="date"
-                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                        @error('start_date') <p class="mt-1 text-[0.62rem] text-red-600">{{ $message }}</p> @enderror
+                {{-- ===== Sektion 1: Basis ===== --}}
+                <section class="space-y-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-1 h-4 bg-blue-600 rounded-sm"></span>
+                        <h3 class="text-[0.7rem] font-bold uppercase tracking-wider text-[var(--ui-secondary)] m-0">Basis</h3>
                     </div>
                     <div>
-                        <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Ende</label>
-                        <input wire:model="end_date" type="date"
-                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                        @error('end_date') <p class="mt-1 text-[0.62rem] text-red-600">{{ $message }}</p> @enderror
+                        <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Name der Veranstaltung *</label>
+                        <input wire:model="name" type="text" placeholder="z.B. Sommer-Gala 2026"
+                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        @error('name') <p class="mt-1 text-[0.62rem] text-red-600">{{ $message }}</p> @enderror
                     </div>
-                </div>
+                    <div>
+                        <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Kunde</label>
+                        @php $sc = $crmSlots['customer'] ?? []; @endphp
+                        @include('events::partials.crm-company-picker', [
+                            'slot'          => 'customer',
+                            'available'     => $crmCompanyAvailable,
+                            'options'       => $sc['options']   ?? [],
+                            'label'         => $sc['label']     ?? null,
+                            'url'           => $sc['url']       ?? null,
+                            'currentId'     => $sc['currentId'] ?? null,
+                            'fallbackField' => 'customer',
+                            'placeholder'   => '— CRM-Firma wählen —',
+                        ])
+                    </div>
+                </section>
 
-                <div>
-                    <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Status</label>
-                    <select wire:model="status"
-                            class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                        @foreach($statusOptions as $s)
-                            <option value="{{ $s }}">{{ $s }}</option>
-                        @endforeach
-                    </select>
-                </div>
+                {{-- ===== Sektion 2: Zeitraum & Gäste ===== --}}
+                <section class="space-y-3 border-t border-[var(--ui-border)] pt-4">
+                    <div class="flex items-center gap-2">
+                        <span class="w-1 h-4 bg-emerald-600 rounded-sm"></span>
+                        <h3 class="text-[0.7rem] font-bold uppercase tracking-wider text-[var(--ui-secondary)] m-0">Zeitraum & Gäste</h3>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Wunschdatum (Start) *</label>
+                            <input wire:model.blur="start_date" type="date"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            @error('start_date') <p class="mt-1 text-[0.62rem] text-red-600">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Ende</label>
+                            <input wire:model="end_date" type="date"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            @error('end_date') <p class="mt-1 text-[0.62rem] text-red-600">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Personenzahl (vorbefüllt für alle Tage)</label>
+                        <input wire:model="default_pax" type="text" placeholder="z.B. 120 oder 100 – 150"
+                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        <p class="mt-1 text-[0.58rem] text-[var(--ui-muted)]">Wird auf jeden Event-Tag in „Personen von/bis" übernommen — kann später pro Tag angepasst werden.</p>
+                    </div>
+                </section>
+
+                {{-- ===== Sektion 3: Anlass & Zuständigkeit ===== --}}
+                <section class="space-y-3 border-t border-[var(--ui-border)] pt-4">
+                    <div class="flex items-center gap-2">
+                        <span class="w-1 h-4 bg-violet-600 rounded-sm"></span>
+                        <h3 class="text-[0.7rem] font-bold uppercase tracking-wider text-[var(--ui-secondary)] m-0">Anlass & Zuständigkeit</h3>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Anlass-Typ</label>
+                            <input wire:model="event_type" type="text" list="evt-create-types"
+                                   placeholder="z.B. Hochzeit"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            <datalist id="evt-create-types">
+                                @foreach(($filterOptions['eventTypes'] ?? []) as $t)
+                                    <option value="{{ $t }}"></option>
+                                @endforeach
+                            </datalist>
+                        </div>
+                        <div>
+                            <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Verantwortlich</label>
+                            <input wire:model="responsible" type="text" list="evt-create-resps"
+                                   placeholder="Projektleiter"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            <datalist id="evt-create-resps">
+                                @foreach(($filterOptions['responsibles'] ?? []) as $r)
+                                    <option value="{{ $r }}"></option>
+                                @endforeach
+                            </datalist>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Status</label>
+                        <select wire:model="status"
+                                class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            @foreach($statusOptions as $s)
+                                <option value="{{ $s }}">{{ $s }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </section>
+
+                {{-- ===== Sektion 4: Eingang & Wiedervorlage ===== --}}
+                <section class="space-y-3 border-t border-[var(--ui-border)] pt-4">
+                    <div class="flex items-center gap-2">
+                        <span class="w-1 h-4 bg-amber-500 rounded-sm"></span>
+                        <h3 class="text-[0.7rem] font-bold uppercase tracking-wider text-[var(--ui-secondary)] m-0">Eingang & Wiedervorlage</h3>
+                    </div>
+                    <div class="grid grid-cols-[1fr_120px_1fr] gap-3">
+                        <div>
+                            <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Eingangsdatum</label>
+                            <input wire:model="inquiry_date" type="date"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        </div>
+                        <div>
+                            <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Uhrzeit</label>
+                            <input wire:model="inquiry_time" type="time"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        </div>
+                        <div>
+                            <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Potenzial</label>
+                            <select wire:model="potential"
+                                    class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                <option value="">— offen —</option>
+                                <option value="A">A — hoch / Hot</option>
+                                <option value="B">B — mittel / Warm</option>
+                                <option value="C">C — niedrig / Cold</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-[160px_1fr] gap-3">
+                        <div>
+                            <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Wiedervorlage</label>
+                            <input wire:model="follow_up_date" type="date"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        </div>
+                        <div>
+                            <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Notiz zum Erstkontakt</label>
+                            <input wire:model="follow_up_note" type="text"
+                                   placeholder="z.B. Telefonat mit Frau Müller, Budget ca. 8 k€, möchte Buffet"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        </div>
+                    </div>
+                </section>
 
                 <div class="flex justify-end gap-2 pt-4 border-t border-[var(--ui-border)]">
                     <x-ui-button type="button" variant="secondary-outline" size="sm" wire:click="closeCreate">

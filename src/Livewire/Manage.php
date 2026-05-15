@@ -80,6 +80,34 @@ class Manage extends Component
     #[Validate('nullable|string')]
     public ?string $status = 'Option';
 
+    // --- Erstkontakt-Erweiterungen (Lastenheft 2.3.1) ---
+    #[Validate('nullable|string|max:255')]
+    public ?string $event_type = null;
+
+    #[Validate('nullable|string|max:255')]
+    public ?string $responsible = null;
+
+    /** Default-Gaeste-Anzahl, fliesst in EventDay.pers_von/pers_bis. Freitext (z. B. „120 – 150"). */
+    #[Validate('nullable|string|max:64')]
+    public ?string $default_pax = null;
+
+    #[Validate('nullable|date')]
+    public ?string $inquiry_date = null;
+
+    /** HH:MM-String fuer den Erstkontakt. */
+    #[Validate('nullable|string|max:5')]
+    public ?string $inquiry_time = null;
+
+    /** Potenzial-Einschaetzung beim Erstkontakt. Optional. */
+    #[Validate('nullable|string|max:128')]
+    public ?string $potential = null;
+
+    #[Validate('nullable|date')]
+    public ?string $follow_up_date = null;
+
+    #[Validate('nullable|string|max:500')]
+    public ?string $follow_up_note = null;
+
     public function updatingPeriod($value): void
     {
         if (!in_array($value, ['week', 'month', 'year', 'all', 'custom'], true)) {
@@ -158,9 +186,19 @@ class Manage extends Component
 
     protected function resetCreateForm(): void
     {
-        $this->reset(['name', 'customer', 'start_date', 'end_date', 'crm_company_id']);
+        $this->reset([
+            'name', 'customer', 'start_date', 'end_date', 'crm_company_id',
+            'event_type', 'responsible', 'default_pax',
+            'inquiry_date', 'inquiry_time', 'potential',
+            'follow_up_date', 'follow_up_note',
+        ]);
         $this->crmSearch = ['customer' => ''];
         $this->status = 'Option';
+        // Eingangsfelder mit „jetzt" vorbelegen — Projektleiter sitzt im Erstgespraech.
+        $this->inquiry_date = now()->toDateString();
+        $this->inquiry_time = now()->format('H:i');
+        // Verantwortlich = eingeloggter User als Default.
+        $this->responsible = trim((string) (Auth::user()->name ?? '')) ?: null;
         $this->resetErrorBag();
     }
 
@@ -204,6 +242,16 @@ class Manage extends Component
             'start_date'     => $data['start_date'],
             'end_date'       => $data['end_date'] ?? null,
             'status'         => $data['status'] ?? 'Option',
+            // Erstkontakt-Felder (alle optional; EventFactory schleift sie durch)
+            'event_type'     => $data['event_type']     ?? null,
+            'responsible'    => $data['responsible']    ?? null,
+            'inquiry_date'   => $data['inquiry_date']   ?? null,
+            'inquiry_time'   => $data['inquiry_time']   ?? null,
+            'potential'      => $data['potential']      ?? null,
+            'follow_up_date' => $data['follow_up_date'] ?? null,
+            'follow_up_note' => $data['follow_up_note'] ?? null,
+            // default_pax wird in EventFactory extrahiert und auf alle EventDays gemappt
+            'default_pax'    => $this->default_pax ?: null,
         ]);
 
         $this->showCreateModal = false;
