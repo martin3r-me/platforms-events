@@ -927,9 +927,9 @@
                             <select wire:model="potential"
                                     class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                                 <option value="">— offen —</option>
-                                <option value="A">A — hoch / Hot</option>
-                                <option value="B">B — mittel / Warm</option>
-                                <option value="C">C — niedrig / Cold</option>
+                                @foreach(\Platform\Events\Tools\CreateEventTool::POTENTIAL_OPTIONS as $opt)
+                                    <option value="{{ $opt }}">{{ $opt }}</option>
+                                @endforeach
                             </select>
                         </div>
                     </div>
