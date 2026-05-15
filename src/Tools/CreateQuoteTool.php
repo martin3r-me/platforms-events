@@ -72,6 +72,11 @@ class CreateQuoteTool implements ToolContract, ToolMetadataContract
             ];
             if (array_key_exists('valid_until', $arguments) && $arguments['valid_until'] !== null && $arguments['valid_until'] !== '') {
                 $data['valid_until'] = $arguments['valid_until'];
+            } else {
+                // Default-Gueltigkeit aus Team-Settings, wenn nicht explizit gesetzt.
+                $data['valid_until'] = now()->addDays(
+                    \Platform\Events\Services\SettingsService::quoteDefaultValidityDays($event->team_id)
+                )->toDateString();
             }
             if (array_key_exists('attach_floor_plans', $arguments)) {
                 $v = $arguments['attach_floor_plans'];

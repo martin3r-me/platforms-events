@@ -213,6 +213,19 @@
                                 </span>
                             </span>
                         </label>
+
+                        <div class="flex items-start gap-3 border-t border-[var(--ui-border)]/40 pt-4">
+                            <div class="flex-1">
+                                <label for="quote-validity-days" class="block text-xs font-semibold text-[var(--ui-secondary)]">Standard-Gültigkeitsdauer für Angebote (Tage)</label>
+                                <p class="mt-0.5 text-[0.7rem] text-[var(--ui-muted)]">
+                                    Wird bei jedem neu erstellten Angebot automatisch in „gültig bis …" eingetragen (Erstellungsdatum + N Tage). Der Projektleiter kann den Wert am einzelnen Angebot weiterhin überschreiben.
+                                </p>
+                            </div>
+                            <input id="quote-validity-days"
+                                   type="number" min="1" max="3650"
+                                   wire:model.live.debounce.500ms="quoteDefaultValidityDays"
+                                   class="w-24 border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono text-right focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                        </div>
                     </div>
                 </x-ui-panel>
             </div>

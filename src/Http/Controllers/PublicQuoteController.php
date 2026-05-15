@@ -40,6 +40,20 @@ class PublicQuoteController extends Controller
             return redirect()->back()->with('error', 'Ungültige Aktion.');
         }
 
+        // Abgelaufene Angebote duerfen nicht mehr online zugesagt/abgelehnt werden.
+        if ($quote->isExpired()) {
+            return redirect()
+                ->route('events.public.quote', ['token' => $token])
+                ->with('error', 'Dieses Angebot ist abgelaufen. Bitte fordern Sie eine aktualisierte Version an.');
+        }
+
+        // Nur "Gesendet"-Angebote duerfen beantwortet werden.
+        if ($quote->status !== 'sent') {
+            return redirect()
+                ->route('events.public.quote', ['token' => $token])
+                ->with('error', 'Dieses Angebot kann nicht mehr beantwortet werden.');
+        }
+
         $quote->update([
             'status'        => $action === 'accept' ? 'accepted' : 'rejected',
             'responded_at'  => now(),

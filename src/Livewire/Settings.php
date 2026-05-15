@@ -42,6 +42,7 @@ class Settings extends Component
     public array $bausteine       = [];
     public string $orderNumberSchema = '';
     public bool $attachFloorPlansDefault = false;
+    public int $quoteDefaultValidityDays = 14;
 
     public string $newCostCenter  = '';
     public string $newCostCarrier = '';
@@ -125,11 +126,19 @@ class Settings extends Component
         $this->bausteine             = SettingsService::bausteine($teamId);
         $this->orderNumberSchema     = SettingsService::orderNumberSchema($teamId);
         $this->attachFloorPlansDefault = SettingsService::attachFloorPlansDefault($teamId);
+        $this->quoteDefaultValidityDays = SettingsService::quoteDefaultValidityDays($teamId);
     }
 
     public function updatedAttachFloorPlansDefault(bool $value): void
     {
         SettingsService::setAttachFloorPlansDefault($this->teamId(), $value);
+    }
+
+    public function updatedQuoteDefaultValidityDays(int|string $value): void
+    {
+        $days = max(1, (int) $value);
+        $this->quoteDefaultValidityDays = $days;
+        SettingsService::setQuoteDefaultValidityDays($this->teamId(), $days);
     }
 
     public function addCostCenter(): void      { $this->pushSimple('costCenters', 'newCostCenter'); SettingsService::setCostCenters($this->teamId(), $this->costCenters); }

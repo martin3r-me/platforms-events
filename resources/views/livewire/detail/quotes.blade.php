@@ -268,7 +268,17 @@
                                             class="text-[0.72rem] font-semibold text-[var(--ui-secondary)] bg-transparent border-0 cursor-pointer p-0">
                                         Angebot · {{ $q->created_at->format('d.m.Y') }}
                                         @if($q->valid_until)
-                                            <span class="text-[0.6rem] text-[var(--ui-muted)] ml-1.5">gültig bis {{ $q->valid_until->format('d.m.Y') }}</span>
+                                            @php $qExpired = $q->isExpired(); @endphp
+                                            <span class="text-[0.6rem] ml-1.5 {{ $qExpired ? 'text-red-600 font-semibold' : 'text-[var(--ui-muted)]' }}">
+                                                @if($qExpired)
+                                                    abgelaufen am {{ $q->valid_until->format('d.m.Y') }}
+                                                @else
+                                                    gültig bis {{ $q->valid_until->format('d.m.Y') }}
+                                                @endif
+                                            </span>
+                                            @if($qExpired)
+                                                <span class="text-[0.52rem] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ml-1 bg-red-50 text-red-700 border border-red-200">Abgelaufen</span>
+                                            @endif
                                         @endif
                                     </button>
                                     @if($q->sent_at)

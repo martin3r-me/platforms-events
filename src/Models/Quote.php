@@ -104,6 +104,22 @@ class Quote extends Model
     }
 
     /**
+     * True, wenn das Angebot ein Gueltigkeitsdatum hat, dieses in der Vergangenheit
+     * liegt und das Angebot noch nicht angenommen wurde. Akzeptierte Angebote
+     * gelten als nicht ablaufbar (der Kunde hat ja zugesagt).
+     */
+    public function isExpired(): bool
+    {
+        if (!$this->valid_until) {
+            return false;
+        }
+        if ($this->status === 'accepted') {
+            return false;
+        }
+        return $this->valid_until->lt(now()->startOfDay());
+    }
+
+    /**
      * Alle im Event gebuchten Locations (deduped), nach Sortierung der Buchungen.
      * Liefert leere Collection, wenn Event nicht ladbar.
      *

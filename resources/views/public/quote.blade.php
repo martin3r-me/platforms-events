@@ -36,13 +36,37 @@
                 @php
                     $statusMap = ['draft' => ['#94a3b8', 'Entwurf'], 'sent' => ['#2563eb', 'Gesendet'], 'accepted' => ['#16a34a', 'Angenommen'], 'rejected' => ['#ef4444', 'Abgelehnt']];
                     $st = $statusMap[$quote->status] ?? ['#94a3b8', $quote->status];
+                    $isExpired = $quote->isExpired();
                 @endphp
                 <span class="status" style="background: {{ $st[0] }}22; color: {{ $st[0] }};">{{ $st[1] }}</span>
+                @if($quote->valid_until)
+                    <span class="status" style="background: {{ $isExpired ? '#fef2f2' : '#f1f5f9' }}; color: {{ $isExpired ? '#b91c1c' : '#475569' }}; margin-left: 6px;">
+                        @if($isExpired)
+                            Abgelaufen am {{ $quote->valid_until->format('d.m.Y') }}
+                        @else
+                            Gültig bis {{ $quote->valid_until->format('d.m.Y') }}
+                        @endif
+                    </span>
+                @endif
             </div>
 
             @if(session('status'))
                 <div style="margin-top: 16px; padding: 12px; background: #dcfce7; border: 1px solid #86efac; border-radius: 6px; color: #166534; font-size: 0.85rem;">
                     {{ session('status') }}
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div style="margin-top: 16px; padding: 12px; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 6px; color: #991b1b; font-size: 0.85rem;">
+                    {{ session('error') }}
+                </div>
+            @endif
+
+            @if($isExpired && $quote->status === 'sent')
+                <div style="margin-top: 16px; padding: 14px 16px; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 6px; color: #991b1b; font-size: 0.85rem;">
+                    <strong>Dieses Angebot ist abgelaufen.</strong>
+                    Die Gültigkeit endete am {{ $quote->valid_until->format('d.m.Y') }}.
+                    Eine Online-Zusage ist nicht mehr möglich — bitte kontaktieren Sie uns für eine aktualisierte Version.
                 </div>
             @endif
 
@@ -210,7 +234,7 @@
                 @endif
             @endif
 
-            @if($quote->status === 'sent')
+            @if($quote->status === 'sent' && !$isExpired)
                 <form method="POST" action="{{ route('events.public.quote.respond', ['token' => $quote->token]) }}" style="margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
                     @csrf
                     <label style="display: block; font-size: 0.75rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Anmerkung (optional)</label>

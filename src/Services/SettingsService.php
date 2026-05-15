@@ -24,6 +24,10 @@ class SettingsService
     protected const KEY_BEVERAGE_MODES  = 'beverage_modes';
     protected const KEY_ORDER_NUMBER_SCHEMA = 'order_number_schema';
     protected const KEY_ATTACH_FLOOR_PLANS_DEFAULT = 'attach_floor_plans_default';
+    protected const KEY_QUOTE_DEFAULT_VALIDITY_DAYS = 'quote_default_validity_days';
+
+    /** Wie lange ein neu erstelltes Angebot per Default gueltig ist (in Tagen). */
+    public const QUOTE_DEFAULT_VALIDITY_DAYS_FALLBACK = 14;
 
     public static function defaults(): array
     {
@@ -197,6 +201,27 @@ class SettingsService
     public static function setAttachFloorPlansDefault(?int $teamId, bool $value): void
     {
         Setting::setFor($teamId, self::KEY_ATTACH_FLOOR_PLANS_DEFAULT, $value ? '1' : '0');
+    }
+
+    /**
+     * Standard-Gueltigkeitsdauer eines neu erstellten Angebots in Tagen.
+     * Wird bei Quote-Create automatisch in valid_until eingetragen (now + days).
+     */
+    public static function quoteDefaultValidityDays(?int $teamId): int
+    {
+        $raw = Setting::getFor($teamId, self::KEY_QUOTE_DEFAULT_VALIDITY_DAYS);
+        $value = is_string($raw) ? (int) $raw : 0;
+        if ($value < 1) {
+            return self::QUOTE_DEFAULT_VALIDITY_DAYS_FALLBACK;
+        }
+        // Sinnvolle Obergrenze gegen Tippfehler (Jahre statt Tage).
+        return min($value, 3650);
+    }
+
+    public static function setQuoteDefaultValidityDays(?int $teamId, int $days): void
+    {
+        $days = max(1, min($days, 3650));
+        Setting::setFor($teamId, self::KEY_QUOTE_DEFAULT_VALIDITY_DAYS, (string) $days);
     }
 
     public static function setCostCenters(?int $teamId, array $items): void       { self::setArray($teamId, self::KEY_COST_CENTERS, array_values(array_filter(array_map('trim', $items)))); }

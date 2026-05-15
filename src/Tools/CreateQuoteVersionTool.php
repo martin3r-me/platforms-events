@@ -75,6 +75,9 @@ class CreateQuoteVersionTool implements ToolContract, ToolMetadataContract
                 'version'    => $maxVersion + 1,
                 'parent_id'  => $rootId,
                 'is_current' => true,
+                'valid_until' => now()->addDays(
+                    \Platform\Events\Services\SettingsService::quoteDefaultValidityDays($event->team_id)
+                )->toDateString(),
             ]);
 
             ActivityLogger::log($event, 'quote', "Angebot v{$new->version} via Tool angelegt");

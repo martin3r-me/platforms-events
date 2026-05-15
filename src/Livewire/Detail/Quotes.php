@@ -177,6 +177,7 @@ class Quotes extends Component
             'status'     => 'draft',
             'version'    => 1,
             'is_current' => true,
+            'valid_until' => now()->addDays(\Platform\Events\Services\SettingsService::quoteDefaultValidityDays($event->team_id))->toDateString(),
         ]);
         $this->activeQuoteId = $quote->id;
         ActivityLogger::log($event, 'quote', "Angebot #{$quote->id} (v1) angelegt");
@@ -223,6 +224,7 @@ class Quotes extends Component
             'version'    => $maxVersion + 1,
             'parent_id'  => $rootId,
             'is_current' => true,
+            'valid_until' => now()->addDays(\Platform\Events\Services\SettingsService::quoteDefaultValidityDays($event->team_id))->toDateString(),
         ]);
 
         $this->activeQuoteId = $newQ->id;
