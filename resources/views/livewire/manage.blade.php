@@ -714,6 +714,90 @@
                             </div>
                         </template>
                     </div>
+
+                    {{-- ===== Verschieben-Modal (Alpine-only) ===== --}}
+                    <div x-show="pendingMove !== null"
+                         x-cloak
+                         class="fixed inset-0 z-[100] flex items-center justify-center p-4"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0"
+                         x-transition:enter-end="opacity-100"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         @keydown.window.escape="cancelMove()">
+                        {{-- Overlay --}}
+                        <div class="absolute inset-0 backdrop-blur-md bg-black/50" @click="cancelMove()"></div>
+
+                        {{-- Modal-Karte --}}
+                        <div class="relative z-[101] w-full max-w-md bg-white rounded-xl shadow-2xl border border-slate-200/60 overflow-hidden"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 scale-100"
+                             x-transition:leave-end="opacity-0 scale-95">
+                            {{-- Header --}}
+                            <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                                    @svg('heroicon-o-arrows-up-down', 'w-5 h-5')
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="text-[0.9rem] font-bold text-slate-800 m-0 truncate">Veranstaltung verschieben</h3>
+                                    <p class="text-[0.65rem] text-slate-500 m-0 truncate" x-text="pendingMove?.eventName + (pendingMove?.customer ? ' · ' + pendingMove?.customer : '')"></p>
+                                </div>
+                                <button @click="cancelMove()" type="button"
+                                        class="text-slate-400 hover:text-slate-700 p-1 -mr-1"
+                                        aria-label="Schliessen">
+                                    @svg('heroicon-o-x-mark', 'w-4 h-4')
+                                </button>
+                            </div>
+
+                            {{-- Body: Vorher/Nachher --}}
+                            <div class="px-5 py-4">
+                                <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                                    <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                                        <div class="text-[0.55rem] font-bold uppercase tracking-wider text-slate-400">Bisher</div>
+                                        <div class="text-[0.78rem] font-semibold text-slate-700 mt-0.5" x-text="formatDateDE(pendingMove?.oldDate)"></div>
+                                    </div>
+                                    <div class="text-slate-300">
+                                        @svg('heroicon-o-arrow-right', 'w-4 h-4')
+                                    </div>
+                                    <div class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
+                                        <div class="text-[0.55rem] font-bold uppercase tracking-wider text-blue-500">Neu</div>
+                                        <div class="text-[0.78rem] font-semibold text-blue-800 mt-0.5" x-text="formatDateDE(pendingMove?.newDate)"></div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3 flex items-center justify-center">
+                                    <span class="text-[0.62rem] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700"
+                                          x-text="(pendingMove?.offsetDays > 0 ? '+' : '') + pendingMove?.offsetDays + ' Tag' + (Math.abs(pendingMove?.offsetDays) === 1 ? '' : 'e')"></span>
+                                </div>
+
+                                <div class="mt-4 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-[0.65rem] text-amber-800 flex items-start gap-2">
+                                    @svg('heroicon-o-information-circle', 'w-3.5 h-3.5 flex-shrink-0 mt-0.5')
+                                    <div>
+                                        Alle <span class="font-semibold">Event-Tage</span>, <span class="font-semibold">Raumbuchungen</span> und
+                                        <span class="font-semibold">Ablaufplan-Einträge</span> werden um die gleiche Differenz mitgezogen.
+                                        Uhrzeiten, Personenzahlen und Raumzuordnungen bleiben unverändert.
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Footer --}}
+                            <div class="px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-2">
+                                <button type="button" @click="cancelMove()"
+                                        class="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-[0.7rem] font-semibold text-slate-600 transition">
+                                    Abbrechen
+                                </button>
+                                <button type="button" @click="confirmMove()"
+                                        class="px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-[0.7rem] font-semibold text-white transition shadow-sm flex items-center gap-1.5">
+                                    @svg('heroicon-o-check', 'w-3.5 h-3.5')
+                                    Verschieben
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             @endif {{-- /viewMode calendar --}}
         </div>
@@ -805,6 +889,9 @@
                     dragOverDay:  null,
                     draggedId:    null,
                     wasDragging:  false,
+
+                    // Modal-State fuer den Verschieben-Confirm.
+                    pendingMove:  null,  // null oder { eventId, eventName, oldDate, newDate, durationDays }
 
                     monthNames: ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],
                     dowShort:   ['Mo','Di','Mi','Do','Fr','Sa','So'],
@@ -1024,24 +1111,48 @@
                         var movedEv = this.events.find(function (x) { return x.id === this.draggedId; }.bind(this));
                         if (!movedEv) { this.draggedId = null; return; }
                         if (movedEv.start_date === targetDate) { this.draggedId = null; return; }
-                        var ok = confirm(
-                            'Veranstaltung „' + movedEv.name + '" auf ' + targetDate + ' verschieben?\n\n' +
-                            'Alle Event-Tage, Raumbuchungen und Ablaufplan-Eintraege werden um die gleiche\n' +
-                            'Tages-Differenz mitgezogen. Uhrzeiten, Personenzahlen und Raumzuordnungen\n' +
-                            'bleiben unveraendert.'
-                        );
-                        if (!ok) { this.draggedId = null; return; }
-                        // Optimistic UI: lokal verschieben, damit es sofort sichtbar ist.
+                        // Anstatt confirm(): Modal mit allen Details oeffnen.
                         var oldStart = new Date(movedEv.start_date + 'T00:00:00');
                         var oldEnd   = new Date((movedEv.end_date || movedEv.start_date) + 'T00:00:00');
-                        var durationDays = Math.round((oldEnd - oldStart) / 86400000);
-                        var newStart = new Date(targetDate + 'T00:00:00');
-                        var newEnd   = new Date(newStart); newEnd.setDate(newStart.getDate() + durationDays);
+                        this.pendingMove = {
+                            eventId:      movedEv.id,
+                            eventName:    movedEv.name,
+                            customer:     movedEv.customer || '',
+                            oldDate:      movedEv.start_date,
+                            newDate:      targetDate,
+                            durationDays: Math.round((oldEnd - oldStart) / 86400000),
+                            offsetDays:   Math.round((new Date(targetDate + 'T00:00:00') - oldStart) / 86400000),
+                        };
+                    },
+
+                    confirmMove() {
+                        if (!this.pendingMove) return;
+                        var pm = this.pendingMove;
+                        var movedEv = this.events.find(function (x) { return x.id === pm.eventId; });
+                        if (!movedEv) { this.pendingMove = null; this.draggedId = null; return; }
+                        // Optimistic UI: lokal verschieben.
+                        var newStart = new Date(pm.newDate + 'T00:00:00');
+                        var newEnd   = new Date(newStart); newEnd.setDate(newStart.getDate() + pm.durationDays);
                         movedEv.start_date = this.fmtDate(newStart);
                         movedEv.end_date   = this.fmtDate(newEnd);
                         // Server-Round-Trip.
-                        this.$wire.moveEvent(this.draggedId, this.fmtDate(newStart));
-                        this.draggedId = null;
+                        this.$wire.moveEvent(pm.eventId, pm.newDate);
+                        this.pendingMove = null;
+                        this.draggedId   = null;
+                    },
+
+                    cancelMove() {
+                        this.pendingMove = null;
+                        this.draggedId   = null;
+                    },
+
+                    formatDateDE(iso) {
+                        if (!iso) return '';
+                        var d = new Date(iso + 'T00:00:00');
+                        return this.dowShort[(d.getDay() + 6) % 7] + ', '
+                             + String(d.getDate()).padStart(2, '0') + '.'
+                             + String(d.getMonth() + 1).padStart(2, '0') + '.'
+                             + d.getFullYear();
                     },
                 };
             };
