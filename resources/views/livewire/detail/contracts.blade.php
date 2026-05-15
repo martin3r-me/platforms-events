@@ -230,17 +230,77 @@
                     </p>
                 </div>
 
-                {{-- Vorschau --}}
+                {{-- Vorschau — Styles spiegeln das spaetere PDF (pdf/contract.blade.php), damit
+                     Zeilenabstand, Abstaende von Absaetzen, Tabellen-Rahmen und Listen-Einzuege
+                     dem finalen Output entsprechen. --}}
                 @if($contractPreviewMode)
                     <div class="border border-[var(--ui-border)] rounded-md bg-white overflow-hidden">
                         <div class="px-3 py-1.5 bg-emerald-50 border-b border-emerald-200 text-[0.58rem] font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
                             @svg('heroicon-o-eye', 'w-3 h-3')
                             Vorschau — Platzhalter sind mit den aktuellen Event-Daten ersetzt
                         </div>
-                        <div class="p-6 prose prose-sm max-w-none" style="min-height: 600px; max-height: 600px; overflow-y: auto;">
+                        <div class="contract-preview-body" style="min-height: 600px; max-height: 600px; overflow-y: auto;">
                             {!! $contractPreviewHtml !!}
                         </div>
                     </div>
+
+                    <style>
+                        /* Reproduziert die PDF-Typografie (resources/views/pdf/contract.blade.php),
+                           gescopt auf die Preview, damit das App-CSS aussenrum unveraendert bleibt. */
+                        .contract-preview-body {
+                            font-family: 'DejaVu Sans', Arial, sans-serif;
+                            font-size: 10pt;
+                            line-height: 1.5;
+                            color: #1e293b;
+                            padding: 24px 32px;
+                            background: #fff;
+                        }
+                        .contract-preview-body h1 { font-size: 18pt; margin: 0 0 6px 0; line-height: 1.2; }
+                        .contract-preview-body h2 { font-size: 13pt; margin: 14px 0 6px 0; line-height: 1.3; }
+                        .contract-preview-body h3 { font-size: 11pt; margin: 10px 0 4px 0; line-height: 1.3; }
+                        .contract-preview-body p  { margin: 6px 0; }
+                        .contract-preview-body ul,
+                        .contract-preview-body ol { margin: 6px 0 6px 18px; padding: 0; }
+                        .contract-preview-body li { margin: 2px 0; }
+                        .contract-preview-body table {
+                            border-collapse: collapse;
+                            width: 100%;
+                            margin: 8px 0;
+                        }
+                        .contract-preview-body th,
+                        .contract-preview-body td {
+                            border: 1px solid #e2e8f0;
+                            padding: 4px 6px;
+                            text-align: left;
+                        }
+                        .contract-preview-body img { max-width: 100%; }
+                        .contract-preview-body figure { margin: 8px 0; }
+                        .contract-preview-body code {
+                            background: #f1f5f9;
+                            padding: 1px 4px;
+                            border-radius: 3px;
+                        }
+                        .contract-preview-body hr {
+                            border: 0;
+                            border-top: 1px solid #e2e8f0;
+                            margin: 10px 0;
+                        }
+                        /* TinyMCE-Alignment 1:1 wie im PDF */
+                        .contract-preview-body p[style*="text-align: center"],
+                        .contract-preview-body p[style*="text-align:center"],
+                        .contract-preview-body div[style*="text-align: center"],
+                        .contract-preview-body div[style*="text-align:center"] { text-align: center; }
+                        .contract-preview-body p[style*="text-align: right"],
+                        .contract-preview-body p[style*="text-align:right"],
+                        .contract-preview-body div[style*="text-align: right"],
+                        .contract-preview-body div[style*="text-align:right"] { text-align: right; }
+                        .contract-preview-body p[style*="text-align: justify"],
+                        .contract-preview-body div[style*="text-align: justify"] { text-align: justify; }
+                        .contract-preview-body img[style*="float: left"],
+                        .contract-preview-body img[style*="float:left"]   { float: left;  margin: 0 10px 6px 0; }
+                        .contract-preview-body img[style*="float: right"],
+                        .contract-preview-body img[style*="float:right"]  { float: right; margin: 0 0 6px 10px; }
+                    </style>
                 @endif
 
                 <div class="mt-2" x-data="{ open: false }">
