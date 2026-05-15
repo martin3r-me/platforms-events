@@ -594,15 +594,15 @@
                                     </div>
                                     <div class="flex flex-col gap-0.5">
                                         <template x-for="ev in cell.events" :key="ev.id + '-' + cell.date">
-                                            <a :href="ev.url"
-                                               wire:navigate
-                                               draggable="true"
-                                               @dragstart="onDragStart($event, ev)"
-                                               class="block px-1.5 py-0.5 rounded text-[0.55rem] font-semibold no-underline truncate border-l-[3px] transition hover:opacity-80 cursor-move"
-                                               :style="eventStyle(ev)"
-                                               :title="eventTooltip(ev)">
+                                            <div draggable="true"
+                                                 @dragstart="onDragStart($event, ev)"
+                                                 @dragend="onDragEnd()"
+                                                 @click="onPillClick($event, ev)"
+                                                 class="px-1.5 py-0.5 rounded text-[0.55rem] font-semibold truncate border-l-[3px] transition hover:opacity-80 cursor-grab active:cursor-grabbing select-none"
+                                                 :style="eventStyle(ev)"
+                                                 :title="eventTooltip(ev)">
                                                 <span x-show="ev.is_highlight" class="mr-0.5">⭐</span><span x-text="ev.name"></span>
-                                            </a>
+                                            </div>
                                         </template>
                                     </div>
                                 </div>
@@ -632,20 +632,20 @@
                                      :style="dragOverDay === cell.date ? 'outline: 2px dashed #3b82f6; outline-offset: -2px;' : ''">
                                     <div class="flex flex-col gap-1">
                                         <template x-for="ev in cell.events" :key="ev.id + '-' + cell.date">
-                                            <a :href="ev.url"
-                                               wire:navigate
-                                               draggable="true"
-                                               @dragstart="onDragStart($event, ev)"
-                                               class="block px-2 py-1 rounded text-[0.62rem] font-semibold no-underline border-l-[3px] transition hover:opacity-80 cursor-move"
-                                               :style="eventStyle(ev)"
-                                               :title="eventTooltip(ev)">
+                                            <div draggable="true"
+                                                 @dragstart="onDragStart($event, ev)"
+                                                 @dragend="onDragEnd()"
+                                                 @click="onPillClick($event, ev)"
+                                                 class="px-2 py-1 rounded text-[0.62rem] font-semibold border-l-[3px] transition hover:opacity-80 cursor-grab active:cursor-grabbing select-none"
+                                                 :style="eventStyle(ev)"
+                                                 :title="eventTooltip(ev)">
                                                 <div class="flex items-center gap-1">
                                                     <span x-show="ev.is_highlight">⭐</span>
                                                     <span x-text="ev.event_number" class="text-[0.55rem] opacity-70 font-mono"></span>
                                                 </div>
                                                 <div x-text="ev.name" class="truncate"></div>
                                                 <div x-show="ev.customer" x-text="ev.customer" class="text-[0.55rem] opacity-75 truncate"></div>
-                                            </a>
+                                            </div>
                                         </template>
                                         <div x-show="cell.events.length === 0" class="text-[0.55rem] text-slate-300 text-center pt-4">—</div>
                                     </div>
@@ -804,6 +804,7 @@
                     cursor:  new Date(now.getFullYear(), now.getMonth(), now.getDate()),
                     dragOverDay:  null,
                     draggedId:    null,
+                    wasDragging:  false,
 
                     monthNames: ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],
                     dowShort:   ['Mo','Di','Mi','Do','Fr','Sa','So'],
@@ -988,14 +989,36 @@
                     },
 
                     // ---------- Drag & Drop ----------
-                    onDragStart(ev, payload) {
-                        this.draggedId = payload.id;
-                        ev.dataTransfer.effectAllowed = 'move';
-                        // Identifizierungs-Payload mitgeben (manche Browser brauchen das).
-                        try { ev.dataTransfer.setData('text/plain', String(payload.id)); } catch (e) {}
+                    onDragStart(e, payload) {
+                        this.draggedId   = payload.id;
+                        this.wasDragging = true;
+                        e.dataTransfer.effectAllowed = 'move';
+                        // Manche Browser starten den Drag nicht, wenn dataTransfer leer bleibt.
+                        try { e.dataTransfer.setData('text/plain', String(payload.id)); } catch (_) {}
                     },
 
-                    onDropEvent(ev, targetDate) {
+                    onDragEnd() {
+                        // Click-Event feuert NACH dragend — Flag erst danach loeschen.
+                        var self = this;
+                        setTimeout(function () { self.wasDragging = false; }, 100);
+                    },
+
+                    onPillClick(e, payload) {
+                        // Wenn gerade gezogen wurde, Click unterdruecken (kein Navigate).
+                        if (this.wasDragging) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            return;
+                        }
+                        // SPA-Navigation analog zu wire:navigate.
+                        if (window.Livewire && typeof window.Livewire.navigate === 'function') {
+                            window.Livewire.navigate(payload.url);
+                        } else {
+                            window.location.href = payload.url;
+                        }
+                    },
+
+                    onDropEvent(e, targetDate) {
                         this.dragOverDay = null;
                         if (!this.draggedId) return;
                         var movedEv = this.events.find(function (x) { return x.id === this.draggedId; }.bind(this));
