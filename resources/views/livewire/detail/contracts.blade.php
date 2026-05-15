@@ -188,18 +188,60 @@
                 </select>
             </div>
             <div>
-                <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Inhalt</label>
-                @include('events::partials.tinymce-editor', [
-                    'wireProperty' => 'contractText',
-                    'initial'      => $contractText,
-                    'height'       => 600,
-                    'uniqueId'     => 'tiny-contract',
-                ])
-                <p class="text-[0.58rem] text-[var(--ui-muted)] mt-2">
-                    Formatierung (fett, zentriert, Bilder, Tabellen) ueber die Toolbar. Platzhalter wie
-                    <code class="text-purple-600">{EVENT_NUMBER}</code>,
-                    <code class="text-purple-600">{CUSTOMER_COMPANY}</code> etc. werden beim Rendern ersetzt.
-                </p>
+                <div class="flex items-end justify-between mb-1 gap-3 flex-wrap">
+                    <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)]">Inhalt</label>
+                    {{-- Toggle: Bearbeiten / Vorschau --}}
+                    <div class="inline-flex items-center bg-slate-100 border border-slate-200 rounded-md p-0.5 gap-0.5">
+                        <button type="button"
+                                wire:click="$set('contractPreviewMode', false)"
+                                class="flex items-center gap-1 px-2.5 py-1 rounded text-[0.62rem] font-semibold transition
+                                       {{ ! $contractPreviewMode
+                                           ? 'bg-white text-[var(--ui-secondary)] shadow-sm'
+                                           : 'text-slate-500 hover:text-[var(--ui-secondary)]' }}">
+                            @svg('heroicon-o-pencil-square', 'w-3 h-3')
+                            Bearbeiten
+                        </button>
+                        <button type="button"
+                                wire:click="toggleContractPreview"
+                                class="flex items-center gap-1 px-2.5 py-1 rounded text-[0.62rem] font-semibold transition
+                                       {{ $contractPreviewMode
+                                           ? 'bg-white text-[var(--ui-secondary)] shadow-sm'
+                                           : 'text-slate-500 hover:text-[var(--ui-secondary)]' }}"
+                                title="Aktuellen Inhalt mit aufgelösten Platzhaltern ansehen">
+                            @svg('heroicon-o-eye', 'w-3 h-3')
+                            Vorschau
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Editor — bleibt im DOM (wire:ignore in TinyMCE), wird per
+                     CSS versteckt, damit Instanz und Cursor-Position erhalten bleiben. --}}
+                <div class="{{ $contractPreviewMode ? 'hidden' : '' }}">
+                    @include('events::partials.tinymce-editor', [
+                        'wireProperty' => 'contractText',
+                        'initial'      => $contractText,
+                        'height'       => 600,
+                        'uniqueId'     => 'tiny-contract',
+                    ])
+                    <p class="text-[0.58rem] text-[var(--ui-muted)] mt-2">
+                        Formatierung (fett, zentriert, Bilder, Tabellen) über die Toolbar. Platzhalter wie
+                        <code class="text-purple-600">{EVENT_NUMBER}</code>,
+                        <code class="text-purple-600">{CUSTOMER_COMPANY}</code> etc. werden beim Rendern ersetzt.
+                    </p>
+                </div>
+
+                {{-- Vorschau --}}
+                @if($contractPreviewMode)
+                    <div class="border border-[var(--ui-border)] rounded-md bg-white overflow-hidden">
+                        <div class="px-3 py-1.5 bg-emerald-50 border-b border-emerald-200 text-[0.58rem] font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
+                            @svg('heroicon-o-eye', 'w-3 h-3')
+                            Vorschau — Platzhalter sind mit den aktuellen Event-Daten ersetzt
+                        </div>
+                        <div class="p-6 prose prose-sm max-w-none" style="min-height: 600px; max-height: 600px; overflow-y: auto;">
+                            {!! $contractPreviewHtml !!}
+                        </div>
+                    </div>
+                @endif
 
                 <div class="mt-2" x-data="{ open: false }">
                     <button type="button" @click="open = !open"

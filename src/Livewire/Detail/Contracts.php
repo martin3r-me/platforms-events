@@ -24,6 +24,9 @@ class Contracts extends Component
     public string $contractType = 'nutzungsvertrag';
     public string $contractText = '';
 
+    /** Toggle im Edit-Modal: false = TinyMCE-Editor, true = Vorschau mit aufgelösten Platzhaltern. */
+    public bool $contractPreviewMode = false;
+
     public function insertImageMarkdown(string $markdown): void
     {
         $this->contractText = ($this->contractText ?? '') . $markdown;
@@ -134,12 +137,34 @@ class Contracts extends Component
 
         $this->contractType = $c->type;
         $this->contractText = $this->ensureHtmlForEditor((string) ($c->content['text'] ?? ''));
+        $this->contractPreviewMode = false;
         $this->showEditModal = true;
 
         $this->dispatch('tinymce-set-content',
             uid: 'tiny-contract',
             content: $this->contractText
         );
+    }
+
+    /**
+     * Schaltet zwischen Editor und Vorschau um. In den Vorschau-Modus werden
+     * Platzhalter wie {EVENT_NUMBER}, {CUSTOMER_COMPANY}, {EVENT_DATE} live
+     * mit den aktuellen Event-Daten ersetzt — Inhalt aus dem aktuellen
+     * Editor-Stand, nichts wird gespeichert.
+     */
+    public function toggleContractPreview(): void
+    {
+        $this->contractPreviewMode = !$this->contractPreviewMode;
+
+        if (!$this->contractPreviewMode) {
+            // Beim Zurueckwechseln in den Editor den aktuellen Content
+            // wieder ins TinyMCE pushen — falls Livewire-Morph dazwischen
+            // ihn ueberschrieben hat.
+            $this->dispatch('tinymce-set-content',
+                uid: 'tiny-contract',
+                content: $this->contractText
+            );
+        }
     }
 
     protected function ensureHtmlForEditor(string $content): string
@@ -209,11 +234,22 @@ class Contracts extends Component
             ->orderBy('label')
             ->get();
 
+        // Preview-HTML nur rendern, wenn das Modal offen und im Preview-Mode ist —
+        // spart unnoetige Renders bei jedem Livewire-Roundtrip.
+        $contractPreviewHtml = '';
+        if ($this->showEditModal && $this->contractPreviewMode && $this->contractText !== '') {
+            $contractPreviewHtml = \Platform\Events\Services\ContractRenderer::renderPlaceholders(
+                $this->contractText,
+                $event
+            );
+        }
+
         return view('events::livewire.detail.contracts', [
-            'event'          => $event,
-            'contracts'      => $contracts,
-            'activeContract' => $activeContract,
-            'templates'      => $templates,
+            'event'               => $event,
+            'contracts'           => $contracts,
+            'activeContract'      => $activeContract,
+            'templates'           => $templates,
+            'contractPreviewHtml' => $contractPreviewHtml,
         ]);
     }
 }
