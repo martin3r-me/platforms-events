@@ -108,6 +108,12 @@ class Manage extends Component
     #[Validate('nullable|string|max:500')]
     public ?string $follow_up_note = null;
 
+    // Erstinfo-Versand-Steuerung (Lastenheft 2.3.2)
+    public bool $send_initial_info = false;
+
+    #[Validate('nullable|email|max:255')]
+    public ?string $initial_info_to = null;
+
     public function updatingPeriod($value): void
     {
         if (!in_array($value, ['week', 'month', 'year', 'all', 'custom'], true)) {
@@ -191,6 +197,7 @@ class Manage extends Component
             'event_type', 'responsible', 'default_pax',
             'inquiry_date', 'inquiry_time', 'potential',
             'follow_up_date', 'follow_up_note',
+            'send_initial_info', 'initial_info_to',
         ]);
         $this->crmSearch = ['customer' => ''];
         $this->status = 'Option';
@@ -199,6 +206,11 @@ class Manage extends Component
         $this->inquiry_time = now()->format('H:i');
         // Verantwortlich = eingeloggter User als Default.
         $this->responsible = trim((string) (Auth::user()->name ?? '')) ?: null;
+        // Erstinfo: Default aus Team-Settings.
+        $team = Auth::user()->currentTeam ?? null;
+        $this->send_initial_info = $team
+            ? \Platform\Events\Services\SettingsService::initialInfoEnabled($team->id)
+            : false;
         $this->resetErrorBag();
     }
 
@@ -253,6 +265,19 @@ class Manage extends Component
             // default_pax wird in EventFactory extrahiert und auf alle EventDays gemappt
             'default_pax'    => $this->default_pax ?: null,
         ]);
+
+        // Erstinfo-Versand (Lastenheft 2.3.2). Nicht-blockierend: Fehler werden
+        // als Flash-Meldung gezeigt, das Event ist trotzdem angelegt.
+        if ($this->send_initial_info && !empty($this->initial_info_to)) {
+            $result = \Platform\Events\Services\EventInitialInfoMailer::send(
+                $event,
+                (string) $this->initial_info_to,
+            );
+            session()->flash(
+                $result['status'] === 'sent' ? 'eventCreatedStatus' : 'eventCreatedError',
+                $result['message']
+            );
+        }
 
         $this->showCreateModal = false;
         $this->resetCreateForm();

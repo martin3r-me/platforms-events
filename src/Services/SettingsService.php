@@ -25,6 +25,12 @@ class SettingsService
     protected const KEY_ORDER_NUMBER_SCHEMA = 'order_number_schema';
     protected const KEY_ATTACH_FLOOR_PLANS_DEFAULT = 'attach_floor_plans_default';
     protected const KEY_QUOTE_DEFAULT_VALIDITY_DAYS = 'quote_default_validity_days';
+    protected const KEY_INITIAL_INFO_ENABLED          = 'initial_info_enabled';
+    protected const KEY_INITIAL_INFO_TEMPLATE_ID      = 'initial_info_template_id';
+    protected const KEY_INITIAL_INFO_COMMS_CHANNEL_ID = 'initial_info_comms_channel_id';
+    protected const KEY_INITIAL_INFO_SUBJECT          = 'initial_info_subject';
+
+    public const INITIAL_INFO_DEFAULT_SUBJECT = 'Ihre Anfrage: {EVENT_NAME}';
 
     /** Wie lange ein neu erstelltes Angebot per Default gueltig ist (in Tagen). */
     public const QUOTE_DEFAULT_VALIDITY_DAYS_FALLBACK = 14;
@@ -222,6 +228,55 @@ class SettingsService
     {
         $days = max(1, min($days, 3650));
         Setting::setFor($teamId, self::KEY_QUOTE_DEFAULT_VALIDITY_DAYS, (string) $days);
+    }
+
+    // ---- Automatischer Erstinfo-Versand (Lastenheft 2.3.2) ----
+
+    public static function initialInfoEnabled(?int $teamId): bool
+    {
+        $raw = Setting::getFor($teamId, self::KEY_INITIAL_INFO_ENABLED);
+        return $raw !== null && in_array((string) $raw, ['1', 'true', 'on', 'yes'], true);
+    }
+
+    public static function setInitialInfoEnabled(?int $teamId, bool $value): void
+    {
+        Setting::setFor($teamId, self::KEY_INITIAL_INFO_ENABLED, $value ? '1' : '0');
+    }
+
+    public static function initialInfoTemplateId(?int $teamId): ?int
+    {
+        $raw = Setting::getFor($teamId, self::KEY_INITIAL_INFO_TEMPLATE_ID);
+        $val = is_string($raw) ? (int) $raw : 0;
+        return $val > 0 ? $val : null;
+    }
+
+    public static function setInitialInfoTemplateId(?int $teamId, ?int $id): void
+    {
+        Setting::setFor($teamId, self::KEY_INITIAL_INFO_TEMPLATE_ID, $id !== null && $id > 0 ? (string) $id : '');
+    }
+
+    public static function initialInfoCommsChannelId(?int $teamId): ?int
+    {
+        $raw = Setting::getFor($teamId, self::KEY_INITIAL_INFO_COMMS_CHANNEL_ID);
+        $val = is_string($raw) ? (int) $raw : 0;
+        return $val > 0 ? $val : null;
+    }
+
+    public static function setInitialInfoCommsChannelId(?int $teamId, ?int $id): void
+    {
+        Setting::setFor($teamId, self::KEY_INITIAL_INFO_COMMS_CHANNEL_ID, $id !== null && $id > 0 ? (string) $id : '');
+    }
+
+    public static function initialInfoSubject(?int $teamId): string
+    {
+        $raw = Setting::getFor($teamId, self::KEY_INITIAL_INFO_SUBJECT);
+        $s = is_string($raw) ? trim($raw) : '';
+        return $s !== '' ? $s : self::INITIAL_INFO_DEFAULT_SUBJECT;
+    }
+
+    public static function setInitialInfoSubject(?int $teamId, string $subject): void
+    {
+        Setting::setFor($teamId, self::KEY_INITIAL_INFO_SUBJECT, trim($subject));
     }
 
     public static function setCostCenters(?int $teamId, array $items): void       { self::setArray($teamId, self::KEY_COST_CENTERS, array_values(array_filter(array_map('trim', $items)))); }

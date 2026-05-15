@@ -44,6 +44,12 @@ class Settings extends Component
     public bool $attachFloorPlansDefault = false;
     public int $quoteDefaultValidityDays = 14;
 
+    // Erstinfo-Versand (Lastenheft 2.3.2)
+    public bool $initialInfoEnabled = false;
+    public ?int $initialInfoTemplateId = null;
+    public ?int $initialInfoCommsChannelId = null;
+    public string $initialInfoSubject = '';
+
     public string $newCostCenter  = '';
     public string $newCostCarrier = '';
     public string $newQuoteStatus = '';
@@ -127,6 +133,35 @@ class Settings extends Component
         $this->orderNumberSchema     = SettingsService::orderNumberSchema($teamId);
         $this->attachFloorPlansDefault = SettingsService::attachFloorPlansDefault($teamId);
         $this->quoteDefaultValidityDays = SettingsService::quoteDefaultValidityDays($teamId);
+        $this->initialInfoEnabled        = SettingsService::initialInfoEnabled($teamId);
+        $this->initialInfoTemplateId     = SettingsService::initialInfoTemplateId($teamId);
+        $this->initialInfoCommsChannelId = SettingsService::initialInfoCommsChannelId($teamId);
+        $this->initialInfoSubject        = SettingsService::initialInfoSubject($teamId);
+    }
+
+    public function updatedInitialInfoEnabled(bool $value): void
+    {
+        SettingsService::setInitialInfoEnabled($this->teamId(), $value);
+    }
+
+    public function updatedInitialInfoTemplateId($value): void
+    {
+        $id = is_numeric($value) && (int) $value > 0 ? (int) $value : null;
+        $this->initialInfoTemplateId = $id;
+        SettingsService::setInitialInfoTemplateId($this->teamId(), $id);
+    }
+
+    public function updatedInitialInfoCommsChannelId($value): void
+    {
+        $id = is_numeric($value) && (int) $value > 0 ? (int) $value : null;
+        $this->initialInfoCommsChannelId = $id;
+        SettingsService::setInitialInfoCommsChannelId($this->teamId(), $id);
+    }
+
+    public function updatedInitialInfoSubject(string $value): void
+    {
+        $this->initialInfoSubject = trim($value);
+        SettingsService::setInitialInfoSubject($this->teamId(), $this->initialInfoSubject);
     }
 
     public function updatedAttachFloorPlansDefault(bool $value): void
@@ -746,6 +781,22 @@ class Settings extends Component
         $flatRateAllowedTypes = ['Speisen','Getränke','Personal','Equipment','Technik','Bar','Buffet','Geschirr','Sonstiges'];
         $flatRateAllowedGruppen = PositionValidator::allowedGruppen($teamId);
 
+        // Comms-Email-Channels fuer den Erstinfo-Versand (loose coupled).
+        // Liefert leere Liste, wenn das CRM-/Comms-Modul nicht installiert ist.
+        $commsChannels = collect();
+        if ($teamId && class_exists(\Platform\Crm\Models\CommsChannel::class)) {
+            try {
+                $commsChannels = \Platform\Crm\Models\CommsChannel::query()
+                    ->where('team_id', $teamId)
+                    ->where('type', 'email')
+                    ->where('is_active', true)
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'provider']);
+            } catch (\Throwable $e) {
+                $commsChannels = collect();
+            }
+        }
+
         return view('events::livewire.settings', [
             'mrFields'               => $mrFields,
             'templates'              => $templates,
@@ -754,6 +805,7 @@ class Settings extends Component
             'flatRateCatalog'        => $flatRateCatalog,
             'flatRateAllowedTypes'   => $flatRateAllowedTypes,
             'flatRateAllowedGruppen' => $flatRateAllowedGruppen,
+            'commsChannels'          => $commsChannels,
         ])->layout('platform::layouts.app');
     }
 }

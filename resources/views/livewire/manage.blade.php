@@ -61,6 +61,18 @@
     <x-ui-page-container>
 
         <div class="space-y-6">
+            @if(session('eventCreatedStatus'))
+                <div class="px-4 py-2.5 rounded-md bg-emerald-50 border border-emerald-200 text-[0.72rem] text-emerald-800 flex items-center gap-2">
+                    @svg('heroicon-o-paper-airplane', 'w-4 h-4')
+                    {{ session('eventCreatedStatus') }}
+                </div>
+            @endif
+            @if(session('eventCreatedError'))
+                <div class="px-4 py-2.5 rounded-md bg-amber-50 border border-amber-200 text-[0.72rem] text-amber-800 flex items-center gap-2">
+                    @svg('heroicon-o-exclamation-triangle', 'w-4 h-4')
+                    {{ session('eventCreatedError') }}
+                </div>
+            @endif
 
             {{-- Stats (nur in der Listen-Ansicht; im Kalender uebernehmen die Tages-Zellen die Visualisierung) --}}
             @if($viewMode === 'list')
@@ -946,6 +958,33 @@
                                    class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                         </div>
                     </div>
+                </section>
+
+                {{-- ===== Sektion 5: Erstinfo automatisch versenden ===== --}}
+                <section class="space-y-3 border-t border-[var(--ui-border)] pt-4">
+                    <div class="flex items-center gap-2">
+                        <span class="w-1 h-4 bg-sky-600 rounded-sm"></span>
+                        <h3 class="text-[0.7rem] font-bold uppercase tracking-wider text-[var(--ui-secondary)] m-0">Erstinfo-Versand</h3>
+                    </div>
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" wire:model.live="send_initial_info"
+                               class="mt-0.5 h-4 w-4 rounded border-[var(--ui-border)] text-[var(--ui-primary)] focus:ring-[var(--ui-primary)]/30">
+                        <span class="flex-1">
+                            <span class="block text-xs font-semibold text-[var(--ui-secondary)]">Erstinfo direkt nach Anlage versenden</span>
+                            <span class="block mt-0.5 text-[0.62rem] text-[var(--ui-muted)]">
+                                Schickt automatisch eine personalisierte Info-Mail an den Interessenten — basierend auf der in den Einstellungen hinterlegten Dokumentvorlage. Voraussetzung: Vorlage und Email-Channel sind im Settings-Tab „Angebots-Optionen" gepflegt.
+                            </span>
+                        </span>
+                    </label>
+                    @if($send_initial_info)
+                        <div>
+                            <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Empfänger-Mail *</label>
+                            <input wire:model="initial_info_to" type="email"
+                                   placeholder="kunde@beispiel.de"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            @error('initial_info_to') <p class="mt-1 text-[0.62rem] text-red-600">{{ $message }}</p> @enderror
+                        </div>
+                    @endif
                 </section>
 
                 <div class="flex justify-end gap-2 pt-4 border-t border-[var(--ui-border)]">

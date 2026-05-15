@@ -371,6 +371,19 @@
     <x-ui-page-container background="bg-slate-100">
         <div class="events-detail-page">
 
+        @if(session('eventCreatedStatus'))
+            <div class="px-4 py-2.5 rounded-md bg-emerald-50 border border-emerald-200 text-[0.72rem] text-emerald-800 flex items-center gap-2 mb-3">
+                @svg('heroicon-o-paper-airplane', 'w-4 h-4')
+                {{ session('eventCreatedStatus') }}
+            </div>
+        @endif
+        @if(session('eventCreatedError'))
+            <div class="px-4 py-2.5 rounded-md bg-amber-50 border border-amber-200 text-[0.72rem] text-amber-800 flex items-center gap-2 mb-3">
+                @svg('heroicon-o-exclamation-triangle', 'w-4 h-4')
+                {{ session('eventCreatedError') }}
+            </div>
+        @endif
+
         {{-- ================= Tab: Details ================= --}}
         @if($activeTab === 'details')
             <div class="pt-1 space-y-4">

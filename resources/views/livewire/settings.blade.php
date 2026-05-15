@@ -228,6 +228,64 @@
                         </div>
                     </div>
                 </x-ui-panel>
+
+                {{-- ===== Erstinfo-Mail (Lastenheft 2.3.2) ===== --}}
+                <x-ui-panel title="Erstinfo-Versand"
+                            subtitle="Automatische Info-Mail nach jeder neu angelegten Veranstaltung — basierend auf einer Dokumentvorlage. Voraussetzung: ein Email-Channel (z.B. Postmark) ist im CRM-Modul eingerichtet.">
+                    <div class="p-4 space-y-4">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="checkbox" wire:model.live="initialInfoEnabled"
+                                   class="mt-0.5 h-4 w-4 rounded border-[var(--ui-border)] text-[var(--ui-primary)] focus:ring-[var(--ui-primary)]/30">
+                            <span class="flex-1">
+                                <span class="block text-xs font-semibold text-[var(--ui-secondary)]">Automatischer Erstinfo-Versand aktivieren</span>
+                                <span class="block mt-0.5 text-[0.7rem] text-[var(--ui-muted)]">
+                                    Wenn aktiv, schlägt das Erstkontakt-Formular vor, die Erstinfo direkt nach Anlage zu versenden. Pro Veranstaltung kann das übersteuert werden.
+                                </span>
+                            </span>
+                        </label>
+
+                        <div class="grid grid-cols-2 gap-3 border-t border-[var(--ui-border)]/40 pt-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-[var(--ui-secondary)] mb-1">Dokumentvorlage</label>
+                                <select wire:model.live="initialInfoTemplateId"
+                                        class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                    <option value="">— keine Vorlage gewählt —</option>
+                                    @foreach($templates as $tpl)
+                                        <option value="{{ $tpl->id }}">{{ $tpl->label }}</option>
+                                    @endforeach
+                                </select>
+                                <p class="mt-1 text-[0.6rem] text-[var(--ui-muted)]">
+                                    Vorlagen werden im Tab „Dokumentvorlagen" gepflegt. Platzhalter wie <code class="bg-slate-100 px-1 rounded">{EVENT_NAME}</code> werden beim Versand ersetzt.
+                                </p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-[var(--ui-secondary)] mb-1">Versand-Channel (E-Mail)</label>
+                                <select wire:model.live="initialInfoCommsChannelId"
+                                        class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                                    <option value="">— ersten verfügbaren nehmen —</option>
+                                    @foreach($commsChannels as $ch)
+                                        <option value="{{ $ch->id }}">{{ $ch->name }} ({{ $ch->provider }})</option>
+                                    @endforeach
+                                </select>
+                                @if($commsChannels->isEmpty())
+                                    <p class="mt-1 text-[0.6rem] text-amber-700">Kein Email-Channel im CRM gefunden. Bitte zuerst im CRM-Modul einen Postmark-Channel anlegen.</p>
+                                @else
+                                    <p class="mt-1 text-[0.6rem] text-[var(--ui-muted)]">Über diesen Channel wird der echte Mail-Versand abgewickelt.</p>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-[var(--ui-secondary)] mb-1">Betreff-Vorlage</label>
+                            <input wire:model.live.debounce.500ms="initialInfoSubject" type="text"
+                                   placeholder="{{ \Platform\Events\Services\SettingsService::INITIAL_INFO_DEFAULT_SUBJECT }}"
+                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
+                            <p class="mt-1 text-[0.6rem] text-[var(--ui-muted)]">
+                                Platzhalter wie <code class="bg-slate-100 px-1 rounded">{EVENT_NAME}</code>, <code class="bg-slate-100 px-1 rounded">{EVENT_NUMBER}</code>, <code class="bg-slate-100 px-1 rounded">{CUSTOMER_COMPANY}</code> werden ersetzt.
+                            </p>
+                        </div>
+                    </div>
+                </x-ui-panel>
             </div>
         @endif
 
