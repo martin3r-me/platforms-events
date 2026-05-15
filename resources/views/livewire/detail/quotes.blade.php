@@ -264,23 +264,38 @@
                                 @endif
 
                                 <div class="flex-1 min-w-0">
-                                    <button wire:click="selectQuote({{ $q->id }})"
-                                            class="text-[0.72rem] font-semibold text-[var(--ui-secondary)] bg-transparent border-0 cursor-pointer p-0">
-                                        Angebot · {{ $q->created_at->format('d.m.Y') }}
-                                        @if($q->valid_until)
-                                            @php $qExpired = $q->isExpired(); @endphp
-                                            <span class="text-[0.6rem] ml-1.5 {{ $qExpired ? 'text-red-600 font-semibold' : 'text-[var(--ui-muted)]' }}">
-                                                @if($qExpired)
-                                                    abgelaufen am {{ $q->valid_until->format('d.m.Y') }}
-                                                @else
-                                                    gültig bis {{ $q->valid_until->format('d.m.Y') }}
-                                                @endif
-                                            </span>
-                                            @if($qExpired)
-                                                <span class="text-[0.52rem] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ml-1 bg-red-50 text-red-700 border border-red-200">Abgelaufen</span>
+                                    @php $qExpired = $q->valid_until && $q->isExpired(); @endphp
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <button wire:click="selectQuote({{ $q->id }})"
+                                                class="text-[0.72rem] font-semibold text-[var(--ui-secondary)] bg-transparent border-0 cursor-pointer p-0">
+                                            Angebot · {{ $q->created_at->format('d.m.Y') }}
+                                        </button>
+
+                                        {{-- Inline-Editor fuer das Gueltigkeits-Datum --}}
+                                        <span class="inline-flex items-center gap-1 text-[0.6rem] {{ $qExpired ? 'text-red-600 font-semibold' : 'text-[var(--ui-muted)]' }}"
+                                              title="{{ $qExpired ? 'Abgelaufen — Kunde kann nicht mehr zusagen' : 'Gültigkeits-Datum dieses Angebots' }}">
+                                            <span>{{ $qExpired ? 'abgelaufen am' : 'gültig bis' }}</span>
+                                            <input type="date"
+                                                   value="{{ $q->valid_until?->format('Y-m-d') }}"
+                                                   x-data
+                                                   @change="$wire.updateQuoteValidUntil({{ $q->id }}, $event.target.value)"
+                                                   @click.stop
+                                                   class="border border-[var(--ui-border)] rounded px-1 py-0.5 text-[0.6rem] font-mono bg-white
+                                                          {{ $qExpired ? 'text-red-600 border-red-200' : 'text-[var(--ui-secondary)]' }}
+                                                          focus:outline-none focus:ring-1 focus:ring-[var(--ui-primary)]/40">
+                                            @if($q->valid_until)
+                                                <button type="button"
+                                                        wire:click="updateQuoteValidUntil({{ $q->id }}, '')"
+                                                        title="Gültigkeits-Datum entfernen"
+                                                        class="text-[var(--ui-muted)] hover:text-red-600 p-0.5">
+                                                    @svg('heroicon-o-x-mark', 'w-3 h-3')
+                                                </button>
                                             @endif
+                                        </span>
+                                        @if($qExpired)
+                                            <span class="text-[0.52rem] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">Abgelaufen</span>
                                         @endif
-                                    </button>
+                                    </div>
                                     @if($q->sent_at)
                                         <p class="text-[0.58rem] text-[var(--ui-muted)] mt-0.5">Versendet {{ $q->sent_at->format('d.m.Y H:i') }}</p>
                                     @endif

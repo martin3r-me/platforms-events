@@ -453,6 +453,41 @@ class Quotes extends Component
      * gesamt wird mit demselben Faktor skaliert. Bausteine (Headline/Trenntext/
      * Speisentexte) bleiben unberuehrt.
      */
+    /**
+     * Aendert das valid_until-Datum eines Angebots. Leerer String → null (kein Ablauf).
+     * Wird vom Inline-Date-Picker in der Angebots-Liste aufgerufen.
+     */
+    public function updateQuoteValidUntil(int $quoteId, ?string $value): void
+    {
+        $event = $this->event();
+        $q = Quote::where('event_id', $event->id)->find($quoteId);
+        if (!$q) return;
+
+        $old = $q->valid_until?->toDateString();
+        $new = ($value === null || trim($value) === '') ? null : trim($value);
+
+        if ($new !== null) {
+            // Strikte Y-m-d-Validierung; ungueltige Eingaben werden ignoriert.
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $new)) return;
+            try {
+                \Carbon\Carbon::createFromFormat('Y-m-d', $new);
+            } catch (\Throwable $e) {
+                return;
+            }
+        }
+
+        if ($old === $new) return;
+
+        $q->valid_until = $new;
+        $q->save();
+
+        ActivityLogger::log(
+            $event,
+            'quote',
+            'Angebot v' . $q->version . ': Gültigkeit ' . ($old ?? '∅') . ' → ' . ($new ?? '∅')
+        );
+    }
+
     public function updateQuotePriceMode(string $mode): void
     {
         if (!in_array($mode, ['netto', 'brutto'], true)) return;
