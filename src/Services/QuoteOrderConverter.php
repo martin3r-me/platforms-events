@@ -151,7 +151,6 @@ class QuoteOrderConverter
                 'bis'              => $pos->bis,
                 'inhalt'           => $pos->inhalt,
                 'gebinde'          => $pos->gebinde,
-                'basis_ek'         => $pos->basis_ek,
                 'ek'               => $pos->ek,
                 'preis'            => $pos->preis,
                 'mwst'             => $pos->mwst,

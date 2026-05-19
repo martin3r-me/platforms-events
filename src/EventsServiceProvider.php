@@ -152,6 +152,9 @@ class EventsServiceProvider extends ServiceProvider
             $registry->register(new \Platform\Events\Tools\DeleteOrderItemTool());
             $registry->register(new \Platform\Events\Tools\ListOrderPositionsTool());
             $registry->register(new \Platform\Events\Tools\CreateOrderPositionTool());
+            $registry->register(new \Platform\Events\Tools\UpdateOrderPositionTool());
+            $registry->register(new \Platform\Events\Tools\DeleteOrderPositionTool());
+            $registry->register(new \Platform\Events\Tools\BulkUpdateOrderPositionsTool());
 
             // --- Artikel-Pakete (Vorlagen) ---
             $registry->register(new \Platform\Events\Tools\ListArticlePackagesTool());

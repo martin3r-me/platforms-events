@@ -112,7 +112,6 @@
                         <td class="py-1.5 px-1 font-mono text-slate-500">{{ $text ? '' : $p->uhrzeit }}</td>
                         <td class="py-1.5 px-1 font-mono text-slate-500">{{ $text ? '' : $p->bis }}</td>
                         <td class="py-1.5 px-1 text-slate-500 truncate" title="{{ $p->gebinde }}">{{ $text ? '' : $p->gebinde }}</td>
-                        <td class="py-1.5 px-1 text-right font-mono text-slate-400">{{ $text ? '' : ($p->basis_ek ? $fmt($p->basis_ek) : '') }}</td>
                         <td class="py-1.5 px-1 text-right font-mono font-semibold">{{ $text ? '' : $fmt($p->ek) }}</td>
                         <td class="py-1.5 px-1 text-center text-slate-500">{{ $text ? '' : $p->mwst }}</td>
                         <td class="py-1.5 px-1 text-right font-mono font-bold text-red-600">{{ $text ? '' : $fmt($p->gesamt) }}</td>
@@ -126,7 +125,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="14" class="py-6 text-center text-[0.7rem] text-[var(--ui-muted)]">
+                        <td colspan="13" class="py-6 text-center text-[0.7rem] text-[var(--ui-muted)]">
                             Noch keine Positionen. Fülle die Eingabefelder unten aus.
                         </td>
                     </tr>
@@ -135,7 +134,7 @@
             @if($positions->isNotEmpty())
                 <tfoot>
                     <tr class="bg-slate-50 border-t-2 border-slate-200">
-                        <td colspan="11" class="py-2 px-2.5 text-right text-[0.58rem] font-bold uppercase tracking-wider text-slate-500">
+                        <td colspan="10" class="py-2 px-2.5 text-right text-[0.58rem] font-bold uppercase tracking-wider text-slate-500">
                             Positionen <span class="text-[var(--ui-secondary)] font-mono ml-1">{{ $totalArticles }}</span> · Einkauf
                         </td>
                         <td class="py-2 px-1.5 text-right font-mono font-bold text-red-600 text-[0.72rem]">{{ $fmt($totalGesamt) }} €</td>
@@ -145,7 +144,7 @@
             @endif
             <tbody class="bg-slate-50 border-t-2 border-slate-300">
                 <tr>
-                    <td colspan="14" class="px-2.5 pt-2 pb-1">
+                    <td colspan="13" class="px-2.5 pt-2 pb-1">
                         <div class="flex items-center gap-2 flex-wrap">
                             <div class="w-[3px] h-3 bg-orange-600 rounded-sm"></div>
                             <span class="text-[0.62rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]">Neue Position</span>
@@ -288,10 +287,6 @@
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] bg-white">
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model="newPosition.basis_ek" type="number" step="0.01" placeholder="0,00"
-                               class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
-                    </td>
-                    <td class="px-1.5 py-1.5 align-top">
                         <input wire:model.blur="newPosition.ek" type="number" step="0.01" placeholder="0,00"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
                     </td>
@@ -320,7 +315,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <td colspan="14" class="px-2.5 pt-0.5 pb-2">
+                    <td colspan="13" class="px-2.5 pt-0.5 pb-2">
                         <p class="text-[0.52rem] text-slate-400 m-0">
                             Enter im Bezeichnungs-Feld oder „+" zum Hinzufügen · Gesamt leer → Anz × EK wird berechnet.
                         </p>

@@ -6,8 +6,8 @@
       $mode = 'quote' (Default) | 'order'
 
     Spalten-Unterschiede:
-      - Quote:  Gebinde, EK,        Preis, MwSt, Gesamt, Modus,    Bemerkung
-      - Order:  Gebinde, Basis-EK,  EK,    MwSt, Gesamt,           Bemerkung
+      - Quote:  Gebinde, EK, Preis, MwSt, Gesamt, Modus, Bemerkung
+      - Order:  Gebinde, EK,        MwSt, Gesamt,        Bemerkung
 --}}
 @php
     $mode = $mode ?? 'quote';
@@ -27,7 +27,6 @@
         <col style="width: 64px;"> {{-- EK --}}
         <col style="width: 80px;"> {{-- Preis --}}
     @else
-        <col style="width: 70px;"> {{-- Basis-EK --}}
         <col style="width: 70px;"> {{-- EK --}}
     @endif
     <col style="width: 64px;">     {{-- MwSt --}}
@@ -52,7 +51,6 @@
             <th class="text-right {{ $thBase }}">EK €</th>
             <th class="text-right {{ $thBase }}">Preis</th>
         @else
-            <th class="text-right {{ $thBase }}">Basis-EK</th>
             <th class="text-right {{ $thBase }}">EK €</th>
         @endif
         <th class="text-center {{ $thBase }}">MwSt.</th>

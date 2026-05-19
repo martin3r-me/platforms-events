@@ -37,7 +37,7 @@ class Orders extends Component
     public array $newPosition = [
         'gruppe' => '', 'name' => '', 'anz' => '', 'anz2' => '',
         'uhrzeit' => '', 'bis' => '', 'inhalt' => '', 'gebinde' => '',
-        'basis_ek' => 0, 'ek' => 0, 'preis' => 0, 'mwst' => '7%',
+        'ek' => 0, 'preis' => 0, 'mwst' => '7%',
         'gesamt' => 0, 'bemerkung' => '',
     ];
 
@@ -221,7 +221,6 @@ class Orders extends Component
                 'bis'           => $p->bis,
                 'inhalt'        => $p->inhalt,
                 'gebinde'       => $p->gebinde,
-                'basis_ek'      => $p->basis_ek,
                 'ek'            => $p->ek,
                 'preis'         => $p->preis,
                 'mwst'          => $p->mwst,
@@ -259,7 +258,7 @@ class Orders extends Component
         $this->newPosition = [
             'gruppe' => '', 'name' => '', 'anz' => '', 'anz2' => '',
             'uhrzeit' => '', 'bis' => '', 'inhalt' => '', 'gebinde' => '',
-            'basis_ek' => 0, 'ek' => 0, 'preis' => 0, 'mwst' => '7%',
+            'ek' => 0, 'preis' => 0, 'mwst' => '7%',
             'gesamt' => 0, 'bemerkung' => '',
         ];
     }
@@ -280,7 +279,6 @@ class Orders extends Component
         $this->newPosition['inhalt']   = (string) ($article['description'] ?? $article['offer_text'] ?? '');
         $this->newPosition['gebinde']  = (string) ($article['gebinde'] ?? '');
         $this->newPosition['ek']       = (float) ($article['ek'] ?? 0);
-        $this->newPosition['basis_ek'] = (float) ($article['ek'] ?? 0);
         $this->newPosition['preis']    = (float) ($article['vk'] ?? 0);
         if (!empty($article['mwst'])) $this->newPosition['mwst'] = (string) $article['mwst'];
     }
@@ -306,7 +304,6 @@ class Orders extends Component
             'order_item_id' => $item->id,
             'anz'           => (string) $this->newPosition['anz'],
             'anz2'          => (string) $this->newPosition['anz2'],
-            'basis_ek'      => (float) $this->newPosition['basis_ek'],
             'ek'            => (float) $this->newPosition['ek'],
             'preis'         => (float) $this->newPosition['preis'],
             'gesamt'        => (float) ($this->newPosition['gesamt'] ?: ((float) $this->newPosition['anz']) * ((float) $this->newPosition['ek'])),
