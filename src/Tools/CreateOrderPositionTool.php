@@ -9,9 +9,12 @@ use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\OrderItem;
 use Platform\Events\Models\OrderPosition;
+use Platform\Events\Tools\Concerns\NormalizesMwst;
 
 class CreateOrderPositionTool implements ToolContract, ToolMetadataContract
 {
+    use NormalizesMwst;
+
     public function getName(): string
     {
         return 'events.order-positions.CREATE';
@@ -36,8 +39,8 @@ class CreateOrderPositionTool implements ToolContract, ToolMetadataContract
                 'name'             => ['type' => 'string'],
                 'anz'              => ['type' => 'string'],
                 'anz2'             => ['type' => 'string'],
-                'uhrzeit'          => ['type' => 'string'],
-                'bis'              => ['type' => 'string'],
+                'start_time'          => ['type' => 'string'],
+                'end_time'              => ['type' => 'string'],
                 'gebinde'          => ['type' => 'string'],
                 'ek'               => ['type' => 'number'],
                 'mwst'             => ['type' => 'string'],
@@ -67,6 +70,12 @@ class CreateOrderPositionTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('ACCESS_DENIED', 'Kein Zugriff.');
             }
 
+            // MwSt-Numeric-Alias (Excel/DATEV: 1→19%, 3→7%, 0→0%).
+            $aliasesApplied = [];
+            if ($mwstAlias = $this->normalizeMwstField($arguments, 'mwst')) {
+                $aliasesApplied[] = $mwstAlias;
+            }
+
             $anz    = (float) ($arguments['anz'] ?? 0);
             $ek     = (float) ($arguments['ek']  ?? 0);
             $gesamt = isset($arguments['gesamt']) && $arguments['gesamt'] !== ''
@@ -87,8 +96,8 @@ class CreateOrderPositionTool implements ToolContract, ToolMetadataContract
                 'name'             => (string) ($arguments['name']      ?? ''),
                 'anz'              => (string) ($arguments['anz']       ?? ''),
                 'anz2'             => (string) ($arguments['anz2']      ?? ''),
-                'uhrzeit'          => (string) ($arguments['uhrzeit']   ?? ''),
-                'bis'              => (string) ($arguments['bis']       ?? ''),
+                'start_time'          => (string) ($arguments['start_time']   ?? ''),
+                'end_time'              => (string) ($arguments['end_time']       ?? ''),
                 'gebinde'          => (string) ($arguments['gebinde']   ?? ''),
                 'ek'               => $ek,
                 'mwst'             => (string) ($arguments['mwst']      ?? '7%'),
@@ -107,6 +116,7 @@ class CreateOrderPositionTool implements ToolContract, ToolMetadataContract
 
             return ToolResult::success([
                 'position' => ['id' => $pos->id, 'uuid' => $pos->uuid, 'name' => $pos->name, 'gesamt' => (float) $pos->gesamt],
+                'aliases_applied' => $aliasesApplied,
                 'message' => "Bestell-Position «{$pos->name}» hinzugefügt.",
             ]);
         } catch (\Throwable $e) {

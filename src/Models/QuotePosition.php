@@ -19,7 +19,7 @@ class QuotePosition extends Model
     protected $fillable = [
         'uuid', 'user_id', 'team_id', 'quote_item_id',
         'gruppe', 'name', 'anz', 'anz2',
-        'uhrzeit', 'bis', 'inhalt', 'gebinde',
+        'start_time', 'end_time', 'inhalt', 'gebinde',
         'basis_ek', 'ek', 'preis', 'mwst', 'gesamt',
         'bemerkung', 'sort_order', 'procurement_type',
         'beverage_mode',

@@ -8,6 +8,7 @@ use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\OrderPosition;
 use Platform\Events\Tools\Concerns\CollectsValidationErrors;
+use Platform\Events\Tools\Concerns\NormalizesMwst;
 use Platform\Events\Tools\Concerns\RecalculatesOrderItem;
 
 /**
@@ -18,10 +19,11 @@ use Platform\Events\Tools\Concerns\RecalculatesOrderItem;
 class UpdateOrderPositionTool implements ToolContract, ToolMetadataContract
 {
     use CollectsValidationErrors;
+    use NormalizesMwst;
     use RecalculatesOrderItem;
 
     protected const STRING_FIELDS = [
-        'gruppe', 'name', 'anz', 'anz2', 'uhrzeit', 'bis', 'gebinde',
+        'gruppe', 'name', 'anz', 'anz2', 'start_time', 'end_time', 'gebinde',
         'mwst', 'bemerkung', 'inhalt', 'procurement_type',
     ];
     protected const NUMERIC_FIELDS = ['ek', 'gesamt'];
@@ -102,6 +104,11 @@ class UpdateOrderPositionTool implements ToolContract, ToolMetadataContract
                     $arguments[$primary] = $arguments[$alias];
                     $aliasesApplied[] = "{$alias}→{$primary}";
                 }
+            }
+
+            // MwSt-Numeric-Alias (Excel/DATEV: 1→19%, 3→7%, 0→0%).
+            if ($mwstAlias = $this->normalizeMwstField($arguments, 'mwst')) {
+                $aliasesApplied[] = $mwstAlias;
             }
 
             // Validation

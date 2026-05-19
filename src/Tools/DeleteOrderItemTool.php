@@ -26,8 +26,8 @@ class DeleteOrderItemTool implements ToolContract, ToolMetadataContract
     public function getDescription(): string
     {
         return 'DELETE /events/order-items/{id} - Soft-Delete eines Bestell-Vorgangs (OrderItem). '
-            . 'Identifikation: item_id ODER uuid. Alle OrderPositions des Vorgangs werden '
-            . 'kaskadiert soft-deleted. Ein eventuell verknuepftes QuoteItem bleibt erhalten.';
+            . 'Identifikation: order_item_id ODER uuid (Alias: item_id). Alle OrderPositions des Vorgangs '
+            . 'werden kaskadiert soft-deleted. Ein eventuell verknuepftes QuoteItem bleibt erhalten.';
     }
 
     public function getSchema(): array
@@ -35,8 +35,9 @@ class DeleteOrderItemTool implements ToolContract, ToolMetadataContract
         return [
             'type'       => 'object',
             'properties' => [
-                'item_id' => ['type' => 'integer', 'description' => 'ID des OrderItems.'],
-                'uuid'    => ['type' => 'string',  'description' => 'UUID des OrderItems.'],
+                'order_item_id' => ['type' => 'integer', 'description' => 'ID des OrderItems.'],
+                'uuid'          => ['type' => 'string',  'description' => 'UUID des OrderItems.'],
+                'item_id'       => ['type' => 'integer', 'description' => 'Alias fuer order_item_id (Backwards-Kompat).'],
             ],
         ];
     }
@@ -48,13 +49,21 @@ class DeleteOrderItemTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('AUTH_ERROR', 'Kein User im Kontext.');
             }
 
+            $aliasesApplied = [];
+
+            // item_id-Alias auf order_item_id mappen.
+            if (!isset($arguments['order_item_id']) && !empty($arguments['item_id'])) {
+                $arguments['order_item_id'] = $arguments['item_id'];
+                $aliasesApplied[] = 'item_id→order_item_id';
+            }
+
             $query = OrderItem::query();
-            if (!empty($arguments['item_id'])) {
-                $query->where('id', (int) $arguments['item_id']);
+            if (!empty($arguments['order_item_id'])) {
+                $query->where('id', (int) $arguments['order_item_id']);
             } elseif (!empty($arguments['uuid'])) {
                 $query->where('uuid', $arguments['uuid']);
             } else {
-                return ToolResult::error('VALIDATION_ERROR', 'item_id oder uuid ist erforderlich.');
+                return ToolResult::error('VALIDATION_ERROR', 'order_item_id oder uuid ist erforderlich.');
             }
 
             $item = $query->first();
@@ -86,6 +95,7 @@ class DeleteOrderItemTool implements ToolContract, ToolMetadataContract
                 'typ'                => $typ,
                 'event_id'           => $event->id,
                 'positions_deleted'  => $positionsDeleted,
+                'aliases_applied'    => $aliasesApplied,
                 'message'            => "Bestell-Vorgang „{$typ}\" geloescht (soft, inkl. {$positionsDeleted} Position(en)).",
             ]);
         } catch (\Throwable $e) {

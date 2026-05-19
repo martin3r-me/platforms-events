@@ -224,7 +224,7 @@ class FlatRateApplicator
         if ($persBis <= 0) $persBis = $persVon;
         $persAvg = $persVon > 0 && $persBis > 0 ? round(($persVon + $persBis) / 2, 2) : 0.0;
 
-        $durationHours = self::durationHours((string) ($day->von ?? ''), (string) ($day->bis ?? ''));
+        $durationHours = self::durationHours((string) ($day->start_time ?? ''), (string) ($day->bis ?? ''));
         $durationDays  = $event->days()->count();
 
         $startIso = $event->start_date?->format('Y-m-d') ?: $day->datum?->format('Y-m-d') ?: now()->toDateString();

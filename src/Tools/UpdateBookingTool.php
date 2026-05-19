@@ -15,7 +15,7 @@ class UpdateBookingTool implements ToolContract, ToolMetadataContract
     use ResolvesLocationRefInput;
 
     protected const STRING_FIELDS = [
-        'raum', 'datum', 'beginn', 'ende', 'pers',
+        'raum', 'datum', 'start_time', 'end_time', 'pers',
         'bestuhlung', 'optionsrang', 'absprache',
     ];
 
@@ -29,9 +29,9 @@ class UpdateBookingTool implements ToolContract, ToolMetadataContract
         return 'PATCH /events/bookings/{id} - Aktualisiert eine Buchung. Identifikation: booking_id ODER uuid. '
             . 'Felder: location_id (FK locations_locations.id, null = auf raum-Fallback zurueck), '
             . 'raum (Legacy-Kuerzel), datum (YYYY-MM-DD oder Freitext), '
-            . 'beginn (HH:MM), ende (HH:MM), pers (string), '
+            . 'start_time (HH:MM), end_time (HH:MM), pers (string), '
             . 'bestuhlung, optionsrang ("1. Option"|"2. Option"|"Definitiv"|"Vertrag"), absprache, sort_order. '
-            . 'WICHTIG: Tag-Feldnamen werden ebenfalls akzeptiert (von→beginn, bis→ende, pers_von/pers_bis→pers).';
+            . 'Historische Aliase: von/beginn → start_time, bis/ende → end_time, pers_von/pers_bis → pers.';
     }
 
     public function getSchema(): array
@@ -48,9 +48,11 @@ class UpdateBookingTool implements ToolContract, ToolMetadataContract
         foreach (self::STRING_FIELDS as $f) {
             $props[$f] = ['type' => 'string'];
         }
-        // Tag-Feld-Aliase
-        $props['von']      = ['type' => 'string', 'description' => 'Alias fuer beginn.'];
-        $props['bis']      = ['type' => 'string', 'description' => 'Alias fuer ende.'];
+        // Historische Aliase
+        $props['von']      = ['type' => 'string', 'description' => 'Alias fuer start_time.'];
+        $props['bis']      = ['type' => 'string', 'description' => 'Alias fuer end_time.'];
+        $props['beginn']   = ['type' => 'string', 'description' => 'Alias fuer start_time.'];
+        $props['ende']     = ['type' => 'string', 'description' => 'Alias fuer end_time.'];
         $props['pers_von'] = ['type' => 'string', 'description' => 'Alias fuer pers.'];
         $props['pers_bis'] = ['type' => 'string', 'description' => 'Alias fuer pers.'];
         return ['type' => 'object', 'properties' => $props];
@@ -63,14 +65,19 @@ class UpdateBookingTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('AUTH_ERROR', 'Kein User im Kontext gefunden.');
             }
 
-            // Aliase mappen (siehe CreateBookingTool)
-            if (!isset($arguments['beginn']) && !empty($arguments['von'])) {
-                $arguments['beginn'] = $arguments['von'];
+            // Historische Aliase normalisieren (von/beginn → start_time,
+            // bis/ende → end_time, pers_von/pers_bis → pers).
+            if (!isset($arguments['start_time']) || $arguments['start_time'] === '') {
+                foreach (['von', 'beginn'] as $alias) {
+                    if (!empty($arguments[$alias])) { $arguments['start_time'] = $arguments[$alias]; break; }
+                }
             }
-            if (!isset($arguments['ende']) && !empty($arguments['bis'])) {
-                $arguments['ende'] = $arguments['bis'];
+            if (!isset($arguments['end_time']) || $arguments['end_time'] === '') {
+                foreach (['bis', 'ende'] as $alias) {
+                    if (!empty($arguments[$alias])) { $arguments['end_time'] = $arguments[$alias]; break; }
+                }
             }
-            if ((!isset($arguments['pers']) || $arguments['pers'] === '' || $arguments['pers'] === null)) {
+            if (!isset($arguments['pers']) || $arguments['pers'] === '' || $arguments['pers'] === null) {
                 if (!empty($arguments['pers_von'])) {
                     $arguments['pers'] = $arguments['pers_von'];
                 } elseif (!empty($arguments['pers_bis'])) {
@@ -147,8 +154,8 @@ class UpdateBookingTool implements ToolContract, ToolMetadataContract
                 'event_id'       => $booking->event_id,
                 'location_id'    => $booking->location_id,
                 'datum'          => $booking->datum,
-                'beginn'         => $booking->beginn,
-                'ende'           => $booking->ende,
+                'start_time'         => $booking->start_time,
+                'end_time'           => $booking->end_time,
                 'pers'           => $booking->pers,
                 'pers_numeric'   => is_numeric($booking->pers) ? (int) $booking->pers : null,
                 'bestuhlung'     => $booking->bestuhlung,

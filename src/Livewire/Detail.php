@@ -88,7 +88,7 @@ class Detail extends Component
     // Mehrfachauswahl fuer Bulk-Delete in der Raeume-Tabelle
     public array $selectedBookingUuids = [];
     public array $newBookingInline = [
-        'datum'       => '', 'beginn' => '', 'ende' => '',
+        'datum'       => '', 'start_time' => '', 'end_time' => '',
         'pers'        => '', 'location_id' => null, 'raum' => '',
         'bestuhlung'  => '', 'optionsrang' => '1. Option', 'absprache' => '',
         'taeglich'    => false,
@@ -105,7 +105,7 @@ class Detail extends Component
     // Mehrfachauswahl fuer Bulk-Delete in der Ablauf-Tabelle
     public array $selectedScheduleUuids = [];
     public array $newScheduleInline = [
-        'datum'        => '', 'von' => '', 'bis' => '',
+        'datum'        => '', 'start_time' => '', 'end_time' => '',
         'beschreibung' => '', 'raum' => '', 'bemerkung' => '',
     ];
 
@@ -457,8 +457,8 @@ class Detail extends Component
             'datum'          => $this->event->start_date?->format('Y-m-d') ?? '',
             'color'          => '#6366f1',
             'day_of_week'    => '',
-            'von'            => '',
-            'bis'            => '',
+            'start_time'            => '',
+            'end_time'            => '',
             'pers_von'       => '',
             'pers_bis'       => '',
             'split_a'        => 50,
@@ -479,8 +479,8 @@ class Detail extends Component
             'datum'          => $day->datum?->format('Y-m-d') ?? '',
             'color'          => $day->color ?: '#6366f1',
             'day_of_week'    => $day->day_of_week ?? '',
-            'von'            => $day->von ?? '',
-            'bis'            => $day->bis ?? '',
+            'start_time'            => $day->start_time ?? '',
+            'end_time'            => $day->bis ?? '',
             'pers_von'       => $day->pers_von ?? '',
             'pers_bis'       => $day->pers_bis ?? '',
             'split_a'        => $day->split_a ?? 50,
@@ -556,8 +556,8 @@ class Detail extends Component
             'location_id' => null,
             'raum'        => '',
             'datum'       => $this->event->start_date?->format('Y-m-d') ?? '',
-            'beginn'      => '',
-            'ende'        => '',
+            'start_time'      => '',
+            'end_time'        => '',
             'pers'        => '',
             'bestuhlung'  => '',
             'optionsrang' => '1. Option',
@@ -575,8 +575,8 @@ class Detail extends Component
             'location_id' => $booking->location_id,
             'raum'        => $booking->raum ?? '',
             'datum'       => $booking->datum ?? '',
-            'beginn'      => $booking->beginn ?? '',
-            'ende'        => $booking->ende ?? '',
+            'start_time'      => $booking->start_time ?? '',
+            'end_time'        => $booking->end_time ?? '',
             'pers'        => $booking->pers ?? '',
             'bestuhlung'  => $booking->bestuhlung ?? '',
             'optionsrang' => $booking->optionsrang ?: '1. Option',
@@ -721,7 +721,7 @@ class Detail extends Component
         if (!str_contains($key, '.')) return;
         [$uuid, $field] = explode('.', $key, 2);
 
-        $allowed = ['datum', 'beginn', 'ende', 'pers', 'location_id', 'raum', 'bestuhlung', 'optionsrang', 'absprache'];
+        $allowed = ['datum', 'start_time', 'end_time', 'pers', 'location_id', 'raum', 'bestuhlung', 'optionsrang', 'absprache'];
         if (!in_array($field, $allowed, true)) return;
 
         $this->event->bookings()->where('uuid', $uuid)->update([
@@ -742,8 +742,8 @@ class Detail extends Component
         }
 
         if (empty($value)) {
-            $this->newBookingInline['beginn'] = '';
-            $this->newBookingInline['ende']   = '';
+            $this->newBookingInline['start_time'] = '';
+            $this->newBookingInline['end_time']   = '';
             $this->newBookingInline['pers']   = '';
             return;
         }
@@ -758,12 +758,12 @@ class Detail extends Component
         }
 
         // Leere von/bis als 00:00 behandeln (so wird es in der Sidebar angezeigt).
-        $von  = trim((string) ($day->von  ?? '')) ?: '00:00';
+        $von  = trim((string) ($day->start_time  ?? '')) ?: '00:00';
         $bis  = trim((string) ($day->bis  ?? '')) ?: '00:00';
         $pers = trim((string) ($day->pers_bis ?: $day->pers_von ?: ''));
 
-        $this->newBookingInline['beginn'] = $von;
-        $this->newBookingInline['ende']   = $bis;
+        $this->newBookingInline['start_time'] = $von;
+        $this->newBookingInline['end_time']   = $bis;
         $this->newBookingInline['pers']   = $pers;
     }
 
@@ -804,8 +804,8 @@ class Detail extends Component
                 'location_id' => !empty($data['location_id']) ? (int) $data['location_id'] : null,
                 'raum'        => $data['raum'] ?: null,
                 'datum'       => $dt,
-                'beginn'      => $data['beginn'] ?: null,
-                'ende'        => $data['ende'] ?: null,
+                'start_time'      => $data['start_time'] ?: null,
+                'end_time'        => $data['end_time'] ?: null,
                 'pers'        => $data['pers'] ?: null,
                 'bestuhlung'  => $data['bestuhlung'] ?: null,
                 'optionsrang' => $data['optionsrang'] ?: '1. Option',
@@ -821,7 +821,7 @@ class Detail extends Component
             : "Raum gebucht: {$label}");
 
         $this->newBookingInline = [
-            'datum'       => '', 'beginn' => '', 'ende' => '',
+            'datum'       => '', 'start_time' => '', 'end_time' => '',
             'pers'        => '', 'location_id' => null, 'raum' => '',
             'bestuhlung'  => '', 'optionsrang' => '1. Option', 'absprache' => '',
             'taeglich'    => false,
@@ -882,8 +882,8 @@ class Detail extends Component
                 'location_id' => !empty($data['location_id']) ? (int) $data['location_id'] : null,
                 'raum'        => $data['raum'] ?: null,
                 'datum'       => $datum,
-                'beginn'      => $day->von ?: null,
-                'ende'        => $day->bis ?: null,
+                'start_time'      => $day->start_time ?: null,
+                'end_time'        => $day->bis ?: null,
                 'pers'        => $pers ? (string) $pers : null,
                 'bestuhlung'  => $data['bestuhlung'] ?: null,
                 'optionsrang' => $data['optionsrang'] ?: '1. Option',
@@ -904,8 +904,8 @@ class Detail extends Component
     {
         $this->scheduleForm = [
             'datum'        => $this->event->start_date?->format('Y-m-d') ?? '',
-            'von'          => '',
-            'bis'          => '',
+            'start_time'          => '',
+            'end_time'          => '',
             'beschreibung' => '',
             'raum'         => '',
             'bemerkung'    => '',
@@ -921,8 +921,8 @@ class Detail extends Component
         $item = $this->event->scheduleItems()->where('uuid', $uuid)->firstOrFail();
         $this->scheduleForm = [
             'datum'        => $item->datum ?? '',
-            'von'          => $item->von ?? '',
-            'bis'          => $item->bis ?? '',
+            'start_time'          => $item->start_time ?? '',
+            'end_time'          => $item->bis ?? '',
             'beschreibung' => $item->beschreibung,
             'raum'         => $item->raum ?? '',
             'bemerkung'    => $item->bemerkung ?? '',
@@ -1025,7 +1025,7 @@ class Detail extends Component
         if (!str_contains($key, '.')) return;
         [$uuid, $field] = explode('.', $key, 2);
 
-        $allowed = ['datum', 'von', 'bis', 'beschreibung', 'raum', 'bemerkung'];
+        $allowed = ['datum', 'start_time', 'end_time', 'beschreibung', 'raum', 'bemerkung'];
         if (!in_array($field, $allowed, true)) return;
 
         $this->event->scheduleItems()->where('uuid', $uuid)->update([
@@ -1055,8 +1055,8 @@ class Detail extends Component
             'team_id'      => $this->event->team_id,
             'user_id'      => Auth::id(),
             'datum'        => $datum,
-            'von'          => $data['von'] ?: null,
-            'bis'          => $data['bis'] ?: null,
+            'start_time'          => $data['start_time'] ?: null,
+            'end_time'          => $data['end_time'] ?: null,
             'beschreibung' => $data['beschreibung'],
             'raum'         => $data['raum'] ?: null,
             'bemerkung'    => $data['bemerkung'] ?: null,
@@ -1066,7 +1066,7 @@ class Detail extends Component
         ActivityLogger::log($this->event, 'schedule', "Ablauf-Eintrag angelegt: {$data['beschreibung']}");
 
         $this->newScheduleInline = [
-            'datum' => '', 'von' => '', 'bis' => '',
+            'datum' => '', 'start_time' => '', 'end_time' => '',
             'beschreibung' => '', 'raum' => '', 'bemerkung' => '',
         ];
     }
@@ -1333,8 +1333,8 @@ class Detail extends Component
         $this->inlineBookings = $bookings->mapWithKeys(fn ($b) => [
             $b->uuid => [
                 'datum'       => $b->datum,
-                'beginn'      => $b->beginn,
-                'ende'        => $b->ende,
+                'start_time'      => $b->start_time,
+                'end_time'        => $b->end_time,
                 'pers'        => $b->pers,
                 'location_id' => $b->location_id,
                 'raum'        => $b->raum,
@@ -1347,8 +1347,8 @@ class Detail extends Component
         $this->inlineSchedule = $schedule->mapWithKeys(fn ($s) => [
             $s->uuid => [
                 'datum'        => $s->datum,
-                'von'          => $s->von,
-                'bis'          => $s->bis,
+                'start_time'          => $s->start_time,
+                'end_time'          => $s->bis,
                 'beschreibung' => $s->beschreibung,
                 'raum'         => $s->raum,
                 'bemerkung'    => $s->bemerkung,

@@ -44,7 +44,7 @@ class Quotes extends Component
 
     public array $newPosition = [
         'gruppe' => '', 'name' => '', 'anz' => '', 'anz2' => '',
-        'uhrzeit' => '', 'bis' => '', 'inhalt' => '', 'gebinde' => '',
+        'start_time' => '', 'end_time' => '', 'inhalt' => '', 'gebinde' => '',
         'basis_ek' => 0, 'ek' => 0, 'preis' => 0, 'mwst' => '7%',
         'gesamt' => 0, 'bemerkung' => '',
     ];
@@ -564,7 +564,7 @@ class Quotes extends Component
     {
         $this->newPosition = [
             'gruppe' => '', 'name' => '', 'anz' => '', 'anz2' => '',
-            'uhrzeit' => '', 'bis' => '', 'inhalt' => '', 'gebinde' => '',
+            'start_time' => '', 'end_time' => '', 'inhalt' => '', 'gebinde' => '',
             'basis_ek' => 0, 'ek' => 0, 'preis' => 0, 'mwst' => '7%',
             'gesamt' => 0, 'bemerkung' => '',
         ];
@@ -859,8 +859,8 @@ class Quotes extends Component
             'name'          => $this->newPosition['name'],
             'anz'           => (string) $this->newPosition['anz'],
             'anz2'          => (string) $this->newPosition['anz2'],
-            'uhrzeit'       => $this->newPosition['uhrzeit'],
-            'bis'           => $this->newPosition['bis'],
+            'start_time'       => $this->newPosition['start_time'],
+            'end_time'           => $this->newPosition['end_time'],
             'inhalt'        => $this->newPosition['inhalt'],
             'gebinde'       => $this->newPosition['gebinde'],
             'basis_ek'      => (float) $this->newPosition['basis_ek'],
@@ -882,12 +882,12 @@ class Quotes extends Component
      */
     public function updatePositionField(int $positionId, string $field, $value): void
     {
-        $allowed = ['gruppe','name','anz','anz2','uhrzeit','bis','gebinde','ek','preis','mwst','gesamt','bemerkung','procurement_type'];
+        $allowed = ['gruppe','name','anz','anz2','start_time','end_time','gebinde','ek','preis','mwst','gesamt','bemerkung','procurement_type'];
         if (!in_array($field, $allowed, true)) return;
         if (!$this->activeItemId) return;
 
         // Server-seitige Defensive: ungueltige Zeiten nicht speichern
-        if (in_array($field, ['uhrzeit','bis'], true)) {
+        if (in_array($field, ['start_time','end_time'], true)) {
             $v = trim((string) $value);
             if ($v !== '' && !PositionCalculator::isValidTime($v)) {
                 session()->flash('positionError', 'Uhrzeit "' . $v . '" ist nicht zulaessig.');
@@ -904,8 +904,8 @@ class Quotes extends Component
         $data = PositionCalculator::apply([
             'anz'     => $pos->anz,
             'anz2'    => $pos->anz2,
-            'uhrzeit' => $pos->uhrzeit,
-            'bis'     => $pos->bis,
+            'start_time' => $pos->start_time,
+            'end_time'     => $pos->end_time,
             'preis'   => $pos->preis,
             'gesamt'  => $pos->gesamt,
         ], $field, 'preis');

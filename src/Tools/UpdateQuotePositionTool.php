@@ -8,6 +8,7 @@ use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\QuotePosition;
 use Platform\Events\Tools\Concerns\CollectsValidationErrors;
+use Platform\Events\Tools\Concerns\NormalizesMwst;
 use Platform\Events\Tools\Concerns\RecalculatesQuoteItem;
 
 /**
@@ -18,10 +19,11 @@ use Platform\Events\Tools\Concerns\RecalculatesQuoteItem;
 class UpdateQuotePositionTool implements ToolContract, ToolMetadataContract
 {
     use CollectsValidationErrors;
+    use NormalizesMwst;
     use RecalculatesQuoteItem;
 
     protected const STRING_FIELDS = [
-        'gruppe', 'name', 'anz', 'anz2', 'uhrzeit', 'bis', 'gebinde',
+        'gruppe', 'name', 'anz', 'anz2', 'start_time', 'end_time', 'gebinde',
         'mwst', 'bemerkung', 'inhalt', 'beverage_mode', 'procurement_type',
     ];
     protected const NUMERIC_FIELDS = ['basis_ek', 'ek', 'preis', 'gesamt'];
@@ -101,6 +103,11 @@ class UpdateQuotePositionTool implements ToolContract, ToolMetadataContract
                     $arguments[$primary] = $arguments[$alias];
                     $aliasesApplied[] = "{$alias}→{$primary}";
                 }
+            }
+
+            // MwSt-Numeric-Alias (Excel/DATEV: 1→19%, 3→7%, 0→0%).
+            if ($mwstAlias = $this->normalizeMwstField($arguments, 'mwst')) {
+                $aliasesApplied[] = $mwstAlias;
             }
 
             // Validation

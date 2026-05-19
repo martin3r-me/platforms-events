@@ -9,6 +9,7 @@ use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\QuotePosition;
+use Platform\Events\Tools\Concerns\NormalizesMwst;
 use Platform\Events\Tools\Concerns\RecalculatesQuoteItem;
 
 /**
@@ -17,6 +18,7 @@ use Platform\Events\Tools\Concerns\RecalculatesQuoteItem;
  */
 class CreateQuotePositionTool implements ToolContract, ToolMetadataContract
 {
+    use NormalizesMwst;
     use RecalculatesQuoteItem;
 
     public function getName(): string
@@ -46,8 +48,8 @@ class CreateQuotePositionTool implements ToolContract, ToolMetadataContract
                 'name'             => ['type' => 'string',  'description' => 'Bezeichnung der Position.'],
                 'anz'              => ['type' => 'string',  'description' => 'Anzahl (als String, z.B. "10" oder "1,5").'],
                 'anz2'             => ['type' => 'string',  'description' => 'Optional: zweite Mengenangabe.'],
-                'uhrzeit'          => ['type' => 'string',  'description' => 'Optional: Von-Zeit.'],
-                'bis'              => ['type' => 'string',  'description' => 'Optional: Bis-Zeit.'],
+                'start_time'          => ['type' => 'string',  'description' => 'Optional: Von-Zeit.'],
+                'end_time'              => ['type' => 'string',  'description' => 'Optional: Bis-Zeit.'],
                 'gebinde'          => ['type' => 'string',  'description' => 'Optional: Gebinde, z.B. "1 Port.".'],
                 'ek'               => ['type' => 'number',  'description' => 'Optional: EK-Preis.'],
                 'preis'            => ['type' => 'number',  'description' => 'VK-Preis pro Einheit.'],
@@ -83,6 +85,12 @@ class CreateQuotePositionTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('ACCESS_DENIED', 'Kein Zugriff auf das Event.');
             }
 
+            // MwSt-Numeric-Alias (Excel/DATEV: 1→19%, 3→7%, 0→0%).
+            $aliasesApplied = [];
+            if ($mwstAlias = $this->normalizeMwstField($arguments, 'mwst')) {
+                $aliasesApplied[] = $mwstAlias;
+            }
+
             $anz   = (float) ($arguments['anz'] ?? 0);
             $preis = (float) ($arguments['preis'] ?? 0);
             $gesamt = isset($arguments['gesamt']) && $arguments['gesamt'] !== ''
@@ -106,8 +114,8 @@ class CreateQuotePositionTool implements ToolContract, ToolMetadataContract
                 'name'             => (string) ($arguments['name']      ?? ''),
                 'anz'              => (string) ($arguments['anz']       ?? ''),
                 'anz2'             => (string) ($arguments['anz2']      ?? ''),
-                'uhrzeit'          => (string) ($arguments['uhrzeit']   ?? ''),
-                'bis'              => (string) ($arguments['bis']       ?? ''),
+                'start_time'          => (string) ($arguments['start_time']   ?? ''),
+                'end_time'              => (string) ($arguments['end_time']       ?? ''),
                 'gebinde'          => (string) ($arguments['gebinde']   ?? ''),
                 'ek'               => (float)  ($arguments['ek']        ?? 0),
                 'preis'            => $preis,
@@ -129,6 +137,7 @@ class CreateQuotePositionTool implements ToolContract, ToolMetadataContract
                     'anz' => $position->anz, 'preis' => (float) $position->preis,
                     'gesamt' => (float) $position->gesamt,
                 ],
+                'aliases_applied' => $aliasesApplied,
                 'message' => "Position «{$position->name}» hinzugefügt.",
             ]);
         } catch (\Throwable $e) {

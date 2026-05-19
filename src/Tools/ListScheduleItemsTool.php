@@ -45,7 +45,7 @@ class ListScheduleItemsTool implements ToolContract, ToolMetadataContract
 
             $this->applyStandardFilters($query, $arguments, ['datum', 'raum', 'linked']);
             $this->applyStandardSearch($query, $arguments, ['beschreibung', 'raum', 'bemerkung']);
-            $this->applyStandardSort($query, $arguments, ['sort_order', 'datum', 'von', 'created_at'], 'sort_order', 'asc');
+            $this->applyStandardSort($query, $arguments, ['sort_order', 'datum', 'start_time', 'created_at'], 'sort_order', 'asc');
             $this->applyStandardPagination($query, $arguments);
 
             $items = $query->get()->map(fn (ScheduleItem $s) => [
@@ -53,8 +53,8 @@ class ListScheduleItemsTool implements ToolContract, ToolMetadataContract
                 'uuid'         => $s->uuid,
                 'event_id'     => $s->event_id,
                 'datum'        => $s->datum,
-                'von'          => $s->von,
-                'bis'          => $s->bis,
+                'start_time'          => $s->start_time,
+                'end_time'          => $s->bis,
                 'beschreibung' => $s->beschreibung,
                 'raum'         => $s->raum,
                 'bemerkung'    => $s->bemerkung,

@@ -15,7 +15,7 @@ class UpdateEventDayTool implements ToolContract, ToolMetadataContract
     use NormalizesTimeFields;
 
     protected const FIELDS = [
-        'label', 'day_type', 'datum', 'day_of_week', 'von', 'bis',
+        'label', 'day_type', 'datum', 'day_of_week', 'start_time', 'end_time',
         'pers_von', 'pers_bis', 'day_status', 'color',
     ];
 
@@ -91,7 +91,7 @@ class UpdateEventDayTool implements ToolContract, ToolMetadataContract
             }
 
             // Aliases zwischen Tag/Buchung/Englisch normalisieren.
-            $aliasesApplied = $this->normalizeTimeFields($arguments, ['start' => 'von', 'end' => 'bis']);
+            $aliasesApplied = $this->normalizeTimeFields($arguments, ['start' => 'start_time', 'end' => 'end_time']);
             // pers/pax/persons → pers_von+pers_bis (gleicher Wert)
             foreach (['pers', 'pax', 'persons'] as $alias) {
                 if (!empty($arguments[$alias])) {
@@ -134,8 +134,8 @@ class UpdateEventDayTool implements ToolContract, ToolMetadataContract
                 'day_type'       => $day->day_type,
                 'datum'          => $day->datum?->toDateString(),
                 'day_of_week'    => $day->day_of_week,
-                'von'            => $day->von,
-                'bis'            => $day->bis,
+                'start_time'            => $day->start_time,
+                'end_time'            => $day->bis,
                 'pers_von'       => $day->pers_von,
                 'pers_bis'       => $day->pers_bis,
                 'day_status'     => $day->day_status,

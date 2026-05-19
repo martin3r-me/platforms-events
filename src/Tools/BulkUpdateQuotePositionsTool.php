@@ -10,6 +10,7 @@ use Platform\Events\Models\Quote;
 use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\QuotePosition;
 use Platform\Events\Tools\Concerns\CollectsValidationErrors;
+use Platform\Events\Tools\Concerns\NormalizesMwst;
 use Platform\Events\Tools\Concerns\RecalculatesQuoteItem;
 use Platform\Events\Tools\Concerns\ResolvesEvent;
 
@@ -21,6 +22,7 @@ use Platform\Events\Tools\Concerns\ResolvesEvent;
 class BulkUpdateQuotePositionsTool implements ToolContract, ToolMetadataContract
 {
     use CollectsValidationErrors;
+    use NormalizesMwst;
     use RecalculatesQuoteItem;
     use ResolvesEvent;
 
@@ -154,6 +156,10 @@ class BulkUpdateQuotePositionsTool implements ToolContract, ToolMetadataContract
                     $set[$primary] = $set[$alias];
                     $aliasesApplied[] = "{$alias}→{$primary}";
                 }
+            }
+            // MwSt-Numeric-Alias (Excel/DATEV: 1→19%, 3→7%, 0→0%).
+            if ($mwstAlias = $this->normalizeMwstField($set, 'mwst')) {
+                $aliasesApplied[] = 'set.' . $mwstAlias;
             }
 
             // Validation des set-Blocks

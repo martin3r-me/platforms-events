@@ -65,17 +65,19 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
                 'location_ref'       => ['description' => 'Generischer Location-Resolver: numerisch->ID, UUID-Format->uuid, sonst Kuerzel. Bei Mehrfach-Identifikatoren VALIDATION_ERROR wenn inkonsistent.'],
                 'raum'               => ['type' => 'string',  'description' => 'Legacy-Fallback-Kürzel (Freitext am Booking). Empfohlen: stattdessen location_kuerzel verwenden.'],
                 'datum'              => ['type' => 'string',  'description' => 'YYYY-MM-DD oder freitext (nur Single-Modus; bei Bulk wird datum aus EventDay übernommen).'],
-                'beginn'             => ['type' => 'string',  'description' => 'HH:MM. Alias: "von" (Tag-Feldname).'],
-                'ende'               => ['type' => 'string',  'description' => 'HH:MM. Alias: "bis" (Tag-Feldname).'],
-                'pers'               => ['type' => 'string',  'description' => 'Personenzahl als String. Aliases: "pers_von"/"pers_bis" (Tag-Feldnamen).'],
+                'start_time'         => ['type' => 'string',  'description' => 'HH:MM. Historische Aliase: von, beginn.'],
+                'end_time'           => ['type' => 'string',  'description' => 'HH:MM. Historische Aliase: bis, ende.'],
+                'pers'               => ['type' => 'string',  'description' => 'Personenzahl als String. Aliases: pers_von, pers_bis, pax.'],
                 'bestuhlung'         => ['type' => 'string',  'description' => 'z.B. "Bankett", "U-Form" – siehe Settings → Bestuhlungs-Arten.'],
                 'optionsrang'        => ['type' => 'string',  'description' => 'Default "1. Option". Werte: "1. Option" | "2. Option" | "Definitiv" | "Vertrag".'],
                 'absprache'          => ['type' => 'string',  'description' => 'Freitext-Kommentar.'],
-                // Tag-Feld-Aliase (werden auf beginn/ende/pers gemappt)
-                'von'                => ['type' => 'string',  'description' => 'Alias fuer beginn (Tag-Feldname). Wird gemappt.'],
-                'bis'                => ['type' => 'string',  'description' => 'Alias fuer ende (Tag-Feldname). Wird gemappt.'],
-                'pers_von'           => ['type' => 'string',  'description' => 'Alias fuer pers (Tag-Feldname). Wird gemappt.'],
-                'pers_bis'           => ['type' => 'string',  'description' => 'Alias fuer pers (Tag-Feldname). Wird gemappt, falls pers/pers_von nicht gesetzt.'],
+                // Historische Aliase (werden auf start_time/end_time/pers gemappt)
+                'von'                => ['type' => 'string',  'description' => 'Alias fuer start_time. Wird gemappt.'],
+                'bis'                => ['type' => 'string',  'description' => 'Alias fuer end_time. Wird gemappt.'],
+                'beginn'             => ['type' => 'string',  'description' => 'Alias fuer start_time. Wird gemappt.'],
+                'ende'               => ['type' => 'string',  'description' => 'Alias fuer end_time. Wird gemappt.'],
+                'pers_von'           => ['type' => 'string',  'description' => 'Alias fuer pers. Wird gemappt.'],
+                'pers_bis'           => ['type' => 'string',  'description' => 'Alias fuer pers. Wird gemappt, falls pers/pers_von nicht gesetzt.'],
                 // Bulk-Modi
                 'apply_to_all_days'  => ['type' => 'boolean', 'description' => 'Default false. Wenn true: pro EventDay eine Buchung mit datum=Tag.'],
                 'day_ids'            => ['type' => 'array',   'items' => ['type' => 'integer'], 'description' => 'Nur an diese EventDay-IDs Buchungen anlegen (Bulk-Modus).'],
@@ -92,12 +94,12 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
             }
 
             // Aliases (von/bis/start_time/end_time → beginn/ende; pers_von/pers_bis/pax → pers).
-            $aliases = $this->normalizeTimeFields($arguments, ['start' => 'beginn', 'end' => 'ende', 'pers' => 'pers']);
+            $aliases = $this->normalizeTimeFields($arguments, ['start' => 'start_time', 'end' => 'end_time', 'pers' => 'pers']);
 
             // Bekannte Felder zur Erkennung von ignored_fields
             $known = array_merge([
                 'event_id', 'event_uuid', 'event_number',
-                'raum', 'datum', 'beginn', 'ende', 'pers', 'bestuhlung', 'optionsrang', 'absprache',
+                'raum', 'datum', 'start_time', 'end_time', 'pers', 'bestuhlung', 'optionsrang', 'absprache',
                 'apply_to_all_days', 'day_ids',
             ], $this->locationRefInputFields(), $this->timeFieldAliases());
             $ignored = array_values(array_diff(array_keys($arguments), $known));
@@ -153,8 +155,8 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
                 'user_id'     => $context->user->id,
                 'location_id' => $locationId,
                 'raum'        => $raum,
-                'beginn'      => $arguments['beginn']      ?? null,
-                'ende'        => $arguments['ende']        ?? null,
+                'start_time'      => $arguments['start_time']      ?? null,
+                'end_time'        => $arguments['end_time']        ?? null,
                 'pers'        => $arguments['pers']        ?? null,
                 'bestuhlung'  => $arguments['bestuhlung']  ?? null,
                 'optionsrang' => $arguments['optionsrang'] ?? '1. Option',
@@ -168,7 +170,7 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
                 // Bulk-Modus: pro Tag eine Buchung mit datum=Tag.
                 // Tag-Defaults greifen, wenn beginn/ende/pers im POST nicht gesetzt waren –
                 // dann wird pro Tag aus von/bis/pers_von das Tag-spezifische Default uebernommen.
-                $bulkDefaultFromDay = empty($base['beginn']) && empty($base['ende']) && empty($base['pers']);
+                $bulkDefaultFromDay = empty($base['start_time']) && empty($base['end_time']) && empty($base['pers']);
                 foreach ($targetDays as $day) {
                     $maxSort++;
                     $row = array_merge($base, [
@@ -176,8 +178,8 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
                         'sort_order' => $maxSort,
                     ]);
                     if ($bulkDefaultFromDay) {
-                        $row['beginn'] = $day->von ?: $row['beginn'];
-                        $row['ende']   = $day->bis ?: $row['ende'];
+                        $row['start_time'] = $day->start_time ?: $row['start_time'];
+                        $row['end_time']   = $day->bis ?: $row['end_time'];
                         $row['pers']   = $day->pers_von ?: ($day->pers_bis ?: $row['pers']);
                     }
                     $booking = Booking::create($row);
@@ -186,8 +188,8 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
                         'uuid'         => $booking->uuid,
                         'event_day_id' => $day->id,
                         'datum'        => $booking->datum,
-                        'beginn'       => $booking->beginn,
-                        'ende'         => $booking->ende,
+                        'start_time'       => $booking->start_time,
+                        'end_time'         => $booking->end_time,
                         'pers'         => $booking->pers,
                         'pers_numeric' => is_numeric($booking->pers) ? (int) $booking->pers : null,
                         'source'       => $bulkDefaultFromDay ? 'day_defaults' : 'request',
@@ -204,8 +206,8 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
                     'id'           => $booking->id,
                     'uuid'         => $booking->uuid,
                     'datum'        => $booking->datum,
-                    'beginn'       => $booking->beginn,
-                    'ende'         => $booking->ende,
+                    'start_time'       => $booking->start_time,
+                    'end_time'         => $booking->end_time,
                     'pers'         => $booking->pers,
                     'pers_numeric' => is_numeric($booking->pers) ? (int) $booking->pers : null,
                 ];

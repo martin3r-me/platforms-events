@@ -97,15 +97,15 @@ class PositionCalculator
     public static function apply(array $position, string $changedField, string $priceField = 'preis'): array
     {
         // Zeit -> Anz.2
-        if (in_array($changedField, ['uhrzeit', 'bis'], true)) {
-            $h = self::anz2FromTime($position['uhrzeit'] ?? null, $position['bis'] ?? null);
+        if (in_array($changedField, ['start_time', 'end_time'], true)) {
+            $h = self::anz2FromTime($position['start_time'] ?? null, $position['end_time'] ?? null);
             if ($h !== null) {
                 $position['anz2'] = (string) (fmod($h, 1) == 0 ? (int) $h : round($h, 2));
             }
         }
 
         // Gesamt = Anz x (Anz.2 oder 1) x Preis
-        if ($changedField !== 'gesamt' && in_array($changedField, ['anz','anz2','uhrzeit','bis',$priceField], true)) {
+        if ($changedField !== 'gesamt' && in_array($changedField, ['anz','anz2','start_time','end_time',$priceField], true)) {
             $g = self::gesamt(
                 (float) ($position['anz'] ?? 0),
                 isset($position['anz2']) && $position['anz2'] !== '' ? (float) $position['anz2'] : null,

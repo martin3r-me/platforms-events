@@ -225,7 +225,7 @@ class GetEventTool implements ToolContract, ToolMetadataContract
                     ->map(fn($d) => [
                         'id' => $d->id, 'uuid' => $d->uuid,
                         'label' => $d->label, 'datum' => $d->datum?->toDateString(),
-                        'day_of_week' => $d->day_of_week, 'von' => $d->von, 'bis' => $d->bis,
+                        'day_of_week' => $d->day_of_week, 'start_time' => $d->start_time, 'end_time' => $d->bis,
                         'pers_von' => $d->pers_von, 'pers_bis' => $d->pers_bis,
                         'day_status' => $d->day_status, 'color' => $d->color,
                         'sort_order' => $d->sort_order,
@@ -243,7 +243,7 @@ class GetEventTool implements ToolContract, ToolMetadataContract
                             'gruppe'  => $b->location->gruppe,
                         ] : null,
                         'raum' => $b->raum,
-                        'datum' => $b->datum, 'beginn' => $b->beginn, 'ende' => $b->ende,
+                        'datum' => $b->datum, 'start_time' => $b->start_time, 'end_time' => $b->end_time,
                         'pers' => $b->pers,
                         'pers_numeric' => is_numeric($b->pers) ? (int) $b->pers : null,
                         'bestuhlung' => $b->bestuhlung,
@@ -255,7 +255,7 @@ class GetEventTool implements ToolContract, ToolMetadataContract
                 $payload['schedule'] = $event->scheduleItems()->orderBy('sort_order')->get()
                     ->map(fn($s) => [
                         'id' => $s->id, 'uuid' => $s->uuid,
-                        'datum' => $s->datum, 'von' => $s->von, 'bis' => $s->bis,
+                        'datum' => $s->datum, 'start_time' => $s->start_time, 'end_time' => $s->bis,
                         'beschreibung' => $s->beschreibung, 'raum' => $s->raum,
                         'bemerkung' => $s->bemerkung, 'linked' => (bool) $s->linked,
                         'sort_order' => $s->sort_order,

@@ -9,6 +9,7 @@ use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\OrderItem;
 use Platform\Events\Models\OrderPosition;
 use Platform\Events\Tools\Concerns\CollectsValidationErrors;
+use Platform\Events\Tools\Concerns\NormalizesMwst;
 use Platform\Events\Tools\Concerns\RecalculatesOrderItem;
 use Platform\Events\Tools\Concerns\ResolvesEvent;
 
@@ -20,6 +21,7 @@ use Platform\Events\Tools\Concerns\ResolvesEvent;
 class BulkUpdateOrderPositionsTool implements ToolContract, ToolMetadataContract
 {
     use CollectsValidationErrors;
+    use NormalizesMwst;
     use RecalculatesOrderItem;
     use ResolvesEvent;
 
@@ -136,6 +138,10 @@ class BulkUpdateOrderPositionsTool implements ToolContract, ToolMetadataContract
                     $set[$primary] = $set[$alias];
                     $aliasesApplied[] = "{$alias}→{$primary}";
                 }
+            }
+            // MwSt-Numeric-Alias (Excel/DATEV: 1→19%, 3→7%, 0→0%).
+            if ($mwstAlias = $this->normalizeMwstField($set, 'mwst')) {
+                $aliasesApplied[] = 'set.' . $mwstAlias;
             }
 
             // Validation

@@ -277,9 +277,9 @@ class ContractRenderer
             '{LOCATION}'          => (string) ($event->location ?? ''),
             '{ROOMS}'             => self::formatRooms($bookings),
             '{SETUP_DATE}'        => self::dateString(optional($days->first())->datum ?? $event->start_date),
-            '{SETUP_TIME}'        => (string) (optional($bookings->sortBy('beginn')->first())->beginn ?? ''),
+            '{SETUP_TIME}'        => (string) (optional($bookings->sortBy('start_time')->first())->start_time ?? ''),
             '{TEARDOWN_DATE}'     => self::dateString(optional($days->last())->datum ?? $event->end_date),
-            '{TEARDOWN_TIME}'     => (string) (optional($bookings->sortByDesc('ende')->first())->ende ?? ''),
+            '{TEARDOWN_TIME}'     => (string) (optional($bookings->sortByDesc('end_time')->first())->end_time ?? ''),
             '{RESPONSIBLE}'       => (string) ($event->responsible ?? ''),
             '{COST_CENTER}'       => (string) ($event->cost_center ?? ''),
             '{COST_CARRIER}'      => (string) ($event->cost_carrier ?? ''),
@@ -324,7 +324,7 @@ class ContractRenderer
             $name = $b->location?->name ?: ($b->raum ?: '');
             $short = $b->location?->kuerzel ?: '';
             $date = self::dateString($b->datum);
-            $times = trim(($b->beginn ? $b->beginn : '') . ($b->ende ? ' – ' . $b->ende : ''));
+            $times = trim(($b->start_time ? $b->start_time : '') . ($b->end_time ? ' – ' . $b->end_time : ''));
             $pers = $b->pers ? "{$b->pers} Pers." : '';
             $label = trim(($short ? $short . ' — ' : '') . $name);
             $meta = array_filter([$date, $times, $pers]);

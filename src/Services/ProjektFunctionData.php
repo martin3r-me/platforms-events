@@ -23,7 +23,7 @@ class ProjektFunctionData
         $eventSlug = str_replace('#', '', (string) ($event->event_number ?? ''));
 
         $schedule = $event->scheduleItems
-            ->sortBy(['datum', 'von'])
+            ->sortBy(['datum', 'start_time'])
             ->map(function ($s) {
                 $raw = $s->datum ?? '';
                 $short = '';
@@ -42,8 +42,8 @@ class ProjektFunctionData
                     'datum'        => $short,
                     'datum_full'   => $full,
                     'datum_raw'    => (string) $raw,
-                    'von'          => $s->von ?? '',
-                    'bis'          => $s->bis ?? '',
+                    'start_time'          => $s->start_time ?? '',
+                    'end_time'          => $s->bis ?? '',
                     'beschreibung' => $s->beschreibung ?? '',
                     'raum'         => $s->raum ?? '',
                     'bemerkung'    => $s->bemerkung ?? '',
@@ -85,8 +85,8 @@ class ProjektFunctionData
                             'name'      => $p->name ?? '',
                             'anz'       => $p->anz ?? '',
                             'anz2'      => $p->anz2 ?? '',
-                            'uhrzeit'   => $p->uhrzeit ?? '',
-                            'bis'       => $p->bis ?? '',
+                            'start_time'   => $p->uhrzeit ?? '',
+                            'end_time'       => $p->bis ?? '',
                             'inhalt'    => $p->inhalt ?? '',
                             'gebinde'   => $p->gebinde ?? '',
                             'ek'        => $p->ek ?? '',
@@ -111,8 +111,8 @@ class ProjektFunctionData
                 'datum_raw'   => $day->datum,
                 'day_of_week' => $dayOfWeek,
                 'full_day'    => $fullDayName,
-                'von'         => $day->von ?? '',
-                'bis'         => $day->bis ?? '',
+                'start_time'         => $day->start_time ?? '',
+                'end_time'         => $day->bis ?? '',
                 'pers_von'    => $day->pers_von ?? '',
                 'pers_bis'    => $day->pers_bis ?? '',
                 'schedule'    => $daySchedule,

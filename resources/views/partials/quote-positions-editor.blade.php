@@ -174,10 +174,10 @@
                                    class="{{ $inp }} font-mono text-right text-slate-500">
                         </td>
                         <td class="py-1 px-1 {{ $text ? 'opacity-40' : '' }}">
-                            <input type="text" value="{{ $p->uhrzeit }}" maxlength="5" inputmode="numeric"
+                            <input type="text" value="{{ $p->start_time }}" maxlength="5" inputmode="numeric"
                                    x-data="{ invalid: false }"
                                    x-on:input="let v = $el.value.replace(/[^0-9]/g,'').substring(0,4); if (v.length >= 3) v = v.substring(0,2)+':'+v.substring(2); $el.value = v; invalid = false;"
-                                   x-on:blur="const v = $el.value.trim(); const ok = v === '' || /^([01]?\d|2[0-3]):[0-5]\d$/.test(v); invalid = !ok; if (ok && v !== @js((string)$p->uhrzeit)) $wire.updatePositionField({{ $p->id }}, 'uhrzeit', v)"
+                                   x-on:blur="const v = $el.value.trim(); const ok = v === '' || /^([01]?\d|2[0-3]):[0-5]\d$/.test(v); invalid = !ok; if (ok && v !== @js((string)$p->start_time)) $wire.updatePositionField({{ $p->id }}, 'start_time', v)"
                                    :class="invalid ? 'ring-1 ring-red-500 border-red-500 bg-red-50' : ''"
                                    class="{{ $inp }} font-mono text-slate-500">
                         </td>
@@ -185,7 +185,7 @@
                             <input type="text" value="{{ $p->bis }}" maxlength="5" inputmode="numeric"
                                    x-data="{ invalid: false }"
                                    x-on:input="let v = $el.value.replace(/[^0-9]/g,'').substring(0,4); if (v.length >= 3) v = v.substring(0,2)+':'+v.substring(2); $el.value = v; invalid = false;"
-                                   x-on:blur="const v = $el.value.trim(); const ok = v === '' || /^([01]?\d|2[0-3]):[0-5]\d$/.test(v); invalid = !ok; if (ok && v !== @js((string)$p->bis)) $wire.updatePositionField({{ $p->id }}, 'bis', v)"
+                                   x-on:blur="const v = $el.value.trim(); const ok = v === '' || /^([01]?\d|2[0-3]):[0-5]\d$/.test(v); invalid = !ok; if (ok && v !== @js((string)$p->bis)) $wire.updatePositionField({{ $p->id }}, 'end_time', v)"
                                    :class="invalid ? 'ring-1 ring-red-500 border-red-500 bg-red-50' : ''"
                                    class="{{ $inp }} font-mono text-slate-500">
                         </td>
@@ -410,14 +410,14 @@
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model.blur="newPosition.uhrzeit" type="text" placeholder="HH:MM" maxlength="5"
+                        <input wire:model.blur="newPosition.start_time" type="text" placeholder="HH:MM" maxlength="5"
                                inputmode="numeric"
                                x-data
                                x-on:input="let v = $el.value.replace(/[^0-9]/g, '').substring(0, 4); if (v.length >= 3) v = v.substring(0, 2) + ':' + v.substring(2); $el.value = v;"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono bg-white">
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model.blur="newPosition.bis" type="text" placeholder="HH:MM" maxlength="5"
+                        <input wire:model.blur="newPosition.end_time" type="text" placeholder="HH:MM" maxlength="5"
                                inputmode="numeric"
                                x-data
                                x-on:input="let v = $el.value.replace(/[^0-9]/g, '').substring(0, 4); if (v.length >= 3) v = v.substring(0, 2) + ':' + v.substring(2); $el.value = v;"

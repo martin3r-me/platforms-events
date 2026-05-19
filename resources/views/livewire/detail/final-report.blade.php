@@ -114,8 +114,8 @@
                                     <td class="py-1.5 px-2 font-semibold text-slate-700">{{ $i === 0 ? $datum : '' }}</td>
                                     <td class="py-1.5 px-2"><span class="text-[0.6rem] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">{{ $b->location?->kuerzel ?: $b->raum }}</span></td>
                                     <td class="py-1.5 px-2">{{ $b->bestuhlung ?: '—' }}</td>
-                                    <td class="py-1.5 px-2">{{ $b->beginn ?: '—' }}</td>
-                                    <td class="py-1.5 px-2">{{ $b->ende ?: '—' }}</td>
+                                    <td class="py-1.5 px-2">{{ $b->start_time ?: '—' }}</td>
+                                    <td class="py-1.5 px-2">{{ $b->end_time ?: '—' }}</td>
                                     <td class="py-1.5 px-2 text-right font-mono">{{ $b->pers ?: '—' }}</td>
                                 </tr>
                             @endforeach

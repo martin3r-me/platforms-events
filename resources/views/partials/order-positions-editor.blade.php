@@ -109,7 +109,7 @@
                         <td class="py-1.5 px-2 truncate" style="{{ $rs['nameStyle'] ?: '' }}" title="{{ $p->name }}">{{ $p->name }}</td>
                         <td class="py-1.5 px-1 text-right font-mono">{{ $text ? '' : $p->anz }}</td>
                         <td class="py-1.5 px-1 text-right font-mono text-slate-500">{{ $text ? '' : $p->anz2 }}</td>
-                        <td class="py-1.5 px-1 font-mono text-slate-500">{{ $text ? '' : $p->uhrzeit }}</td>
+                        <td class="py-1.5 px-1 font-mono text-slate-500">{{ $text ? '' : $p->start_time }}</td>
                         <td class="py-1.5 px-1 font-mono text-slate-500">{{ $text ? '' : $p->bis }}</td>
                         <td class="py-1.5 px-1 text-slate-500 truncate" title="{{ $p->gebinde }}">{{ $text ? '' : $p->gebinde }}</td>
                         <td class="py-1.5 px-1 text-right font-mono font-semibold">{{ $text ? '' : $fmt($p->ek) }}</td>
@@ -269,14 +269,14 @@
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono text-right bg-white">
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model.blur="newPosition.uhrzeit" type="text" placeholder="HH:MM" maxlength="5"
+                        <input wire:model.blur="newPosition.start_time" type="text" placeholder="HH:MM" maxlength="5"
                                inputmode="numeric"
                                x-data
                                x-on:input="let v = $el.value.replace(/[^0-9]/g, '').substring(0, 4); if (v.length >= 3) v = v.substring(0, 2) + ':' + v.substring(2); $el.value = v;"
                                class="w-full border border-slate-200 rounded px-1.5 py-1 text-[0.65rem] font-mono bg-white">
                     </td>
                     <td class="px-1.5 py-1.5 align-top">
-                        <input wire:model.blur="newPosition.bis" type="text" placeholder="HH:MM" maxlength="5"
+                        <input wire:model.blur="newPosition.end_time" type="text" placeholder="HH:MM" maxlength="5"
                                inputmode="numeric"
                                x-data
                                x-on:input="let v = $el.value.replace(/[^0-9]/g, '').substring(0, 4); if (v.length >= 3) v = v.substring(0, 2) + ':' + v.substring(2); $el.value = v;"

@@ -65,7 +65,7 @@ class ListOrderPositionsTool implements ToolContract, ToolMetadataContract
                 'id' => $p->id, 'uuid' => $p->uuid,
                 'gruppe' => $p->gruppe, 'name' => $p->name,
                 'anz' => $p->anz, 'anz2' => $p->anz2,
-                'uhrzeit' => $p->uhrzeit, 'bis' => $p->bis,
+                'start_time' => $p->start_time, 'end_time' => $p->end_time,
                 'gebinde' => $p->gebinde,
                 'ek' => (float) $p->ek, 'mwst' => $p->mwst,
                 'gesamt' => (float) $p->gesamt, 'bemerkung' => $p->bemerkung,

@@ -53,10 +53,10 @@
                                             @svg('heroicon-o-trash', 'w-2.5 h-2.5')
                                         </button>
                                     </div>
-                                    @if($day->von || $day->bis)
+                                    @if($day->start_time || $day->bis)
                                         <div class="flex items-center gap-1 text-[0.55rem] font-mono text-[var(--ui-muted)]">
                                             @svg('heroicon-o-clock', 'w-2.5 h-2.5')
-                                            {{ $day->von ?: '00:00' }}–{{ $day->bis ?: '00:00' }}
+                                            {{ $day->start_time ?: '00:00' }}–{{ $day->bis ?: '00:00' }}
                                         </div>
                                     @endif
                                 </div>

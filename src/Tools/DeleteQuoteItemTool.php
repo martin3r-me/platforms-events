@@ -29,8 +29,8 @@ class DeleteQuoteItemTool implements ToolContract, ToolMetadataContract
     public function getDescription(): string
     {
         return 'DELETE /events/quote-items/{id} - Soft-Delete eines Angebots-Vorgangs (QuoteItem). '
-            . 'Identifikation: item_id ODER uuid. Alle QuotePositions des Vorgangs werden '
-            . 'kaskadiert soft-deleted. Applications (FlatRate, LocationPricing) bleiben fuer '
+            . 'Identifikation: quote_item_id ODER uuid (Alias: item_id). Alle QuotePositions des Vorgangs '
+            . 'werden kaskadiert soft-deleted. Applications (FlatRate, LocationPricing) bleiben fuer '
             . 'den Audit-Trail erhalten.';
     }
 
@@ -39,8 +39,9 @@ class DeleteQuoteItemTool implements ToolContract, ToolMetadataContract
         return [
             'type'       => 'object',
             'properties' => [
-                'item_id' => ['type' => 'integer', 'description' => 'ID des QuoteItems.'],
-                'uuid'    => ['type' => 'string',  'description' => 'UUID des QuoteItems.'],
+                'quote_item_id' => ['type' => 'integer', 'description' => 'ID des QuoteItems.'],
+                'uuid'          => ['type' => 'string',  'description' => 'UUID des QuoteItems.'],
+                'item_id'       => ['type' => 'integer', 'description' => 'Alias fuer quote_item_id (Backwards-Kompat).'],
             ],
         ];
     }
@@ -52,13 +53,21 @@ class DeleteQuoteItemTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('AUTH_ERROR', 'Kein User im Kontext.');
             }
 
+            $aliasesApplied = [];
+
+            // item_id-Alias auf quote_item_id mappen.
+            if (!isset($arguments['quote_item_id']) && !empty($arguments['item_id'])) {
+                $arguments['quote_item_id'] = $arguments['item_id'];
+                $aliasesApplied[] = 'item_id→quote_item_id';
+            }
+
             $query = QuoteItem::query();
-            if (!empty($arguments['item_id'])) {
-                $query->where('id', (int) $arguments['item_id']);
+            if (!empty($arguments['quote_item_id'])) {
+                $query->where('id', (int) $arguments['quote_item_id']);
             } elseif (!empty($arguments['uuid'])) {
                 $query->where('uuid', $arguments['uuid']);
             } else {
-                return ToolResult::error('VALIDATION_ERROR', 'item_id oder uuid ist erforderlich.');
+                return ToolResult::error('VALIDATION_ERROR', 'quote_item_id oder uuid ist erforderlich.');
             }
 
             $item = $query->first();
@@ -90,6 +99,7 @@ class DeleteQuoteItemTool implements ToolContract, ToolMetadataContract
                 'typ'                => $typ,
                 'event_id'           => $event->id,
                 'positions_deleted'  => $positionsDeleted,
+                'aliases_applied'    => $aliasesApplied,
                 'message'            => "Vorgang „{$typ}\" geloescht (soft, inkl. {$positionsDeleted} Position(en)).",
             ]);
         } catch (\Throwable $e) {

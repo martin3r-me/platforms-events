@@ -36,7 +36,7 @@ class Orders extends Component
 
     public array $newPosition = [
         'gruppe' => '', 'name' => '', 'anz' => '', 'anz2' => '',
-        'uhrzeit' => '', 'bis' => '', 'inhalt' => '', 'gebinde' => '',
+        'start_time' => '', 'end_time' => '', 'inhalt' => '', 'gebinde' => '',
         'ek' => 0, 'mwst' => '7%',
         'gesamt' => 0, 'bemerkung' => '',
     ];
@@ -219,8 +219,8 @@ class Orders extends Component
                 'name'          => $p->name,
                 'anz'           => $p->anz,
                 'anz2'          => $p->anz2,
-                'uhrzeit'       => $p->uhrzeit,
-                'bis'           => $p->bis,
+                'start_time'       => $p->start_time,
+                'end_time'           => $p->end_time,
                 'inhalt'        => $p->inhalt,
                 'gebinde'       => $p->gebinde,
                 'ek'            => $p->ek,
@@ -258,7 +258,7 @@ class Orders extends Component
     {
         $this->newPosition = [
             'gruppe' => '', 'name' => '', 'anz' => '', 'anz2' => '',
-            'uhrzeit' => '', 'bis' => '', 'inhalt' => '', 'gebinde' => '',
+            'start_time' => '', 'end_time' => '', 'inhalt' => '', 'gebinde' => '',
             'ek' => 0, 'mwst' => '7%',
             'gesamt' => 0, 'bemerkung' => '',
         ];

@@ -3,10 +3,14 @@
 namespace Platform\Events\Tools\Concerns;
 
 /**
- * Normalisiert Zeitfeld-Aliases zwischen drei Konventionen:
- *   - Deutsch (Days/ScheduleItems): von, bis
- *   - Deutsch (Bookings):           beginn, ende
- *   - Englisch (Bonus):             start_time, end_time
+ * Normalisiert Zeitfeld-Aliases auf das modul-weit einheitliche
+ * Schema `start_time` / `end_time`. Historische Konventionen werden
+ * weiter als Aliases akzeptiert:
+ *
+ *   - von / bis           (frueher EventDay, ScheduleItem)
+ *   - beginn / ende       (frueher Booking)
+ *   - uhrzeit / bis       (frueher Quote-/OrderPosition)
+ *   - start / end         (englisch, generisch)
  *
  * Personenzahl-Aliases:
  *   - pers (Bookings)
@@ -21,7 +25,7 @@ trait NormalizesTimeFields
     /**
      * @param array<string, mixed>          $arguments
      * @param array{start: string, end: string, pers?: string} $primary
-     *        primaere Feldnamen, auf die gemappt wird (z.B. ['start' => 'beginn', 'end' => 'ende', 'pers' => 'pers'])
+     *        primaere Feldnamen, auf die gemappt wird (z.B. ['start' => 'start_time', 'end' => 'end_time', 'pers' => 'pers'])
      * @return array<int, string> Liste der angewandten Aliases (z.B. "von→beginn")
      */
     protected function normalizeTimeFields(array &$arguments, array $primary): array
@@ -33,7 +37,7 @@ trait NormalizesTimeFields
         $persKey  = $primary['pers'] ?? null;
 
         // Start-Zeit: erstes nicht-leeres Alias gewinnt, falls primary noch nicht gesetzt.
-        $startAliases = ['beginn', 'von', 'start_time', 'start'];
+        $startAliases = ['start_time', 'beginn', 'von', 'uhrzeit', 'start'];
         if (!isset($arguments[$startKey]) || $arguments[$startKey] === '' || $arguments[$startKey] === null) {
             foreach ($startAliases as $alias) {
                 if ($alias === $startKey) continue;
@@ -46,7 +50,7 @@ trait NormalizesTimeFields
         }
 
         // End-Zeit
-        $endAliases = ['ende', 'bis', 'end_time', 'end'];
+        $endAliases = ['end_time', 'ende', 'bis', 'end'];
         if (!isset($arguments[$endKey]) || $arguments[$endKey] === '' || $arguments[$endKey] === null) {
             foreach ($endAliases as $alias) {
                 if ($alias === $endKey) continue;
@@ -81,6 +85,6 @@ trait NormalizesTimeFields
      */
     protected function timeFieldAliases(): array
     {
-        return ['von', 'bis', 'beginn', 'ende', 'start_time', 'end_time', 'start', 'end', 'pers', 'pers_von', 'pers_bis', 'pax', 'persons'];
+        return ['von', 'bis', 'beginn', 'ende', 'uhrzeit', 'start_time', 'end_time', 'start', 'end', 'pers', 'pers_von', 'pers_bis', 'pax', 'persons'];
     }
 }

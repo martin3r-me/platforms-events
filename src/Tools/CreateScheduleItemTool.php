@@ -47,8 +47,8 @@ class CreateScheduleItemTool implements ToolContract, ToolMetadataContract
             'properties' => array_merge($this->eventSelectorSchema(), [
                 'beschreibung'  => ['type' => 'string'],
                 'datum'         => ['type' => 'string',  'description' => 'YYYY-MM-DD oder Freitext.'],
-                'von'           => ['type' => 'string'],
-                'bis'           => ['type' => 'string'],
+                'start_time'           => ['type' => 'string'],
+                'end_time'           => ['type' => 'string'],
                 'raum'          => ['type' => 'string'],
                 'bemerkung'     => ['type' => 'string'],
                 'linked'        => ['type' => 'boolean', 'description' => 'Manuelle Block-Verbindung zum vorherigen Eintrag (KEIN Tag-Link).'],
@@ -71,7 +71,7 @@ class CreateScheduleItemTool implements ToolContract, ToolMetadataContract
             }
 
             // Aliases zwischen Tag/Buchung/Englisch normalisieren.
-            $aliasesApplied = $this->normalizeTimeFields($arguments, ['start' => 'von', 'end' => 'bis']);
+            $aliasesApplied = $this->normalizeTimeFields($arguments, ['start' => 'start_time', 'end' => 'end_time']);
 
             // Convenience: event_day_id|day_id → datum aus Tag uebernehmen, wenn datum leer.
             $dayIdInput = $arguments['event_day_id'] ?? ($arguments['day_id'] ?? null);
@@ -85,7 +85,7 @@ class CreateScheduleItemTool implements ToolContract, ToolMetadataContract
 
             $known = [
                 'event_id', 'event_uuid', 'event_number',
-                'beschreibung', 'datum', 'von', 'bis', 'raum', 'bemerkung', 'linked',
+                'beschreibung', 'datum', 'start_time', 'end_time', 'raum', 'bemerkung', 'linked',
                 'beginn', 'ende', 'start_time', 'end_time', 'start', 'end',
                 'event_day_id', 'day_id',
             ];
@@ -121,8 +121,8 @@ class CreateScheduleItemTool implements ToolContract, ToolMetadataContract
                 'team_id'      => $event->team_id,
                 'user_id'      => $context->user->id,
                 'datum'        => $arguments['datum'] ?? null,
-                'von'          => $arguments['von'] ?? null,
-                'bis'          => $arguments['bis'] ?? null,
+                'start_time'          => $arguments['start_time'] ?? null,
+                'end_time'          => $arguments['end_time'] ?? null,
                 'beschreibung' => $arguments['beschreibung'],
                 'raum'         => $raumValue,
                 'bemerkung'    => $arguments['bemerkung'] ?? null,
@@ -144,8 +144,8 @@ class CreateScheduleItemTool implements ToolContract, ToolMetadataContract
                 'uuid'                  => $item->uuid,
                 'event_id'              => $event->id,
                 'datum'                 => $item->datum,
-                'von'                   => $item->von,
-                'bis'                   => $item->bis,
+                'start_time'                   => $item->start_time,
+                'end_time'                   => $item->bis,
                 'beschreibung'          => $item->beschreibung,
                 'raum'                  => $item->raum,
                 'bemerkung'             => $item->bemerkung,

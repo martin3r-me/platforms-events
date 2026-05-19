@@ -152,8 +152,8 @@
                 @foreach($schedule as $item)
                 <tr>
                     <td>{{ $item['datum'] }}</td>
-                    <td>{{ $item['von'] }}</td>
-                    <td>{{ $item['bis'] }}</td>
+                    <td>{{ $item['start_time'] }}</td>
+                    <td>{{ $item['end_time'] }}</td>
                     <td>{{ $item['beschreibung'] }}</td>
                     <td>{{ $item['raum'] }}</td>
                     <td>{{ $item['bemerkung'] }}</td>
@@ -173,9 +173,9 @@
 
         <div class="day-header">{{ $day['full_day'] }}, {{ $day['datum'] }}</div>
 
-        @if($day['von'] || $day['bis'])
+        @if($day['start_time'] || $day['end_time'])
             <div style="font-size:8pt; color:#64748b; margin-bottom:8px;">
-                Veranstaltungszeit: {{ $day['von'] }}@if($day['bis']) – {{ $day['bis'] }}@endif
+                Veranstaltungszeit: {{ $day['start_time'] }}@if($day['end_time']) – {{ $day['end_time'] }}@endif
                 @if($day['pers_von'] || $day['pers_bis'])
                     &middot; Personen: {{ $day['pers_von'] }}@if($day['pers_bis'])–{{ $day['pers_bis'] }}@endif
                 @endif
@@ -197,8 +197,8 @@
                 <tbody>
                     @foreach($day['schedule'] as $sItem)
                     <tr>
-                        <td>{{ $sItem['von'] }}</td>
-                        <td>{{ $sItem['bis'] }}</td>
+                        <td>{{ $sItem['start_time'] }}</td>
+                        <td>{{ $sItem['end_time'] }}</td>
                         <td>{{ $sItem['beschreibung'] }}</td>
                         <td>{{ $sItem['raum'] }}</td>
                         <td>{{ $sItem['bemerkung'] }}</td>

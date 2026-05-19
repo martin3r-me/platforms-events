@@ -56,7 +56,7 @@
         <h2>Räume</h2>
         <ul>
             @foreach($event->bookings as $b)
-                <li>{{ $b->location?->name ?: $b->raum }} · {{ $b->datum }} · {{ $b->beginn }}–{{ $b->ende }} · {{ $b->optionsrang }}</li>
+                <li>{{ $b->location?->name ?: $b->raum }} · {{ $b->datum }} · {{ $b->start_time }}–{{ $b->end_time }} · {{ $b->optionsrang }}</li>
             @endforeach
         </ul>
     @endif

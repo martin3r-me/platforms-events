@@ -25,8 +25,8 @@ class PositionValidator
      */
     public static function validate(array $position, ?array $allowedGruppen = null): ?string
     {
-        $uhrzeit = (string) ($position['uhrzeit'] ?? '');
-        $bis     = (string) ($position['bis'] ?? '');
+        $uhrzeit = (string) ($position['start_time'] ?? '');
+        $bis     = (string) ($position['end_time'] ?? '');
 
         if ($uhrzeit !== '' && !PositionCalculator::isValidTime($uhrzeit)) {
             return 'Uhrzeit "' . $uhrzeit . '" ist nicht zulaessig.';

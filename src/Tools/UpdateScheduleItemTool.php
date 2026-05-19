@@ -14,7 +14,7 @@ class UpdateScheduleItemTool implements ToolContract, ToolMetadataContract
 {
     use NormalizesTimeFields;
 
-    protected const STRING_FIELDS = ['datum', 'von', 'bis', 'beschreibung', 'raum', 'bemerkung'];
+    protected const STRING_FIELDS = ['datum', 'start_time', 'end_time', 'beschreibung', 'raum', 'bemerkung'];
 
     public function getName(): string
     {
@@ -79,7 +79,7 @@ class UpdateScheduleItemTool implements ToolContract, ToolMetadataContract
             }
 
             // Aliases zwischen Tag/Buchung/Englisch normalisieren.
-            $aliasesApplied = $this->normalizeTimeFields($arguments, ['start' => 'von', 'end' => 'bis']);
+            $aliasesApplied = $this->normalizeTimeFields($arguments, ['start' => 'start_time', 'end' => 'end_time']);
 
             // Convenience: event_day_id|day_id → datum aus Tag uebernehmen.
             $dayIdInput = $arguments['event_day_id'] ?? ($arguments['day_id'] ?? null);
@@ -131,8 +131,8 @@ class UpdateScheduleItemTool implements ToolContract, ToolMetadataContract
                 'uuid'                 => $item->uuid,
                 'event_id'             => $item->event_id,
                 'datum'                => $item->datum,
-                'von'                  => $item->von,
-                'bis'                  => $item->bis,
+                'start_time'                  => $item->start_time,
+                'end_time'                  => $item->bis,
                 'beschreibung'         => $item->beschreibung,
                 'raum'                 => $item->raum,
                 'bemerkung'            => $item->bemerkung,

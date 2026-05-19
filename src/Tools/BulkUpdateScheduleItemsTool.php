@@ -19,7 +19,7 @@ class BulkUpdateScheduleItemsTool implements ToolContract, ToolMetadataContract
     use ResolvesEvent;
     use NormalizesTimeFields;
 
-    protected const SETTABLE_STRING_FIELDS = ['datum', 'von', 'bis', 'beschreibung', 'raum', 'bemerkung'];
+    protected const SETTABLE_STRING_FIELDS = ['datum', 'start_time', 'end_time', 'beschreibung', 'raum', 'bemerkung'];
 
     public function getName(): string
     {
@@ -57,8 +57,8 @@ class BulkUpdateScheduleItemsTool implements ToolContract, ToolMetadataContract
                         'raum'         => ['type' => 'string'],
                         'bemerkung'    => ['type' => 'string'],
                         'datum'        => ['type' => 'string'],
-                        'von'          => ['type' => 'string'],
-                        'bis'          => ['type' => 'string'],
+                        'start_time'          => ['type' => 'string'],
+                        'end_time'          => ['type' => 'string'],
                         'beschreibung' => ['type' => 'string'],
                         'linked'       => ['type' => 'boolean'],
                         'sort_order'   => ['type' => 'integer'],
@@ -79,7 +79,7 @@ class BulkUpdateScheduleItemsTool implements ToolContract, ToolMetadataContract
 
             // Set-Werte einsammeln + Aliases auf primaere Feldnamen mappen.
             $set = is_array($arguments['set'] ?? null) ? $arguments['set'] : [];
-            $aliasesApplied = $this->normalizeTimeFields($set, ['start' => 'von', 'end' => 'bis']);
+            $aliasesApplied = $this->normalizeTimeFields($set, ['start' => 'start_time', 'end' => 'end_time']);
 
             $update = [];
             foreach (self::SETTABLE_STRING_FIELDS as $f) {

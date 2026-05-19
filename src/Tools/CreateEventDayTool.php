@@ -50,8 +50,8 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
                 'day_type'    => ['type' => 'string',  'description' => 'Veranstaltungstag|Aufbautag|Abbautag|Rüsttag. Default Veranstaltungstag.'],
                 'datum'       => ['type' => 'string',  'description' => 'YYYY-MM-DD.'],
                 'day_of_week' => ['type' => 'string'],
-                'von'         => ['type' => 'string'],
-                'bis'         => ['type' => 'string'],
+                'start_time'         => ['type' => 'string'],
+                'end_time'         => ['type' => 'string'],
                 'pers_von'    => ['type' => 'string'],
                 'pers_bis'    => ['type' => 'string'],
                 'day_status'  => ['type' => 'string', 'description' => 'Option|Definitiv|Vertrag|...'],
@@ -70,7 +70,7 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
             }
 
             // Aliases zwischen Tag/Buchung/Englisch normalisieren.
-            $aliasesApplied = $this->normalizeTimeFields($arguments, ['start' => 'von', 'end' => 'bis']);
+            $aliasesApplied = $this->normalizeTimeFields($arguments, ['start' => 'start_time', 'end' => 'end_time']);
             // Pax-Single-Wert auf pers_von/pers_bis spiegeln.
             foreach (['pers', 'pax', 'persons'] as $alias) {
                 if (!empty($arguments[$alias])) {
@@ -124,7 +124,7 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
             $known = [
                 'event_id', 'event_uuid', 'event_number',
                 'label', 'day_type', 'datum', 'day_of_week',
-                'von', 'bis', 'pers_von', 'pers_bis',
+                'start_time', 'end_time', 'pers_von', 'pers_bis',
                 'day_status', 'color', 'sort_order',
                 // Aliase
                 'beginn', 'ende', 'start_time', 'end_time', 'start', 'end',
@@ -154,8 +154,8 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
                 'day_type'    => $arguments['day_type'] ?? 'Veranstaltungstag',
                 'datum'       => $arguments['datum'],
                 'day_of_week' => $dow,
-                'von'         => $arguments['von'] ?? null,
-                'bis'         => $arguments['bis'] ?? null,
+                'start_time'         => $arguments['start_time'] ?? null,
+                'end_time'         => $arguments['end_time'] ?? null,
                 'pers_von'    => $arguments['pers_von'] ?? null,
                 'pers_bis'    => $arguments['pers_bis'] ?? null,
                 'day_status'  => $arguments['day_status'] ?? 'Option',
@@ -176,8 +176,8 @@ class CreateEventDayTool implements ToolContract, ToolMetadataContract
                 'day_type'       => $day->day_type,
                 'datum'          => $day->datum?->toDateString(),
                 'day_of_week'    => $day->day_of_week,
-                'von'            => $day->von,
-                'bis'            => $day->bis,
+                'start_time'            => $day->start_time,
+                'end_time'            => $day->bis,
                 'pers_von'       => $day->pers_von,
                 'pers_bis'       => $day->pers_bis,
                 'day_status'     => $day->day_status,
