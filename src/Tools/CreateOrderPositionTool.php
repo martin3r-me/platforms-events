@@ -20,7 +20,9 @@ class CreateOrderPositionTool implements ToolContract, ToolMetadataContract
     public function getDescription(): string
     {
         return 'POST /events/order-items/{id}/positions - Legt eine Bestell-Position an. '
-            . 'Gesamt = anz × ek wenn nicht angegeben.';
+            . 'Gesamt = anz × ek wenn nicht angegeben. '
+            . 'Text-Zeilen (ohne Preis) entstehen, wenn `gruppe` einem Text-Baustein des Teams entspricht — '
+            . 'verfuegbare Bausteine liefert events.settings.bausteine.GET.';
     }
 
     public function getSchema(): array
@@ -30,7 +32,7 @@ class CreateOrderPositionTool implements ToolContract, ToolMetadataContract
             'properties' => [
                 'order_item_id'    => ['type' => 'integer'],
                 'order_item_uuid'  => ['type' => 'string'],
-                'gruppe'           => ['type' => 'string'],
+                'gruppe'           => ['type' => 'string', 'description' => 'Gruppe / Typ. Entspricht der Wert dem `name` eines Text-Bausteins (events.settings.bausteine.GET), wird die Position als Text-Zeile ohne Preis behandelt.'],
                 'name'             => ['type' => 'string'],
                 'anz'              => ['type' => 'string'],
                 'anz2'             => ['type' => 'string'],

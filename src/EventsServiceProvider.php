@@ -169,6 +169,7 @@ class EventsServiceProvider extends ServiceProvider
 
             // --- Settings / Management Report ---
             $registry->register(new \Platform\Events\Tools\GetMrFieldConfigTool());
+            $registry->register(new \Platform\Events\Tools\GetBausteineTool());
         } catch (\Throwable $e) {
             // Silent fail – Tool-Registry ggf. noch nicht verfügbar
         }

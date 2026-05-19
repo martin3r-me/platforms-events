@@ -30,7 +30,9 @@ class CreateQuotePositionTool implements ToolContract, ToolMetadataContract
             . 'Identifikation via quote_item_id oder quote_item_uuid. '
             . 'Gesamt wird automatisch aus anz × preis berechnet wenn nicht angegeben. '
             . 'beverage_mode am Vorgang wird vererbt; Position kann mit beverage_mode ueberschreiben. '
-            . 'procurement_type optional fuer Lager-/Beschaffungslogik.';
+            . 'procurement_type optional fuer Lager-/Beschaffungslogik. '
+            . 'Text-Zeilen (ohne Preis) entstehen, wenn `gruppe` einem Text-Baustein des Teams entspricht — '
+            . 'verfuegbare Bausteine liefert events.settings.bausteine.GET.';
     }
 
     public function getSchema(): array
@@ -40,7 +42,7 @@ class CreateQuotePositionTool implements ToolContract, ToolMetadataContract
             'properties' => [
                 'quote_item_id'    => ['type' => 'integer', 'description' => 'ID des QuoteItems.'],
                 'quote_item_uuid'  => ['type' => 'string',  'description' => 'UUID des QuoteItems.'],
-                'gruppe'           => ['type' => 'string',  'description' => 'Gruppe / Typ. "Headline"/"Speisentexte"/"Trenntext" erzeugt Text-Zeilen.'],
+                'gruppe'           => ['type' => 'string',  'description' => 'Gruppe / Typ. Entspricht der Wert dem `name` eines Text-Bausteins (z.B. "Headline", "Speisentexte", "Trenntext", "Interne Bemerkung"), wird die Position als Text-Zeile ohne Preis behandelt; Bausteine mit show_in_quote=false sind ausserdem nur intern sichtbar. Verfuegbare Bausteine: events.settings.bausteine.GET.'],
                 'name'             => ['type' => 'string',  'description' => 'Bezeichnung der Position.'],
                 'anz'              => ['type' => 'string',  'description' => 'Anzahl (als String, z.B. "10" oder "1,5").'],
                 'anz2'             => ['type' => 'string',  'description' => 'Optional: zweite Mengenangabe.'],
