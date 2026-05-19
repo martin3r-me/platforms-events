@@ -26,14 +26,16 @@ class BulkUpdateOrderPositionsTool implements ToolContract, ToolMetadataContract
     protected const SETTABLE_STRING_FIELDS = [
         'gruppe', 'mwst', 'gebinde', 'bemerkung', 'inhalt', 'procurement_type',
     ];
-    protected const SETTABLE_NUMERIC_FIELDS = ['ek', 'preis', 'gesamt'];
+    protected const SETTABLE_NUMERIC_FIELDS = ['ek', 'gesamt'];
 
+    /**
+     * OrderPositions kennen weder preis (VK) noch basis_ek —
+     * `price`/`price_net`/`vk` werden NICHT gemappt und landen in
+     * ignored_fields.
+     */
     protected const FIELD_ALIASES = [
-        'price_net' => 'preis',
-        'price'     => 'preis',
-        'vk'        => 'preis',
-        'tax_rate'  => 'mwst',
-        'unit'      => 'gebinde',
+        'tax_rate' => 'mwst',
+        'unit'     => 'gebinde',
     ];
 
     public function getName(): string
@@ -49,10 +51,10 @@ class BulkUpdateOrderPositionsTool implements ToolContract, ToolMetadataContract
             . '(2) event_id|event_uuid|event_number – alle Positionen aller Order-Items aller Tage des Events. '
             . 'INNERHALB des Scopes mind. ein Filter ODER confirm_scope_wide=true: '
             . 'position_ids[], gruppe (exakt), gruppe_contains, name_contains. '
-            . 'Setzwerte unter "set" (mind. einer): gruppe, mwst, gebinde, bemerkung, inhalt, '
-            . 'procurement_type, ek, preis (Aliases: price_net|price|vk), gesamt, sort_order. '
-            . 'Aliases werden in set akzeptiert. Recalc aller betroffenen OrderItems am Ende automatisch. '
-            . 'Hinweis: OrderPositions haben kein basis_ek.';
+            . 'Setzwerte unter "set" (mind. einer): gruppe, mwst (Alias tax_rate), gebinde (Alias unit), '
+            . 'bemerkung, inhalt, procurement_type, ek, gesamt, sort_order. '
+            . 'Recalc aller betroffenen OrderItems am Ende automatisch. '
+            . 'Hinweis: OrderPositions haben weder basis_ek noch preis (VK) — Einkauf wird in `ek` gefuehrt.';
     }
 
     public function getSchema(): array

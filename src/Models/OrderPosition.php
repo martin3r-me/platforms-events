@@ -20,14 +20,13 @@ class OrderPosition extends Model
         'uuid', 'user_id', 'team_id', 'order_item_id',
         'gruppe', 'name', 'anz', 'anz2',
         'uhrzeit', 'bis', 'inhalt', 'gebinde',
-        'ek', 'preis', 'mwst', 'gesamt',
+        'ek', 'mwst', 'gesamt',
         'bemerkung', 'sort_order', 'procurement_type',
     ];
 
     protected $casts = [
         'uuid'   => 'string',
         'ek'     => 'decimal:2',
-        'preis'  => 'decimal:2',
         'gesamt' => 'decimal:2',
     ];
 

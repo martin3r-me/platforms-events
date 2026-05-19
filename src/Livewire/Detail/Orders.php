@@ -37,7 +37,7 @@ class Orders extends Component
     public array $newPosition = [
         'gruppe' => '', 'name' => '', 'anz' => '', 'anz2' => '',
         'uhrzeit' => '', 'bis' => '', 'inhalt' => '', 'gebinde' => '',
-        'ek' => 0, 'preis' => 0, 'mwst' => '7%',
+        'ek' => 0, 'mwst' => '7%',
         'gesamt' => 0, 'bemerkung' => '',
     ];
 
@@ -169,11 +169,13 @@ class Orders extends Component
             if ($pct <= 0) continue;
 
             $factor = 1 + $pct / 100;
+            // OrderPositions kennen keinen VK-Preis — Brutto/Netto-Toggle wirkt
+            // nur auf ek + gesamt.
             if ($mode === 'brutto') {
-                $pos->preis  = round((float) $pos->preis  * $factor, 2);
+                $pos->ek     = round((float) $pos->ek     * $factor, 2);
                 $pos->gesamt = round((float) $pos->gesamt * $factor, 2);
             } else {
-                $pos->preis  = round((float) $pos->preis  / $factor, 2);
+                $pos->ek     = round((float) $pos->ek     / $factor, 2);
                 $pos->gesamt = round((float) $pos->gesamt / $factor, 2);
             }
             $pos->save();
@@ -222,7 +224,6 @@ class Orders extends Component
                 'inhalt'        => $p->inhalt,
                 'gebinde'       => $p->gebinde,
                 'ek'            => $p->ek,
-                'preis'         => $p->preis,
                 'mwst'          => $p->mwst,
                 'gesamt'        => $p->gesamt,
                 'bemerkung'     => $p->bemerkung,
@@ -258,7 +259,7 @@ class Orders extends Component
         $this->newPosition = [
             'gruppe' => '', 'name' => '', 'anz' => '', 'anz2' => '',
             'uhrzeit' => '', 'bis' => '', 'inhalt' => '', 'gebinde' => '',
-            'ek' => 0, 'preis' => 0, 'mwst' => '7%',
+            'ek' => 0, 'mwst' => '7%',
             'gesamt' => 0, 'bemerkung' => '',
         ];
     }
@@ -279,7 +280,6 @@ class Orders extends Component
         $this->newPosition['inhalt']   = (string) ($article['description'] ?? $article['offer_text'] ?? '');
         $this->newPosition['gebinde']  = (string) ($article['gebinde'] ?? '');
         $this->newPosition['ek']       = (float) ($article['ek'] ?? 0);
-        $this->newPosition['preis']    = (float) ($article['vk'] ?? 0);
         if (!empty($article['mwst'])) $this->newPosition['mwst'] = (string) $article['mwst'];
     }
 
@@ -305,7 +305,6 @@ class Orders extends Component
             'anz'           => (string) $this->newPosition['anz'],
             'anz2'          => (string) $this->newPosition['anz2'],
             'ek'            => (float) $this->newPosition['ek'],
-            'preis'         => (float) $this->newPosition['preis'],
             'gesamt'        => (float) ($this->newPosition['gesamt'] ?: ((float) $this->newPosition['anz']) * ((float) $this->newPosition['ek'])),
             'sort_order'    => $maxSort + 1,
         ]));

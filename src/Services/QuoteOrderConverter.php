@@ -152,7 +152,6 @@ class QuoteOrderConverter
                 'inhalt'           => $pos->inhalt,
                 'gebinde'          => $pos->gebinde,
                 'ek'               => $pos->ek,
-                'preis'            => $pos->preis,
                 'mwst'             => $pos->mwst,
                 'procurement_type' => $pos->procurement_type,
                 'gesamt'           => $pos->gesamt,

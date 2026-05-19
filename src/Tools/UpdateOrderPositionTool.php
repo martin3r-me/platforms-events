@@ -24,16 +24,17 @@ class UpdateOrderPositionTool implements ToolContract, ToolMetadataContract
         'gruppe', 'name', 'anz', 'anz2', 'uhrzeit', 'bis', 'gebinde',
         'mwst', 'bemerkung', 'inhalt', 'procurement_type',
     ];
-    protected const NUMERIC_FIELDS = ['ek', 'preis', 'gesamt'];
+    protected const NUMERIC_FIELDS = ['ek', 'gesamt'];
     protected const INT_FIELDS     = ['sort_order'];
 
-    /** Aliases analog zum Quote-Pendant. */
+    /**
+     * Aliases. OrderPositions kennen weder preis (VK) noch basis_ek —
+     * `price`/`price_net`/`vk` werden daher nicht gemappt und tauchen
+     * als ignored_fields auf, statt silent persistiert zu werden.
+     */
     protected const FIELD_ALIASES = [
-        'price_net' => 'preis',
-        'price'     => 'preis',
-        'vk'        => 'preis',
-        'tax_rate'  => 'mwst',
-        'unit'      => 'gebinde',
+        'tax_rate' => 'mwst',
+        'unit'     => 'gebinde',
     ];
 
     public function getName(): string
@@ -46,10 +47,10 @@ class UpdateOrderPositionTool implements ToolContract, ToolMetadataContract
         return 'PATCH /events/order-positions/{id} - Aktualisiert eine Bestell-Position. '
             . 'Identifikation: position_id ODER uuid. '
             . 'Felder (alle optional): gruppe, name, anz, anz2, uhrzeit, bis, gebinde (Alias unit), '
-            . 'inhalt, ek, preis (Alias price_net|price|vk), mwst ("0%"|"7%"|"19%"; Alias tax_rate), '
+            . 'inhalt, ek, mwst ("0%"|"7%"|"19%"; Alias tax_rate), '
             . 'gesamt (auto = anz × ek wenn weggelassen), bemerkung, sort_order, procurement_type. '
             . 'Recalc des OrderItems (artikel/positionen/einkauf) erfolgt automatisch. '
-            . 'OrderPositions haben kein basis_ek — Einkauf wird in `ek` gefuehrt.';
+            . 'OrderPositions haben weder basis_ek noch preis (VK) — Einkauf wird ausschliesslich in `ek` gefuehrt.';
     }
 
     public function getSchema(): array
@@ -171,7 +172,6 @@ class UpdateOrderPositionTool implements ToolContract, ToolMetadataContract
                 'name'            => $position->name,
                 'anz'             => $position->anz,
                 'ek'              => (float) $position->ek,
-                'preis'           => (float) $position->preis,
                 'gesamt'          => (float) $position->gesamt,
                 'mwst'            => $position->mwst,
                 'sort_order'      => $position->sort_order,
@@ -180,8 +180,7 @@ class UpdateOrderPositionTool implements ToolContract, ToolMetadataContract
                 'aliases_applied' => $aliasesApplied,
                 'ignored_fields'  => $ignored,
                 '_field_hints'    => [
-                    'ek'      => 'OrderPosition fuehrt den Einkauf ausschliesslich in `ek` — kein basis_ek.',
-                    'preis'   => 'Aliases: price_net | price | vk.',
+                    'ek'      => 'OrderPosition fuehrt den Einkauf ausschliesslich in `ek` — kein basis_ek, kein preis (VK).',
                     'mwst'    => 'Strikt: "0%" | "7%" | "19%". Alias: tax_rate.',
                     'gesamt'  => 'Auto = anz × ek, wenn nicht explizit gesetzt und anz/ek geaendert wurden.',
                 ],
