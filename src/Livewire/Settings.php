@@ -271,9 +271,10 @@ class Settings extends Component
     {
         if (trim($this->newBaustein['name']) === '') return;
         $this->bausteine[] = [
-            'name' => trim($this->newBaustein['name']),
-            'bg'   => $this->newBaustein['bg'] ?: '#f8fafc',
-            'text' => $this->newBaustein['text'] ?: '#64748b',
+            'name'          => trim($this->newBaustein['name']),
+            'bg'            => $this->newBaustein['bg']   ?: '#f8fafc',
+            'text'          => $this->newBaustein['text'] ?: '#64748b',
+            'show_in_quote' => true,
         ];
         $this->newBaustein = ['name' => '', 'bg' => '#f8fafc', 'text' => '#64748b'];
         SettingsService::setBausteine($this->teamId(), $this->bausteine);
@@ -283,6 +284,15 @@ class Settings extends Component
     {
         unset($this->bausteine[$i]);
         $this->bausteine = array_values($this->bausteine);
+        SettingsService::setBausteine($this->teamId(), $this->bausteine);
+    }
+
+    /** Schaltet `show_in_quote` fuer einen Baustein um. */
+    public function toggleBausteinShowInQuote(int $i): void
+    {
+        if (!isset($this->bausteine[$i])) return;
+        $current = (bool) ($this->bausteine[$i]['show_in_quote'] ?? true);
+        $this->bausteine[$i]['show_in_quote'] = !$current;
         SettingsService::setBausteine($this->teamId(), $this->bausteine);
     }
 

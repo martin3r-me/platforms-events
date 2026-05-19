@@ -41,6 +41,21 @@
         $totalMwst7 = 0;
         $totalMwst19 = 0;
 
+        // Baustein-Sichtbarkeit: Positionen, deren Gruppe einem Baustein mit
+        // show_in_quote=false entspricht (z.B. „Interne Bemerkung"), werden
+        // im PDF nicht gerendert. Bestands-Bausteine ohne Flag → sichtbar.
+        $bausteine = \Platform\Events\Services\SettingsService::bausteine($event->team_id ?? null);
+        $hiddenBausteinNames = [];
+        foreach ($bausteine as $b) {
+            if (! ($b['show_in_quote'] ?? true)) {
+                $hiddenBausteinNames[mb_strtolower((string) $b['name'])] = true;
+            }
+        }
+        $isHiddenBaustein = function (?string $gruppe) use ($hiddenBausteinNames) {
+            if ($gruppe === null || trim($gruppe) === '') return false;
+            return isset($hiddenBausteinNames[mb_strtolower(trim($gruppe))]);
+        };
+
         // Getraenke-Modi-Lookup einmal pro Render bauen: name → Flags.
         // Ein Modus kann den Einzelpreis, den Gesamtpreis oder beides ausblenden;
         // sind beide ausgeblendet, wird die Position aus den Summen genommen
@@ -107,6 +122,7 @@
                         </thead>
                         <tbody>
                             @foreach($item->posList as $pos)
+                                @if($isHiddenBaustein((string) $pos->gruppe)) @continue @endif
                                 @php
                                     $posMode = !empty($pos->beverage_mode) ? $pos->beverage_mode : $itemMode;
                                     $f = $flagsFor($posMode);

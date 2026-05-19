@@ -53,9 +53,9 @@ class SettingsService
                 ['name' => 'In Pauschale','hide_unit_price' => true,  'hide_total_price' => true],
             ],
             self::KEY_POSITION_BAUSTEINE => [
-                ['name' => 'Headline',     'bg' => '#d1fae5', 'text' => '#065f46'],
-                ['name' => 'Trenntext',    'bg' => '#f8fafc', 'text' => '#64748b'],
-                ['name' => 'Speisentexte', 'bg' => '#fffbeb', 'text' => '#92400e'],
+                ['name' => 'Headline',     'bg' => '#d1fae5', 'text' => '#065f46', 'show_in_quote' => true],
+                ['name' => 'Trenntext',    'bg' => '#f8fafc', 'text' => '#64748b', 'show_in_quote' => true],
+                ['name' => 'Speisentexte', 'bg' => '#fffbeb', 'text' => '#92400e', 'show_in_quote' => true],
             ],
         ];
     }
@@ -178,7 +178,47 @@ class SettingsService
         }
         return $off;
     }
-    public static function bausteine(?int $teamId): array        { return self::getArray($teamId, self::KEY_POSITION_BAUSTEINE, self::defaults()[self::KEY_POSITION_BAUSTEINE]); }
+    /**
+     * Position-Bausteine (Text-Zeilen ohne Preis: Headlines, Trenntexte, …).
+     * Schema pro Eintrag: { name, bg, text, show_in_quote }.
+     * Bestandsdaten ohne `show_in_quote` werden als sichtbar (true) interpretiert.
+     */
+    public static function bausteine(?int $teamId): array
+    {
+        $raw = self::getArray($teamId, self::KEY_POSITION_BAUSTEINE, self::defaults()[self::KEY_POSITION_BAUSTEINE]);
+        $out = [];
+        foreach ($raw as $entry) {
+            if (!is_array($entry)) continue;
+            $name = trim((string) ($entry['name'] ?? ''));
+            if ($name === '') continue;
+            $out[] = [
+                'name'          => $name,
+                'bg'            => (string) ($entry['bg']   ?? '#f8fafc'),
+                'text'          => (string) ($entry['text'] ?? '#64748b'),
+                'show_in_quote' => array_key_exists('show_in_quote', $entry)
+                    ? (bool) $entry['show_in_quote']
+                    : true,
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * Lookup: ist `$gruppe` ein Baustein, der NICHT im Angebots-PDF / Public-View
+     * gerendert werden soll? Case-insensitive. False, wenn die Gruppe gar kein
+     * Baustein ist (regulaere Positionen werden immer gerendert).
+     */
+    public static function bausteinIsHiddenInQuote(?int $teamId, ?string $gruppe): bool
+    {
+        if ($gruppe === null || trim($gruppe) === '') return false;
+        $needle = mb_strtolower(trim($gruppe));
+        foreach (self::bausteine($teamId) as $b) {
+            if (mb_strtolower($b['name']) === $needle) {
+                return ! (bool) $b['show_in_quote'];
+            }
+        }
+        return false;
+    }
 
     public static function orderNumberSchema(?int $teamId): string
     {

@@ -564,9 +564,25 @@
                     @else
                         <ul class="divide-y divide-[var(--ui-border)]/40">
                             @foreach($bausteine as $i => $b)
-                                <li class="p-3 flex items-center justify-between gap-3">
+                                @php $showInQuote = (bool) ($b['show_in_quote'] ?? true); @endphp
+                                <li class="p-3 flex items-center justify-between gap-3 flex-wrap">
                                     <span class="text-[0.7rem] font-bold px-3 py-1 rounded-md" style="background: {{ $b['bg'] }}; color: {{ $b['text'] }}">{{ $b['name'] }}</span>
                                     <div class="flex items-center gap-2 text-[0.62rem] font-mono text-[var(--ui-muted)]">
+                                        <button type="button"
+                                                wire:click="toggleBausteinShowInQuote({{ $i }})"
+                                                title="{{ $showInQuote ? 'Wird im Angebots-PDF und in der Public-Ansicht ausgegeben — klicken zum Ausblenden' : 'Wird im Angebots-PDF und in der Public-Ansicht NICHT ausgegeben — klicken zum Einblenden' }}"
+                                                class="flex items-center gap-1.5 px-2 py-1 rounded-md border text-[0.62rem] font-sans font-semibold cursor-pointer transition
+                                                       {{ $showInQuote
+                                                           ? 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100'
+                                                           : 'bg-slate-100 border-slate-300 text-slate-500 hover:bg-slate-200' }}">
+                                            @if($showInQuote)
+                                                @svg('heroicon-o-eye', 'w-3 h-3')
+                                                Im Angebot
+                                            @else
+                                                @svg('heroicon-o-eye-slash', 'w-3 h-3')
+                                                Intern
+                                            @endif
+                                        </button>
                                         <span>{{ $b['bg'] }}</span>
                                         <span>{{ $b['text'] }}</span>
                                         <button wire:click="removeBaustein({{ $i }})" wire:confirm="Baustein entfernen?"
