@@ -44,8 +44,8 @@
         <th class="text-left {{ $thBase }} px-2">Name</th>
         <th class="text-right {{ $thBase }}">Anz.</th>
         <th class="text-right {{ $thBase }}">Anz.2</th>
-        <th class="text-left {{ $thBase }}">Uhrzeit</th>
-        <th class="text-left {{ $thBase }}">Bis</th>
+        <th class="text-left {{ $thBase }}">Uhr von</th>
+        <th class="text-left {{ $thBase }}">Uhr bis</th>
         <th class="text-left {{ $thBase }}">Gebinde</th>
         @if($isQuote)
             <th class="text-right {{ $thBase }}">EK €</th>
