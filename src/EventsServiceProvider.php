@@ -132,6 +132,7 @@ class EventsServiceProvider extends ServiceProvider
             // Items + Positions
             $registry->register(new \Platform\Events\Tools\ListQuoteItemsTool());
             $registry->register(new \Platform\Events\Tools\CreateQuoteItemTool());
+            $registry->register(new \Platform\Events\Tools\DeleteQuoteItemTool());
             $registry->register(new \Platform\Events\Tools\ListQuotePositionsTool());
             $registry->register(new \Platform\Events\Tools\CreateQuotePositionTool());
             $registry->register(new \Platform\Events\Tools\UpdateQuotePositionTool());
@@ -148,6 +149,7 @@ class EventsServiceProvider extends ServiceProvider
             // --- Bestellungen (Orders) ---
             $registry->register(new \Platform\Events\Tools\ListOrderItemsTool());
             $registry->register(new \Platform\Events\Tools\CreateOrderItemTool());
+            $registry->register(new \Platform\Events\Tools\DeleteOrderItemTool());
             $registry->register(new \Platform\Events\Tools\ListOrderPositionsTool());
             $registry->register(new \Platform\Events\Tools\CreateOrderPositionTool());
 
