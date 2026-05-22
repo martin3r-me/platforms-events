@@ -9,6 +9,7 @@ use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\OrderPosition;
 use Platform\Events\Tools\Concerns\CollectsValidationErrors;
 use Platform\Events\Tools\Concerns\NormalizesMwst;
+use Platform\Events\Tools\Concerns\NormalizesTimeFields;
 use Platform\Events\Tools\Concerns\RecalculatesOrderItem;
 
 /**
@@ -20,6 +21,7 @@ class UpdateOrderPositionTool implements ToolContract, ToolMetadataContract
 {
     use CollectsValidationErrors;
     use NormalizesMwst;
+    use NormalizesTimeFields;
     use RecalculatesOrderItem;
 
     protected const STRING_FIELDS = [
@@ -48,8 +50,8 @@ class UpdateOrderPositionTool implements ToolContract, ToolMetadataContract
     {
         return 'PATCH /events/order-positions/{id} - Aktualisiert eine Bestell-Position. '
             . 'Identifikation: position_id ODER uuid. '
-            . 'Felder (alle optional): gruppe, name, anz, anz2, uhrzeit, bis, gebinde (Alias unit), '
-            . 'inhalt, ek, mwst ("0%"|"7%"|"19%"; Alias tax_rate), '
+            . 'Felder (alle optional): gruppe, name, anz, anz2, start_time, end_time (Aliase: uhrzeit/von/beginn → start_time, bis/ende → end_time), gebinde (Alias unit), '
+            . 'inhalt, ek, mwst ("0%"|"7%"|"19%"; Alias tax_rate; MwSt-Numeric-Alias 0/1/3 → 0%/19%/7%), '
             . 'gesamt (auto = anz × ek wenn weggelassen), bemerkung, sort_order, procurement_type. '
             . 'Recalc des OrderItems (artikel/positionen/einkauf) erfolgt automatisch. '
             . 'OrderPositions haben weder basis_ek noch preis (VK) — Einkauf wird ausschliesslich in `ek` gefuehrt.';
@@ -105,6 +107,9 @@ class UpdateOrderPositionTool implements ToolContract, ToolMetadataContract
                     $aliasesApplied[] = "{$alias}→{$primary}";
                 }
             }
+
+            // Time-Aliase (uhrzeit/von/beginn → start_time, bis/ende → end_time).
+            $aliasesApplied = array_merge($aliasesApplied, $this->normalizeTimeFields($arguments, ['start' => 'start_time', 'end' => 'end_time']));
 
             // MwSt-Numeric-Alias (Excel/DATEV: 1→19%, 3→7%, 0→0%).
             if ($mwstAlias = $this->normalizeMwstField($arguments, 'mwst')) {
@@ -163,6 +168,7 @@ class UpdateOrderPositionTool implements ToolContract, ToolMetadataContract
                 ['position_id', 'uuid'],
                 self::STRING_FIELDS, self::NUMERIC_FIELDS, self::INT_FIELDS,
                 array_keys(self::FIELD_ALIASES),
+                $this->timeFieldAliases(),
             );
             $ignored = array_values(array_diff(array_keys($arguments), $known));
 

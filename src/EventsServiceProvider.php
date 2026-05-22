@@ -139,6 +139,7 @@ class EventsServiceProvider extends ServiceProvider
             $registry->register(new \Platform\Events\Tools\DeleteQuotePositionTool());
             $registry->register(new \Platform\Events\Tools\BulkCreateQuotePositionsTool());
             $registry->register(new \Platform\Events\Tools\BulkUpdateQuotePositionsTool());
+            $registry->register(new \Platform\Events\Tools\BulkDeleteQuotePositionsTool());
             // Quote-Actions (Versionen, Vorlagen, Pauschalen, Location-Preise, Order-Konversion)
             $registry->register(new \Platform\Events\Tools\CreateQuoteVersionTool());
             $registry->register(new \Platform\Events\Tools\ApplyArticlePackageTool());
@@ -157,6 +158,7 @@ class EventsServiceProvider extends ServiceProvider
             $registry->register(new \Platform\Events\Tools\DeleteOrderPositionTool());
             $registry->register(new \Platform\Events\Tools\BulkCreateOrderPositionsTool());
             $registry->register(new \Platform\Events\Tools\BulkUpdateOrderPositionsTool());
+            $registry->register(new \Platform\Events\Tools\BulkDeleteOrderPositionsTool());
 
             // --- Artikel-Pakete (Vorlagen) ---
             $registry->register(new \Platform\Events\Tools\ListArticlePackagesTool());

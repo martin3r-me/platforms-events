@@ -10,10 +10,12 @@ use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\OrderItem;
 use Platform\Events\Models\OrderPosition;
 use Platform\Events\Tools\Concerns\NormalizesMwst;
+use Platform\Events\Tools\Concerns\NormalizesTimeFields;
 
 class CreateOrderPositionTool implements ToolContract, ToolMetadataContract
 {
     use NormalizesMwst;
+    use NormalizesTimeFields;
 
     public function getName(): string
     {
@@ -70,8 +72,10 @@ class CreateOrderPositionTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('ACCESS_DENIED', 'Kein Zugriff.');
             }
 
+            // Time-Aliase (uhrzeit/von/beginn → start_time, bis/ende → end_time).
+            $aliasesApplied = $this->normalizeTimeFields($arguments, ['start' => 'start_time', 'end' => 'end_time']);
+
             // MwSt-Numeric-Alias (Excel/DATEV: 1→19%, 3→7%, 0→0%).
-            $aliasesApplied = [];
             if ($mwstAlias = $this->normalizeMwstField($arguments, 'mwst')) {
                 $aliasesApplied[] = $mwstAlias;
             }

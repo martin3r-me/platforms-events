@@ -10,6 +10,7 @@ use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\QuotePosition;
 use Platform\Events\Tools\Concerns\NormalizesMwst;
+use Platform\Events\Tools\Concerns\NormalizesTimeFields;
 use Platform\Events\Tools\Concerns\RecalculatesQuoteItem;
 
 /**
@@ -19,6 +20,7 @@ use Platform\Events\Tools\Concerns\RecalculatesQuoteItem;
 class CreateQuotePositionTool implements ToolContract, ToolMetadataContract
 {
     use NormalizesMwst;
+    use NormalizesTimeFields;
     use RecalculatesQuoteItem;
 
     public function getName(): string
@@ -85,8 +87,10 @@ class CreateQuotePositionTool implements ToolContract, ToolMetadataContract
                 return ToolResult::error('ACCESS_DENIED', 'Kein Zugriff auf das Event.');
             }
 
+            // Time-Aliase (uhrzeit/von/beginn → start_time, bis/ende → end_time).
+            $aliasesApplied = $this->normalizeTimeFields($arguments, ['start' => 'start_time', 'end' => 'end_time']);
+
             // MwSt-Numeric-Alias (Excel/DATEV: 1→19%, 3→7%, 0→0%).
-            $aliasesApplied = [];
             if ($mwstAlias = $this->normalizeMwstField($arguments, 'mwst')) {
                 $aliasesApplied[] = $mwstAlias;
             }

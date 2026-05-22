@@ -12,6 +12,7 @@ use Platform\Events\Models\OrderItem;
 use Platform\Events\Models\OrderPosition;
 use Platform\Events\Tools\Concerns\CollectsValidationErrors;
 use Platform\Events\Tools\Concerns\NormalizesMwst;
+use Platform\Events\Tools\Concerns\NormalizesTimeFields;
 use Platform\Events\Tools\Concerns\RecalculatesOrderItem;
 
 /**
@@ -28,6 +29,7 @@ class BulkCreateOrderPositionsTool implements ToolContract, ToolMetadataContract
 {
     use CollectsValidationErrors;
     use NormalizesMwst;
+    use NormalizesTimeFields;
     use RecalculatesOrderItem;
 
     protected const FIELD_ALIASES = [
@@ -143,6 +145,10 @@ class BulkCreateOrderPositionsTool implements ToolContract, ToolMetadataContract
                         $row[$primary] = $row[$alias];
                         $aliasesAggregate[] = "row[{$index}].{$alias}→{$primary}";
                     }
+                }
+                // Time-Aliase pro Row (uhrzeit/von/beginn → start_time, bis/ende → end_time).
+                foreach ($this->normalizeTimeFields($row, ['start' => 'start_time', 'end' => 'end_time']) as $applied) {
+                    $aliasesAggregate[] = "row[{$index}].{$applied}";
                 }
                 // MwSt-Numeric-Alias.
                 if ($mwstAlias = $this->normalizeMwstField($row, 'mwst')) {

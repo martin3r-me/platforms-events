@@ -9,6 +9,7 @@ use Platform\Core\Contracts\ToolResult;
 use Platform\Events\Models\QuotePosition;
 use Platform\Events\Tools\Concerns\CollectsValidationErrors;
 use Platform\Events\Tools\Concerns\NormalizesMwst;
+use Platform\Events\Tools\Concerns\NormalizesTimeFields;
 use Platform\Events\Tools\Concerns\RecalculatesQuoteItem;
 
 /**
@@ -20,6 +21,7 @@ class UpdateQuotePositionTool implements ToolContract, ToolMetadataContract
 {
     use CollectsValidationErrors;
     use NormalizesMwst;
+    use NormalizesTimeFields;
     use RecalculatesQuoteItem;
 
     protected const STRING_FIELDS = [
@@ -47,9 +49,9 @@ class UpdateQuotePositionTool implements ToolContract, ToolMetadataContract
     {
         return 'PATCH /events/quote-positions/{id} - Aktualisiert eine Angebots-Position. '
             . 'Identifikation: position_id ODER uuid. '
-            . 'Felder (alle optional): gruppe, name, anz, anz2, uhrzeit, bis, gebinde (Alias unit), '
+            . 'Felder (alle optional): gruppe, name, anz, anz2, start_time, end_time (Aliase: uhrzeit/von/beginn → start_time, bis/ende → end_time), gebinde (Alias unit), '
             . 'inhalt (TEXT, vom Apply-Pfad gesetzt), basis_ek, ek, preis (Alias price_net|price|vk), '
-            . 'mwst ("0%"|"7%"|"19%"; Alias tax_rate), gesamt (auto = anz × preis wenn weggelassen), '
+            . 'mwst ("0%"|"7%"|"19%"; Alias tax_rate; MwSt-Numeric-Alias 0/1/3 → 0%/19%/7%), gesamt (auto = anz × preis wenn weggelassen), '
             . 'bemerkung, sort_order, beverage_mode (Override; null=Vorgang-Default), procurement_type. '
             . 'Recalc des QuoteItems (artikel/positionen/umsatz) erfolgt automatisch.';
     }
@@ -104,6 +106,9 @@ class UpdateQuotePositionTool implements ToolContract, ToolMetadataContract
                     $aliasesApplied[] = "{$alias}→{$primary}";
                 }
             }
+
+            // Time-Aliase (uhrzeit/von/beginn → start_time, bis/ende → end_time).
+            $aliasesApplied = array_merge($aliasesApplied, $this->normalizeTimeFields($arguments, ['start' => 'start_time', 'end' => 'end_time']));
 
             // MwSt-Numeric-Alias (Excel/DATEV: 1→19%, 3→7%, 0→0%).
             if ($mwstAlias = $this->normalizeMwstField($arguments, 'mwst')) {
@@ -162,6 +167,7 @@ class UpdateQuotePositionTool implements ToolContract, ToolMetadataContract
                 ['position_id', 'uuid'],
                 self::STRING_FIELDS, self::NUMERIC_FIELDS, self::INT_FIELDS,
                 array_keys(self::FIELD_ALIASES),
+                $this->timeFieldAliases(),
             );
             $ignored = array_values(array_diff(array_keys($arguments), $known));
 

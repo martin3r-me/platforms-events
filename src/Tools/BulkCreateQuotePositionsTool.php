@@ -12,6 +12,7 @@ use Platform\Events\Models\QuoteItem;
 use Platform\Events\Models\QuotePosition;
 use Platform\Events\Tools\Concerns\CollectsValidationErrors;
 use Platform\Events\Tools\Concerns\NormalizesMwst;
+use Platform\Events\Tools\Concerns\NormalizesTimeFields;
 use Platform\Events\Tools\Concerns\RecalculatesQuoteItem;
 
 /**
@@ -45,6 +46,7 @@ class BulkCreateQuotePositionsTool implements ToolContract, ToolMetadataContract
 {
     use CollectsValidationErrors;
     use NormalizesMwst;
+    use NormalizesTimeFields;
     use RecalculatesQuoteItem;
 
     /** Aliases analog zu UpdateQuotePositionTool — pro Row anwendbar. */
@@ -166,6 +168,10 @@ class BulkCreateQuotePositionsTool implements ToolContract, ToolMetadataContract
                         $row[$primary] = $row[$alias];
                         $aliasesAggregate[] = "row[{$index}].{$alias}→{$primary}";
                     }
+                }
+                // Time-Aliase pro Row (uhrzeit/von/beginn → start_time, bis/ende → end_time).
+                foreach ($this->normalizeTimeFields($row, ['start' => 'start_time', 'end' => 'end_time']) as $applied) {
+                    $aliasesAggregate[] = "row[{$index}].{$applied}";
                 }
                 // MwSt-Numeric-Alias.
                 if ($mwstAlias = $this->normalizeMwstField($row, 'mwst')) {
