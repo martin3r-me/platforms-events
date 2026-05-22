@@ -133,6 +133,8 @@ class EventsServiceProvider extends ServiceProvider
             $registry->register(new \Platform\Events\Tools\ListQuoteItemsTool());
             $registry->register(new \Platform\Events\Tools\CreateQuoteItemTool());
             $registry->register(new \Platform\Events\Tools\DeleteQuoteItemTool());
+            $registry->register(new \Platform\Events\Tools\BulkCreateQuoteItemsTool());
+            $registry->register(new \Platform\Events\Tools\BulkDeleteQuoteItemsTool());
             $registry->register(new \Platform\Events\Tools\ListQuotePositionsTool());
             $registry->register(new \Platform\Events\Tools\CreateQuotePositionTool());
             $registry->register(new \Platform\Events\Tools\UpdateQuotePositionTool());
@@ -152,6 +154,8 @@ class EventsServiceProvider extends ServiceProvider
             $registry->register(new \Platform\Events\Tools\ListOrderItemsTool());
             $registry->register(new \Platform\Events\Tools\CreateOrderItemTool());
             $registry->register(new \Platform\Events\Tools\DeleteOrderItemTool());
+            $registry->register(new \Platform\Events\Tools\BulkCreateOrderItemsTool());
+            $registry->register(new \Platform\Events\Tools\BulkDeleteOrderItemsTool());
             $registry->register(new \Platform\Events\Tools\ListOrderPositionsTool());
             $registry->register(new \Platform\Events\Tools\CreateOrderPositionTool());
             $registry->register(new \Platform\Events\Tools\UpdateOrderPositionTool());
