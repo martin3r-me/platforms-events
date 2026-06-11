@@ -148,6 +148,15 @@ class UpdateBookingTool implements ToolContract, ToolMetadataContract
 
             $booking->update($update);
 
+            // Verfuegbarkeits-Hinweise (nicht blockierend), wenn belegungs-
+            // relevante Felder im Spiel sind.
+            $availabilityWarnings = app(\Platform\Events\Services\LocationAvailabilityWarnings::class)->for(
+                $booking->location_id ? (int) $booking->location_id : null,
+                $booking->event_id ? (int) $booking->event_id : null,
+                [$booking->datum],
+                $booking->pers,
+            );
+
             return ToolResult::success([
                 'id'             => $booking->id,
                 'uuid'           => $booking->uuid,
@@ -163,9 +172,11 @@ class UpdateBookingTool implements ToolContract, ToolMetadataContract
                 'absprache'      => $booking->absprache,
                 'sort_order'     => $booking->sort_order,
                 'updated_fields' => array_keys($update),
+                'availability_warnings' => $availabilityWarnings,
                 'aliases_applied' => $aliases,
                 'ignored_fields' => $ignored,
-                'message'        => 'Buchung aktualisiert.',
+                'message'        => 'Buchung aktualisiert.'
+                    . ($availabilityWarnings !== [] ? ' ACHTUNG: ' . implode(' ', $availabilityWarnings) : ''),
             ]);
         } catch (\Throwable $e) {
             return ToolResult::error('EXECUTION_ERROR', 'Fehler beim Aktualisieren der Buchung: ' . $e->getMessage());

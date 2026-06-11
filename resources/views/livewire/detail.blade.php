@@ -684,6 +684,23 @@
         {{-- ================= Tab: Räume (Buchungen) – Inline-Edit ================= --}}
         @if($activeTab === 'buchungen')
             <div class="pt-1 space-y-4">
+                @if(!empty($bookingWarnings))
+                    <div class="flex items-start gap-2.5 p-3 rounded-md bg-amber-50 border border-amber-200">
+                        @svg('heroicon-o-exclamation-triangle', 'w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5')
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[0.7rem] font-bold text-amber-800 m-0 mb-1">Verfügbarkeits-Hinweis — Buchung wurde trotzdem gespeichert</p>
+                            <ul class="m-0 pl-4 space-y-0.5">
+                                @foreach($bookingWarnings as $warning)
+                                    <li class="text-[0.68rem] text-amber-800">{{ $warning }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        <button type="button" wire:click="dismissBookingWarnings"
+                                class="text-amber-600 hover:bg-amber-100 rounded p-1 flex-shrink-0">
+                            @svg('heroicon-o-x-mark', 'w-3.5 h-3.5')
+                        </button>
+                    </div>
+                @endif
                 <x-ui-panel>
                     <div class="flex items-center gap-2 px-4 py-3 border-b border-[var(--ui-border)]">
                         <span class="w-1 h-4 rounded-full bg-blue-500 flex-shrink-0"></span>
@@ -780,18 +797,16 @@
                                             ])
                                         </td>
                                         <td class="px-2 py-1.5">
-                                            @if(!empty($settings['bestuhlung']))
-                                                <select wire:model.blur="inlineBookings.{{ $b->uuid }}.bestuhlung"
-                                                        class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs bg-transparent focus:bg-white">
-                                                    <option value="">—</option>
-                                                    @foreach($settings['bestuhlung'] as $bOpt)
-                                                        <option value="{{ $bOpt }}">{{ $bOpt }}</option>
-                                                    @endforeach
-                                                </select>
-                                            @else
-                                                <input wire:model.blur="inlineBookings.{{ $b->uuid }}.bestuhlung" type="text" placeholder="—"
-                                                       class="w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs bg-transparent focus:bg-white">
-                                            @endif
+                                            @include('events::partials.bestuhlung-select', [
+                                                'model'             => 'inlineBookings.' . $b->uuid . '.bestuhlung',
+                                                'modifier'          => 'blur',
+                                                'locationId'        => $inlineBookings[$b->uuid]['location_id'] ?? null,
+                                                'current'           => $inlineBookings[$b->uuid]['bestuhlung'] ?? '',
+                                                'seatingByLocation' => $seatingByLocation,
+                                                'fallback'          => $settings['bestuhlung'] ?? [],
+                                                'placeholder'       => '—',
+                                                'class'             => 'w-full border border-transparent hover:border-[var(--ui-border)] focus:border-[var(--ui-primary)]/60 rounded px-2 py-1 text-xs bg-transparent focus:bg-white',
+                                            ])
                                         </td>
                                         <td class="px-2 py-1.5">
                                             <select wire:model.blur="inlineBookings.{{ $b->uuid }}.optionsrang"
@@ -855,19 +870,17 @@
                                     'placeholder' => 'Raum',
                                 ])
                             </div>
-                            <div class="col-span-2">
-                                @if(!empty($settings['bestuhlung']))
-                                    <select wire:model.defer="newBookingInline.bestuhlung"
-                                            class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                                        <option value="">Bestuhlung</option>
-                                        @foreach($settings['bestuhlung'] as $bOpt)
-                                            <option value="{{ $bOpt }}">{{ $bOpt }}</option>
-                                        @endforeach
-                                    </select>
-                                @else
-                                    <input wire:model.defer="newBookingInline.bestuhlung" type="text" placeholder="Bestuhlung"
-                                           class="w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                                @endif
+                            <div class="col-span-2" wire:key="bk-bestuhlung-{{ $newBookingInline['location_id'] ?: 'none' }}">
+                                @include('events::partials.bestuhlung-select', [
+                                    'model'             => 'newBookingInline.bestuhlung',
+                                    'modifier'          => 'defer',
+                                    'locationId'        => $newBookingInline['location_id'] ?? null,
+                                    'current'           => $newBookingInline['bestuhlung'] ?? '',
+                                    'seatingByLocation' => $seatingByLocation,
+                                    'fallback'          => $settings['bestuhlung'] ?? [],
+                                    'placeholder'       => 'Bestuhlung',
+                                    'class'             => 'w-full border border-[var(--ui-border)] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30',
+                                ])
                             </div>
                             <div class="col-span-1">
                                 <select wire:model.defer="newBookingInline.optionsrang"
@@ -1182,7 +1195,7 @@
             <form wire:submit.prevent="saveBooking" class="space-y-4">
                 <div>
                     <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Location</label>
-                    <select wire:model="bookingForm.location_id"
+                    <select wire:model.live="bookingForm.location_id"
                             class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                         <option value="">— Keine Location (freitext Raum) —</option>
                         @foreach($locations as $loc)
@@ -1191,6 +1204,13 @@
                     </select>
                     @error('bookingForm.location_id') <p class="mt-1 text-[0.62rem] text-red-600">{{ $message }}</p> @enderror
                 </div>
+
+                @if($bookingModalWarning)
+                    <div class="flex items-start gap-2 p-2.5 rounded-md bg-amber-50 border border-amber-200">
+                        @svg('heroicon-o-exclamation-triangle', 'w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5')
+                        <p class="text-[0.68rem] text-amber-800 m-0">{{ $bookingModalWarning }} Buchung ist trotzdem möglich.</p>
+                    </div>
+                @endif
                 <div>
                     <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Raum (freitext, Fallback)</label>
                     <input wire:model="bookingForm.raum" type="text" placeholder="z.B. BLUE — nur nutzen wenn keine Location passt"
@@ -1200,7 +1220,7 @@
                 <div class="grid grid-cols-3 gap-3">
                     <div>
                         <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Datum</label>
-                        <input wire:model="bookingForm.datum" type="date"
+                        <input wire:model.live="bookingForm.datum" type="date"
                                class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                     </div>
                     <div>
@@ -1219,20 +1239,18 @@
                         <input wire:model="bookingForm.pers" type="text" placeholder="80"
                                class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                     </div>
-                    <div>
+                    <div wire:key="modal-bestuhlung-{{ $bookingForm['location_id'] ?? 'none' }}">
                         <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Bestuhlung</label>
-                        @if(!empty($settings['bestuhlung']))
-                            <select wire:model="bookingForm.bestuhlung"
-                                    class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                                <option value="">—</option>
-                                @foreach($settings['bestuhlung'] as $b)
-                                    <option value="{{ $b }}">{{ $b }}</option>
-                                @endforeach
-                            </select>
-                        @else
-                            <input wire:model="bookingForm.bestuhlung" type="text" placeholder="Reihen / Bankett / …"
-                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                        @endif
+                        @include('events::partials.bestuhlung-select', [
+                            'model'             => 'bookingForm.bestuhlung',
+                            'modifier'          => null,
+                            'locationId'        => $bookingForm['location_id'] ?? null,
+                            'current'           => $bookingForm['bestuhlung'] ?? '',
+                            'seatingByLocation' => $seatingByLocation,
+                            'fallback'          => $settings['bestuhlung'] ?? [],
+                            'placeholder'       => '—',
+                            'class'             => 'w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30',
+                        ])
                     </div>
                     <div>
                         <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Optionsrang</label>
@@ -1280,20 +1298,18 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
-                    <div>
+                    <div wire:key="bulk-bestuhlung-{{ $bulkBookingForm['location_id'] ?? 'none' }}">
                         <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Bestuhlung</label>
-                        @if(!empty($settings['bestuhlung']))
-                            <select wire:model="bulkBookingForm.bestuhlung"
-                                    class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                                <option value="">—</option>
-                                @foreach($settings['bestuhlung'] as $b)
-                                    <option value="{{ $b }}">{{ $b }}</option>
-                                @endforeach
-                            </select>
-                        @else
-                            <input wire:model="bulkBookingForm.bestuhlung" type="text" placeholder="Reihen / Bankett / …"
-                                   class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
-                        @endif
+                        @include('events::partials.bestuhlung-select', [
+                            'model'             => 'bulkBookingForm.bestuhlung',
+                            'modifier'          => null,
+                            'locationId'        => $bulkBookingForm['location_id'] ?? null,
+                            'current'           => $bulkBookingForm['bestuhlung'] ?? '',
+                            'seatingByLocation' => $seatingByLocation,
+                            'fallback'          => $settings['bestuhlung'] ?? [],
+                            'placeholder'       => '—',
+                            'class'             => 'w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30',
+                        ])
                     </div>
                     <div>
                         <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Optionsrang</label>

@@ -72,6 +72,12 @@ class Detail extends Component
     public ?string $editingBookingUuid = null;
     public array $bookingForm = [];
 
+    /** Verfuegbarkeits-Warnungen nach Booking-Aktionen (Banner im Termine-Tab). */
+    public array $bookingWarnings = [];
+
+    /** Live-Warnung im Booking-Modal, sobald Location + Datum gewaehlt sind. */
+    public ?string $bookingModalWarning = null;
+
     // Bulk-Booking: fuer jeden Termin eine Buchung anlegen mit Daten des Tages
     public bool $showBulkBookingModal = false;
     public array $bulkBookingForm = [
@@ -550,6 +556,43 @@ class Detail extends Component
 
     // ========== Buchungen ==========
 
+    /**
+     * Verfuegbarkeits-Warnungen fuer eine Location an gegebenen Tagen —
+     * eigene Buchungen dieses Events ausgeklammert. Nicht blockierend;
+     * Logik zentral in Services\LocationAvailabilityWarnings (geteilt mit
+     * den Booking-Tools).
+     *
+     * @param array<int, string|null> $dates  YYYY-MM-DD
+     * @return array<int, string>
+     */
+    protected function availabilityWarnings(?int $locationId, array $dates, ?string $pers = null): array
+    {
+        return app(\Platform\Events\Services\LocationAvailabilityWarnings::class)
+            ->for($locationId, $this->event?->id, $dates, $pers);
+    }
+
+    public function dismissBookingWarnings(): void
+    {
+        $this->bookingWarnings = [];
+    }
+
+    /**
+     * Live-Warnung im Booking-Modal, sobald Location und Datum gewaehlt sind.
+     */
+    public function updatedBookingForm($value, $key): void
+    {
+        if (!in_array($key, ['location_id', 'datum'], true)) {
+            return;
+        }
+
+        $locationId = !empty($this->bookingForm['location_id']) ? (int) $this->bookingForm['location_id'] : null;
+        $datum = $this->bookingForm['datum'] ?? null;
+
+        $this->bookingModalWarning = ($locationId && $datum)
+            ? (implode(' ', $this->availabilityWarnings($locationId, [$datum])) ?: null)
+            : null;
+    }
+
     public function openBookingCreate(): void
     {
         $this->bookingForm = [
@@ -564,6 +607,7 @@ class Detail extends Component
             'absprache'   => '',
         ];
         $this->editingBookingUuid = null;
+        $this->bookingModalWarning = null;
         $this->resetErrorBag();
         $this->showBookingModal = true;
     }
@@ -583,6 +627,9 @@ class Detail extends Component
             'absprache'   => $booking->absprache ?? '',
         ];
         $this->editingBookingUuid = $uuid;
+        $this->bookingModalWarning = $booking->location_id && $booking->datum
+            ? (implode(' ', $this->availabilityWarnings((int) $booking->location_id, [$booking->datum])) ?: null)
+            : null;
         $this->resetErrorBag();
         $this->showBookingModal = true;
     }
@@ -590,6 +637,7 @@ class Detail extends Component
     public function closeBookingModal(): void
     {
         $this->showBookingModal = false;
+        $this->bookingModalWarning = null;
     }
 
     public function saveBooking(): void
@@ -627,7 +675,14 @@ class Detail extends Component
             ActivityLogger::log($this->event, 'booking', "Raum gebucht: {$label}");
         }
 
+        $this->bookingWarnings = $this->availabilityWarnings(
+            $payload['location_id'] ? (int) $payload['location_id'] : null,
+            [$payload['datum'] ?? null],
+            $payload['pers'] ?? null,
+        );
+
         $this->showBookingModal = false;
+        $this->bookingModalWarning = null;
     }
 
     /**
@@ -727,6 +782,14 @@ class Detail extends Component
         $this->event->bookings()->where('uuid', $uuid)->update([
             $field => $value === '' ? null : $value,
         ]);
+
+        // Bei belegungsrelevanten Feldern direkt gegen Verfuegbarkeit pruefen.
+        if (in_array($field, ['datum', 'location_id', 'optionsrang', 'pers'], true)) {
+            $booking = $this->event->bookings()->where('uuid', $uuid)->first();
+            $this->bookingWarnings = $booking && $booking->location_id
+                ? $this->availabilityWarnings((int) $booking->location_id, [$booking->datum], $booking->pers)
+                : [];
+        }
     }
 
     /**
@@ -820,6 +883,12 @@ class Detail extends Component
             ? "{$count} Raumbuchungen angelegt ({$label})"
             : "Raum gebucht: {$label}");
 
+        $this->bookingWarnings = $this->availabilityWarnings(
+            !empty($data['location_id']) ? (int) $data['location_id'] : null,
+            $targetDates,
+            $data['pers'] ?? null,
+        );
+
         $this->newBookingInline = [
             'datum'       => '', 'start_time' => '', 'end_time' => '',
             'pers'        => '', 'location_id' => null, 'raum' => '',
@@ -894,6 +963,11 @@ class Detail extends Component
 
         $label = self::bookingLabel(['location_id' => $data['location_id'] ?? null, 'raum' => $data['raum'] ?? '']);
         ActivityLogger::log($this->event, 'booking', $days->count() . ' Raumbuchungen aus Terminen uebernommen (' . $label . ')');
+
+        $this->bookingWarnings = $this->availabilityWarnings(
+            !empty($data['location_id']) ? (int) $data['location_id'] : null,
+            $days->map(fn ($d) => $d->datum?->format('Y-m-d'))->all(),
+        );
 
         $this->showBulkBookingModal = false;
     }
@@ -1354,7 +1428,24 @@ class Detail extends Component
                 'bemerkung'    => $s->bemerkung,
             ],
         ])->toArray();
-        $locations = Location::where('team_id', $team->id)->orderBy('sort_order')->orderBy('name')->get();
+        $locations = Location::where('team_id', $team->id)
+            ->with('seatingOptions')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        // Bestuhlungsoptionen je Location (aus dem Locations-Stamm) — die
+        // Bestuhlungs-Selects zeigen sie bevorzugt; Locations ohne gepflegte
+        // Optionen fallen auf die Team-Settings-Liste zurueck.
+        $seatingByLocation = $locations
+            ->mapWithKeys(fn ($l) => [
+                $l->id => $l->seatingOptions->map(fn ($s) => [
+                    'label' => (string) $s->label,
+                    'pax'   => (int) $s->pax_max_ca,
+                ])->values()->all(),
+            ])
+            ->filter(fn ($opts) => $opts !== [])
+            ->toArray();
 
         // Sidebar-Counts + Drilldown-Baum
         $dayIds = $days->pluck('id');
@@ -1549,6 +1640,7 @@ class Detail extends Component
             'notes'          => $notes,
             'notesByType'    => $notesByType,
             'locations'      => $locations,
+            'seatingByLocation' => $seatingByLocation,
             'statusOptions'  => self::STATUS_OPTIONS,
             'bookingRangs'   => self::BOOKING_RANGS,
             'noteTypes'      => self::NOTE_TYPES,

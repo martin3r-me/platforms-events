@@ -223,8 +223,16 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
                 'id'      => $primaryBooking->location->id,
                 'name'    => $primaryBooking->location->name,
                 'kuerzel' => $primaryBooking->location->kuerzel,
-                'gruppe'  => $primaryBooking->location->gruppe,
             ] : null;
+
+            // Verfuegbarkeits-Hinweise (nicht blockierend): Sperrzeiten, harte
+            // Belegung durch andere Events, PAX-Ueberschreitung.
+            $availabilityWarnings = app(\Platform\Events\Services\LocationAvailabilityWarnings::class)->for(
+                $locationId ? (int) $locationId : null,
+                $event->id,
+                array_map(fn ($c) => $c['datum'] ?? null, $created),
+                $base['pers'] ?? null,
+            );
 
             return ToolResult::success([
                 'event_id'      => $event->id,
@@ -235,11 +243,13 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
                 'count'         => count($created),
                 'bookings'      => $created,
                 'primary_location' => $primaryLocation,
+                'availability_warnings' => $availabilityWarnings,
                 'aliases_applied'  => $aliases,
                 'ignored_fields'   => $ignored,
-                'message'       => count($created) === 1
+                'message'       => (count($created) === 1
                     ? "Buchung fuer Event #{$event->event_number} angelegt."
-                    : count($created) . " Buchungen fuer Event #{$event->event_number} angelegt.",
+                    : count($created) . " Buchungen fuer Event #{$event->event_number} angelegt.")
+                    . ($availabilityWarnings !== [] ? ' ACHTUNG: ' . implode(' ', $availabilityWarnings) : ''),
             ]);
         } catch (\Throwable $e) {
             return ToolResult::error('EXECUTION_ERROR', 'Fehler beim Anlegen der Buchung: ' . $e->getMessage());
