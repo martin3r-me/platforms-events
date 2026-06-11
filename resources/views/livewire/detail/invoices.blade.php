@@ -74,6 +74,20 @@
                         <span class="font-semibold">{{ $opt['label'] }}</span>
                     </button>
                 @endforeach
+
+                <div class="border-t border-slate-100 my-1"></div>
+                <p class="text-[0.55rem] font-bold uppercase tracking-wider text-slate-400 px-2.5 pt-1 pb-0.5 m-0">Positionen aus Angebot übernehmen</p>
+                @foreach([
+                    ['type' => 'rechnung',        'label' => 'Rechnung aus Angebot',        'color' => '#2563eb'],
+                    ['type' => 'schlussrechnung', 'label' => 'Schlussrechnung aus Angebot', 'color' => '#059669'],
+                ] as $opt)
+                    <button type="button" wire:click="createInvoiceFromQuote('{{ $opt['type'] }}')" @click="dropOpen = false"
+                            class="flex items-center gap-2 w-full px-2.5 py-2 border-0 rounded bg-white hover:bg-slate-50 cursor-pointer text-left text-[0.65rem] text-slate-700 transition">
+                        <div class="w-2 h-2 rounded-full flex-shrink-0" style="background: {{ $opt['color'] }};"></div>
+                        <span class="font-semibold">{{ $opt['label'] }}</span>
+                        @svg('heroicon-o-arrow-down-on-square', 'w-3 h-3 text-slate-400 ml-auto')
+                    </button>
+                @endforeach
             </div>
         </div>
     </div>

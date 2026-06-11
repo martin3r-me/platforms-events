@@ -9,6 +9,7 @@ use Platform\Events\Models\Event;
 use Platform\Events\Models\Invoice;
 use Platform\Events\Models\InvoiceItem;
 use Platform\Events\Services\ActivityLogger;
+use Platform\Events\Services\QuoteInvoiceConverter;
 
 class Invoices extends Component
 {
@@ -86,6 +87,30 @@ class Invoices extends Component
         $this->activeInvoiceId = $invoice->id;
         $this->showCreateModal = false;
         ActivityLogger::log($event, 'invoice', "Rechnung {$invoice->invoice_number} ({$invoice->type}) angelegt");
+    }
+
+    /**
+     * Rechnung anlegen und alle abrechenbaren Angebots-Positionen des
+     * Events uebernehmen (Quote -> Invoice, analog Quote -> Order).
+     */
+    public function createInvoiceFromQuote(string $type = 'rechnung'): void
+    {
+        $event = $this->event();
+
+        if (!in_array($type, ['rechnung', 'teilrechnung', 'schlussrechnung'], true)) {
+            $type = 'rechnung';
+        }
+
+        $result = QuoteInvoiceConverter::createFromEvent($event, $type);
+
+        $this->activeInvoiceId = $result['invoice']->id;
+        ActivityLogger::log($event, 'invoice', sprintf(
+            'Rechnung %s (%s) aus Angebot erzeugt — %d Position(en) uebernommen%s',
+            $result['invoice']->invoice_number,
+            $type,
+            $result['items'],
+            $result['skipped_bausteine'] > 0 ? ", {$result['skipped_bausteine']} Text-Baustein(e) uebersprungen" : '',
+        ));
     }
 
     public function selectInvoice(int $invoiceId): void

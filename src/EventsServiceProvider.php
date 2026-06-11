@@ -176,6 +176,7 @@ class EventsServiceProvider extends ServiceProvider
             // --- Read-Tools für weitere Entitäten ---
             $registry->register(new \Platform\Events\Tools\ListContractsTool());
             $registry->register(new \Platform\Events\Tools\ListInvoicesTool());
+            $registry->register(new \Platform\Events\Tools\CreateInvoiceFromQuoteTool());
             $registry->register(new \Platform\Events\Tools\ListPickListsTool());
             $registry->register(new \Platform\Events\Tools\ListFeedbackEntriesTool());
             $registry->register(new \Platform\Events\Tools\ListEmailLogsTool());

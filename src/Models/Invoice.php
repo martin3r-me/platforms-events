@@ -111,14 +111,15 @@ class Invoice extends Model
     public function recalculate(): void
     {
         $items = $this->items()->get();
+        $netto0  = (float) $items->where('mwst_rate', 0)->sum('total');
         $netto7  = (float) $items->where('mwst_rate', 7)->sum('total');
         $netto19 = (float) $items->where('mwst_rate', 19)->sum('total');
 
         $this->update([
-            'netto'   => $netto7 + $netto19,
+            'netto'   => $netto0 + $netto7 + $netto19,
             'mwst_7'  => round($netto7 * 0.07, 2),
             'mwst_19' => round($netto19 * 0.19, 2),
-            'brutto'  => round($netto7 * 1.07 + $netto19 * 1.19, 2),
+            'brutto'  => round($netto0 + $netto7 * 1.07 + $netto19 * 1.19, 2),
         ]);
     }
 }
