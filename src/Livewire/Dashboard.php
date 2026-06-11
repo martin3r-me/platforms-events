@@ -4,7 +4,9 @@ namespace Platform\Events\Livewire;
 
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
+use Platform\Events\Models\Booking;
 use Platform\Events\Models\Event;
+use Platform\Events\Models\Quote;
 
 class Dashboard extends Component
 {
@@ -85,6 +87,63 @@ class Dashboard extends Component
             'past'           => $past,
             'upcomingEvents' => $upcomingEvents,
             'customerLabels' => $customerLabels,
+            'resubmission'   => $team ? $this->buildResubmission($team->id) : ['options' => collect(), 'followUps' => collect(), 'quotes' => collect()],
         ])->layout('platform::layouts.app');
+    }
+
+    /** Event-Status, die keine Wiedervorlage mehr brauchen. */
+    protected const INACTIVE_STATUSES = ['Storno', 'Abgeschlossen'];
+
+    /** Horizont in Tagen: Fristen bis dahin (plus alles Ueberfaellige) erscheinen im Cockpit. */
+    protected const RESUBMISSION_HORIZON_DAYS = 7;
+
+    /**
+     * Wiedervorlage-Cockpit: drei Fristtypen in einem Datenpaket.
+     *
+     *  1. Ablaufende Raum-Optionsfristen (Booking.option_until)
+     *  2. Faellige Follow-ups (Event.follow_up_date)
+     *  3. Ablaufende versendete Angebote (Quote.valid_until, status=sent)
+     *
+     * Jeweils inkl. Ueberfaelligem; Events in Storno/Abgeschlossen ausgenommen.
+     *
+     * @return array{options: \Illuminate\Support\Collection, followUps: \Illuminate\Support\Collection, quotes: \Illuminate\Support\Collection}
+     */
+    protected function buildResubmission(int $teamId): array
+    {
+        $horizon = now()->addDays(self::RESUBMISSION_HORIZON_DAYS)->toDateString();
+
+        $options = Booking::query()
+            ->where('team_id', $teamId)
+            ->whereNotNull('option_until')
+            ->whereDate('option_until', '<=', $horizon)
+            ->where('optionsrang', 'like', '%Option%')
+            ->whereHas('event', fn ($q) => $q->whereNotIn('status', self::INACTIVE_STATUSES))
+            ->with(['event:id,name,event_number,status', 'location:id,name,kuerzel'])
+            ->orderBy('option_until')
+            ->limit(15)
+            ->get();
+
+        $followUps = Event::query()
+            ->where('team_id', $teamId)
+            ->whereNotNull('follow_up_date')
+            ->whereDate('follow_up_date', '<=', $horizon)
+            ->whereNotIn('status', self::INACTIVE_STATUSES)
+            ->orderBy('follow_up_date')
+            ->limit(15)
+            ->get(['id', 'name', 'event_number', 'status', 'follow_up_date', 'follow_up_note']);
+
+        $quotes = Quote::query()
+            ->where('team_id', $teamId)
+            ->where('is_current', true)
+            ->where('status', 'sent')
+            ->whereNotNull('valid_until')
+            ->whereDate('valid_until', '<=', $horizon)
+            ->whereHas('event', fn ($q) => $q->whereNotIn('status', self::INACTIVE_STATUSES))
+            ->with('event:id,name,event_number,status')
+            ->orderBy('valid_until')
+            ->limit(15)
+            ->get();
+
+        return ['options' => $options, 'followUps' => $followUps, 'quotes' => $quotes];
     }
 }

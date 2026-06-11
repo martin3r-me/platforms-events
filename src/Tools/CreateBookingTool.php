@@ -70,6 +70,7 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
                 'pers'               => ['type' => 'string',  'description' => 'Personenzahl als String. Aliases: pers_von, pers_bis, pax.'],
                 'bestuhlung'         => ['type' => 'string',  'description' => 'z.B. "Bankett", "U-Form" – siehe Settings → Bestuhlungs-Arten.'],
                 'optionsrang'        => ['type' => 'string',  'description' => 'Default "1. Option". Werte: "1. Option" | "2. Option" | "Definitiv" | "Vertrag".'],
+                'option_until'       => ['type' => 'string',  'description' => 'Optionsfrist (YYYY-MM-DD): bis wann gilt die Option? Erscheint im Dashboard unter Wiedervorlage, wenn sie ablaeuft.'],
                 'absprache'          => ['type' => 'string',  'description' => 'Freitext-Kommentar.'],
                 // Historische Aliase (werden auf start_time/end_time/pers gemappt)
                 'von'                => ['type' => 'string',  'description' => 'Alias fuer start_time. Wird gemappt.'],
@@ -99,7 +100,7 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
             // Bekannte Felder zur Erkennung von ignored_fields
             $known = array_merge([
                 'event_id', 'event_uuid', 'event_number',
-                'raum', 'datum', 'start_time', 'end_time', 'pers', 'bestuhlung', 'optionsrang', 'absprache',
+                'raum', 'datum', 'start_time', 'end_time', 'pers', 'bestuhlung', 'optionsrang', 'option_until', 'absprache',
                 'apply_to_all_days', 'day_ids',
             ], $this->locationRefInputFields(), $this->timeFieldAliases());
             $ignored = array_values(array_diff(array_keys($arguments), $known));
@@ -160,6 +161,7 @@ class CreateBookingTool implements ToolContract, ToolMetadataContract
                 'pers'        => $arguments['pers']        ?? null,
                 'bestuhlung'  => $arguments['bestuhlung']  ?? null,
                 'optionsrang' => $arguments['optionsrang'] ?? '1. Option',
+                'option_until' => $arguments['option_until'] ?? null,
                 'absprache'   => $arguments['absprache']   ?? null,
             ];
 

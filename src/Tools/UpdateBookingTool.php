@@ -16,7 +16,7 @@ class UpdateBookingTool implements ToolContract, ToolMetadataContract
 
     protected const STRING_FIELDS = [
         'raum', 'datum', 'start_time', 'end_time', 'pers',
-        'bestuhlung', 'optionsrang', 'absprache',
+        'bestuhlung', 'optionsrang', 'option_until', 'absprache',
     ];
 
     public function getName(): string
@@ -169,6 +169,7 @@ class UpdateBookingTool implements ToolContract, ToolMetadataContract
                 'pers_numeric'   => is_numeric($booking->pers) ? (int) $booking->pers : null,
                 'bestuhlung'     => $booking->bestuhlung,
                 'optionsrang'    => $booking->optionsrang,
+                'option_until'   => $booking->option_until?->format('Y-m-d'),
                 'absprache'      => $booking->absprache,
                 'sort_order'     => $booking->sort_order,
                 'updated_fields' => array_keys($update),

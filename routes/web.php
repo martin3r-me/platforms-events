@@ -35,3 +35,4 @@ Route::get('/va/{event}/vertrag/{contractId}/pdf', [ContractPdfController::class
 Route::get('/va/{event}/rechnung/{invoiceId}/pdf', [InvoicePdfController::class, 'download'])->name('events.invoice.pdf');
 Route::get('/va/{event}/projekt-function/pdf', [ReportPdfController::class, 'projektFunction'])->name('events.projekt-function.pdf');
 Route::get('/va/{event}/schlussbericht/pdf', [ReportPdfController::class, 'finalReport'])->name('events.final-report.pdf');
+Route::get('/va/{event}/function-sheet/pdf', [ReportPdfController::class, 'functionSheet'])->name('events.function-sheet.pdf');

@@ -601,10 +601,11 @@ class Detail extends Component
             'datum'       => $this->event->start_date?->format('Y-m-d') ?? '',
             'start_time'      => '',
             'end_time'        => '',
-            'pers'        => '',
-            'bestuhlung'  => '',
-            'optionsrang' => '1. Option',
-            'absprache'   => '',
+            'pers'         => '',
+            'bestuhlung'   => '',
+            'optionsrang'  => '1. Option',
+            'option_until' => '',
+            'absprache'    => '',
         ];
         $this->editingBookingUuid = null;
         $this->bookingModalWarning = null;
@@ -621,10 +622,11 @@ class Detail extends Component
             'datum'       => $booking->datum ?? '',
             'start_time'      => $booking->start_time ?? '',
             'end_time'        => $booking->end_time ?? '',
-            'pers'        => $booking->pers ?? '',
-            'bestuhlung'  => $booking->bestuhlung ?? '',
-            'optionsrang' => $booking->optionsrang ?: '1. Option',
-            'absprache'   => $booking->absprache ?? '',
+            'pers'         => $booking->pers ?? '',
+            'bestuhlung'   => $booking->bestuhlung ?? '',
+            'optionsrang'  => $booking->optionsrang ?: '1. Option',
+            'option_until' => $booking->option_until?->format('Y-m-d') ?? '',
+            'absprache'    => $booking->absprache ?? '',
         ];
         $this->editingBookingUuid = $uuid;
         $this->bookingModalWarning = $booking->location_id && $booking->datum
@@ -649,6 +651,7 @@ class Detail extends Component
             'bookingForm.beginn'      => 'nullable|string|max:10',
             'bookingForm.ende'        => 'nullable|string|max:10',
             'bookingForm.optionsrang' => 'nullable|string|max:32',
+            'bookingForm.option_until' => 'nullable|date',
         ]);
 
         if (empty($this->bookingForm['location_id']) && empty($this->bookingForm['raum'])) {
@@ -658,6 +661,7 @@ class Detail extends Component
 
         $payload = $this->bookingForm;
         $payload['location_id'] = $payload['location_id'] ?: null;
+        $payload['option_until'] = $payload['option_until'] ?: null;
 
         if ($this->editingBookingUuid) {
             $this->event->bookings()->where('uuid', $this->editingBookingUuid)->update($payload);
@@ -776,7 +780,7 @@ class Detail extends Component
         if (!str_contains($key, '.')) return;
         [$uuid, $field] = explode('.', $key, 2);
 
-        $allowed = ['datum', 'start_time', 'end_time', 'pers', 'location_id', 'raum', 'bestuhlung', 'optionsrang', 'absprache'];
+        $allowed = ['datum', 'start_time', 'end_time', 'pers', 'location_id', 'raum', 'bestuhlung', 'optionsrang', 'option_until', 'absprache'];
         if (!in_array($field, $allowed, true)) return;
 
         $this->event->bookings()->where('uuid', $uuid)->update([
@@ -1412,9 +1416,10 @@ class Detail extends Component
                 'pers'        => $b->pers,
                 'location_id' => $b->location_id,
                 'raum'        => $b->raum,
-                'bestuhlung'  => $b->bestuhlung,
-                'optionsrang' => $b->optionsrang,
-                'absprache'   => $b->absprache,
+                'bestuhlung'   => $b->bestuhlung,
+                'optionsrang'  => $b->optionsrang,
+                'option_until' => $b->option_until?->format('Y-m-d'),
+                'absprache'    => $b->absprache,
             ],
         ])->toArray();
 

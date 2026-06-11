@@ -55,6 +55,85 @@
                 />
             </div>
 
+            {{-- Wiedervorlage-Cockpit: Optionsfristen / Follow-ups / Angebots-Ablauf --}}
+            @php
+                $resubToday = now()->toDateString();
+                $resubTotal = $resubmission['options']->count() + $resubmission['followUps']->count() + $resubmission['quotes']->count();
+            @endphp
+            @if($resubTotal > 0)
+                <div>
+                    <h2 class="text-sm font-bold text-[var(--ui-secondary)] uppercase tracking-wider mb-3 flex items-center gap-2">
+                        @svg('heroicon-o-bell-alert', 'w-4 h-4 text-amber-500')
+                        Wiedervorlage
+                        <span class="text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{{ $resubTotal }}</span>
+                    </h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+                        {{-- Spalte 1: Ablaufende Raum-Optionen --}}
+                        <div class="bg-white border border-[var(--ui-border)] rounded-xl p-4">
+                            <h3 class="text-[0.65rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] mb-2.5">Ablaufende Raum-Optionen</h3>
+                            @forelse($resubmission['options'] as $b)
+                                @php $expired = $b->option_until->toDateString() < $resubToday; @endphp
+                                <a href="{{ route('events.show', ['slug' => $b->event->slug]) }}?tab=buchungen" wire:navigate
+                                   class="flex items-center gap-2 py-1.5 border-b border-[var(--ui-border)]/40 last:border-0 no-underline hover:bg-slate-50 rounded px-1 -mx-1">
+                                    <span class="text-[0.62rem] font-mono font-bold {{ $expired ? 'text-red-600' : 'text-amber-600' }} w-14 flex-shrink-0">
+                                        {{ $b->option_until->format('d.m.') }}
+                                    </span>
+                                    <span class="text-[0.62rem] font-mono font-bold text-[var(--ui-secondary)] flex-shrink-0">{{ $b->location?->kuerzel ?: $b->raum ?: '—' }}</span>
+                                    <span class="text-[0.62rem] text-[var(--ui-muted)] truncate flex-1">{{ $b->event->name ?: $b->event->event_number }}</span>
+                                    <span class="text-[0.55rem] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 {{ $expired ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700' }}">
+                                        {{ $expired ? 'abgelaufen' : $b->optionsrang }}
+                                    </span>
+                                </a>
+                            @empty
+                                <p class="text-[0.62rem] text-[var(--ui-muted)] m-0">Keine Optionsfristen in den nächsten 7 Tagen.</p>
+                            @endforelse
+                        </div>
+
+                        {{-- Spalte 2: Faellige Follow-ups --}}
+                        <div class="bg-white border border-[var(--ui-border)] rounded-xl p-4">
+                            <h3 class="text-[0.65rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] mb-2.5">Fällige Follow-ups</h3>
+                            @forelse($resubmission['followUps'] as $e)
+                                @php $expired = $e->follow_up_date->toDateString() < $resubToday; @endphp
+                                <a href="{{ route('events.show', ['slug' => $e->slug]) }}" wire:navigate
+                                   class="flex items-center gap-2 py-1.5 border-b border-[var(--ui-border)]/40 last:border-0 no-underline hover:bg-slate-50 rounded px-1 -mx-1">
+                                    <span class="text-[0.62rem] font-mono font-bold {{ $expired ? 'text-red-600' : 'text-amber-600' }} w-14 flex-shrink-0">
+                                        {{ $e->follow_up_date->format('d.m.') }}
+                                    </span>
+                                    <span class="text-[0.62rem] text-[var(--ui-secondary)] font-semibold truncate flex-1"
+                                          title="{{ $e->follow_up_note }}">{{ $e->name ?: $e->event_number }}</span>
+                                    @if($e->follow_up_note)
+                                        <span class="text-[0.58rem] text-[var(--ui-muted)] truncate max-w-[40%]">{{ $e->follow_up_note }}</span>
+                                    @endif
+                                </a>
+                            @empty
+                                <p class="text-[0.62rem] text-[var(--ui-muted)] m-0">Keine fälligen Follow-ups.</p>
+                            @endforelse
+                        </div>
+
+                        {{-- Spalte 3: Ablaufende Angebote --}}
+                        <div class="bg-white border border-[var(--ui-border)] rounded-xl p-4">
+                            <h3 class="text-[0.65rem] font-bold uppercase tracking-wider text-[var(--ui-muted)] mb-2.5">Ablaufende Angebote</h3>
+                            @forelse($resubmission['quotes'] as $q)
+                                @php $expired = $q->valid_until->toDateString() < $resubToday; @endphp
+                                <a href="{{ route('events.show', ['slug' => $q->event->slug]) }}?tab=angebote" wire:navigate
+                                   class="flex items-center gap-2 py-1.5 border-b border-[var(--ui-border)]/40 last:border-0 no-underline hover:bg-slate-50 rounded px-1 -mx-1">
+                                    <span class="text-[0.62rem] font-mono font-bold {{ $expired ? 'text-red-600' : 'text-amber-600' }} w-14 flex-shrink-0">
+                                        {{ $q->valid_until->format('d.m.') }}
+                                    </span>
+                                    <span class="text-[0.62rem] text-[var(--ui-secondary)] font-semibold truncate flex-1">{{ $q->event->name ?: $q->event->event_number }}</span>
+                                    <span class="text-[0.55rem] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 {{ $expired ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700' }}">
+                                        {{ $expired ? 'abgelaufen' : 'versendet' }}
+                                    </span>
+                                </a>
+                            @empty
+                                <p class="text-[0.62rem] text-[var(--ui-muted)] m-0">Keine ablaufenden Angebote.</p>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             {{-- Anstehende Veranstaltungen --}}
             @if($upcomingEvents->isNotEmpty())
                 @php

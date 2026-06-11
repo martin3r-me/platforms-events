@@ -29,13 +29,15 @@ class Booking extends Model
         'pers',
         'bestuhlung',
         'optionsrang',
+        'option_until',
         'absprache',
         'sort_order',
     ];
 
     protected $casts = [
-        'uuid'       => 'string',
-        'sort_order' => 'integer',
+        'uuid'         => 'string',
+        'option_until' => 'date',
+        'sort_order'   => 'integer',
     ];
 
     protected static function booted(): void

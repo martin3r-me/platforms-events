@@ -708,6 +708,12 @@
                             <h3 class="text-[0.82rem] font-bold text-[var(--ui-secondary)] m-0 leading-tight">Räume</h3>
                             <div class="text-[0.65rem] text-[var(--ui-muted)] mt-0.5">{{ $bookings->count() }} Buchung(en)</div>
                         </div>
+                        <a href="{{ route('events.function-sheet.pdf', ['event' => $event->slug]) }}" target="_blank" rel="noopener"
+                           class="inline-flex items-center gap-1.5 px-3 py-1.5 border border-[var(--ui-border)] rounded-md bg-white hover:bg-slate-50 text-[0.68rem] font-bold text-[var(--ui-secondary)] no-underline"
+                           title="Function Sheet (Tagesregie) als PDF — Räume, Ablauf und Absprachen pro Tag">
+                            @svg('heroicon-o-document-arrow-down', 'w-3.5 h-3.5')
+                            Function Sheet
+                        </a>
                         @if($days->isNotEmpty())
                             <x-ui-button variant="secondary" size="sm" wire:click="openBulkBooking">
                                 @svg('heroicon-o-calendar-days', 'w-3.5 h-3.5 inline') Alle Termine übernehmen
@@ -815,6 +821,16 @@
                                                     <option value="{{ $r }}">{{ $r }}</option>
                                                 @endforeach
                                             </select>
+                                            @if(!empty($inlineBookings[$b->uuid]['option_until']))
+                                                @php
+                                                    $ouDate = $inlineBookings[$b->uuid]['option_until'];
+                                                    $ouExpired = $ouDate < now()->toDateString();
+                                                @endphp
+                                                <span class="block px-2 text-[0.55rem] font-mono {{ $ouExpired ? 'text-red-600 font-bold' : 'text-[var(--ui-muted)]' }}"
+                                                      title="Optionsfrist{{ $ouExpired ? ' — abgelaufen' : '' }}">
+                                                    bis {{ \Carbon\Carbon::parse($ouDate)->format('d.m.Y') }}
+                                                </span>
+                                            @endif
                                         </td>
                                         <td class="px-2 py-1.5">
                                             <input wire:model.blur="inlineBookings.{{ $b->uuid }}.absprache" type="text" placeholder="Absprache…"
@@ -1260,6 +1276,12 @@
                                 <option value="{{ $r }}">{{ $r }}</option>
                             @endforeach
                         </select>
+                    </div>
+                    <div>
+                        <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Option gültig bis</label>
+                        <input wire:model="bookingForm.option_until" type="date"
+                               title="Frist der Option — erscheint im Dashboard unter 'Wiedervorlage', wenn sie ablaeuft."
+                               class="w-full border border-[var(--ui-border)] rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/30">
                     </div>
                     <div>
                         <label class="text-[0.65rem] font-semibold text-[var(--ui-muted)] block mb-1">Absprache</label>
