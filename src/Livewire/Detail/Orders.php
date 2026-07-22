@@ -44,6 +44,9 @@ class Orders extends Component
     // Mehrfachauswahl fuer Bulk-Delete von Positionen
     public array $selectedPositionUuids = [];
 
+    // Suchtext des CRM-Firmen-Pickers fuer den Bestellschein-Empfaenger
+    public array $crmSearch = ['recipient' => ''];
+
     public function mount(int $eventId, ?int $initialItemId = null, ?int $initialDayId = null, ?string $initialView = null): void
     {
         $this->eventId = $eventId;
@@ -190,6 +193,120 @@ class Orders extends Component
         $event = $this->event();
         $item = OrderItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($this->activeItemId);
         if ($item) $item->update(['lieferant' => $lieferant ?: null]);
+    }
+
+    // ---------- Bestellschein-Empfaenger (CRM + Freitext) ----------
+
+    protected function activeOrderItem(): ?OrderItem
+    {
+        if (!$this->activeItemId) return null;
+        $event = $this->event();
+        return OrderItem::whereHas('eventDay', fn($q) => $q->where('event_id', $event->id))->find($this->activeItemId);
+    }
+
+    /** Picker-Callback: CRM-Firma als Empfaenger setzen (Kontakt wird zurueckgesetzt). */
+    public function pickCrmCompany(string $slot, int $id, ?string $label = null): void
+    {
+        $item = $this->activeOrderItem();
+        if (!$item) return;
+        $item->update([
+            'crm_company_id' => $id,
+            'crm_contact_id' => null,
+            'lieferant'      => $item->lieferant ?: $label,
+        ]);
+        $this->crmSearch['recipient'] = '';
+    }
+
+    public function clearCrmCompany(string $slot): void
+    {
+        $item = $this->activeOrderItem();
+        if ($item) $item->update(['crm_company_id' => null, 'crm_contact_id' => null]);
+    }
+
+    public function pickCrmContact(string $slot, int $id, ?string $label = null): void
+    {
+        $item = $this->activeOrderItem();
+        if ($item) $item->update(['crm_contact_id' => $id]);
+    }
+
+    public function clearCrmContact(string $slot): void
+    {
+        $item = $this->activeOrderItem();
+        if ($item) $item->update(['crm_contact_id' => null]);
+    }
+
+    public function updateItemTel(string $tel): void
+    {
+        $item = $this->activeOrderItem();
+        if ($item) $item->update(['empfaenger_tel' => $tel ?: null]);
+    }
+
+    public function updateItemBemerkung(string $bemerkung): void
+    {
+        $item = $this->activeOrderItem();
+        if ($item) $item->update(['bemerkung' => $bemerkung ?: null]);
+    }
+
+    /**
+     * Baut die View-Daten fuer den Empfaenger-Picker der aktiven Bestellung.
+     *
+     * @return array{company: array, contact: array}
+     */
+    protected function recipientPickerData(?OrderItem $item): array
+    {
+        $companyAvailable = app()->bound(\Platform\Core\Contracts\CrmCompanyOptionsProviderInterface::class);
+        $contactAvailable = app()->bound(\Platform\Core\Contracts\CrmCompanyContactsProviderInterface::class);
+
+        $companyId = $item?->crm_company_id;
+        $contactId = $item?->crm_contact_id;
+
+        $options = [];
+        if ($companyAvailable) {
+            $options = app(\Platform\Core\Contracts\CrmCompanyOptionsProviderInterface::class)
+                ->options(trim((string) ($this->crmSearch['recipient'] ?? '')) ?: null, 20);
+        }
+
+        $companyLabel = null;
+        $companyUrl = null;
+        if ($companyId && app()->bound(\Platform\Core\Contracts\CrmCompanyResolverInterface::class)) {
+            $resolver = app(\Platform\Core\Contracts\CrmCompanyResolverInterface::class);
+            $companyLabel = $resolver->displayName((int) $companyId);
+            $companyUrl = $resolver->url((int) $companyId);
+        }
+
+        $contacts = [];
+        $contactLabel = null;
+        $contactUrl = null;
+        if ($contactAvailable && $companyId) {
+            $contacts = app(\Platform\Core\Contracts\CrmCompanyContactsProviderInterface::class)->contacts((int) $companyId);
+            foreach ($contacts as $c) {
+                if ((int) ($c['id'] ?? 0) === (int) $contactId) {
+                    $contactLabel = $c['name'] ?? null;
+                    break;
+                }
+            }
+            if ($contactId && app()->bound(\Platform\Core\Contracts\CrmContactResolverInterface::class)) {
+                $contactUrl = app(\Platform\Core\Contracts\CrmContactResolverInterface::class)->url((int) $contactId);
+            }
+        }
+
+        return [
+            'company' => [
+                'available' => $companyAvailable,
+                'options'   => $options,
+                'label'     => $companyLabel ?: ($item?->lieferant ?: null),
+                'url'       => $companyUrl,
+                'currentId' => $companyId,
+            ],
+            'contact' => [
+                'available'    => $contactAvailable,
+                'contacts'     => $contacts,
+                'currentId'    => $contactId,
+                'currentLabel' => $contactLabel,
+                'currentUrl'   => $contactUrl,
+                'hasCompany'   => (bool) $companyId,
+            ],
+        ];
     }
 
     public function convertFromQuote(int $quoteItemId): void
@@ -407,10 +524,12 @@ class Orders extends Component
 
         $activeItem = null;
         $positions = collect();
+        $recipientPicker = ['company' => [], 'contact' => []];
         if ($this->activeItemId) {
             $activeItem = OrderItem::find($this->activeItemId);
             if ($activeItem) {
                 $positions = $activeItem->posList()->orderBy('sort_order')->get();
+                $recipientPicker = $this->recipientPickerData($activeItem);
             }
         }
 
@@ -449,6 +568,7 @@ class Orders extends Component
             'positions'      => $positions,
             'bausteine'      => $bausteine,
             'allowedGruppen' => $allowedGruppen,
+            'recipientPicker' => $recipientPicker,
         ]);
     }
 }

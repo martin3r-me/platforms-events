@@ -28,11 +28,74 @@
                     </p>
                 </div>
             </div>
-            <button wire:click="closePositions"
-                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-[0.68rem] font-semibold">
-                @svg('heroicon-o-arrow-left', 'w-3.5 h-3.5')
-                Zurück
-            </button>
+            <div class="flex items-center gap-2">
+                <a href="{{ route('events.order-form.pdf', ['event' => $event->slug, 'orderItemId' => $activeItem->id]) }}"
+                   target="_blank"
+                   class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-orange-600 border border-orange-600 hover:bg-orange-700 text-white text-[0.68rem] font-semibold"
+                   title="Bestellschein (AUFTRAG) als PDF">
+                    @svg('heroicon-o-document-arrow-down', 'w-3.5 h-3.5')
+                    Bestellschein PDF
+                </a>
+                <button wire:click="closePositions"
+                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-[0.68rem] font-semibold">
+                    @svg('heroicon-o-arrow-left', 'w-3.5 h-3.5')
+                    Zurück
+                </button>
+            </div>
+        </div>
+
+        {{-- Empfänger des Bestellscheins (externer Dienstleister) --}}
+        <div class="bg-white border border-[var(--ui-border)] rounded-xl shadow-sm mb-4 p-4">
+            <div class="flex items-center gap-2 mb-3">
+                <div class="w-[3px] h-3.5 bg-orange-600 rounded-sm"></div>
+                <span class="text-[0.72rem] font-bold text-[var(--ui-secondary)]">Bestellschein-Empfänger</span>
+                <span class="text-[0.6rem] text-[var(--ui-muted)]">· Dienstleister, an den der AUFTRAG geht</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[0.6rem] font-semibold text-[var(--ui-muted)] block mb-1">Firma (CRM)</label>
+                    @include('events::partials.crm-company-picker', [
+                        'slot'          => 'recipient',
+                        'available'     => $recipientPicker['company']['available'] ?? false,
+                        'options'       => $recipientPicker['company']['options']   ?? [],
+                        'label'         => $recipientPicker['company']['label']     ?? null,
+                        'url'           => $recipientPicker['company']['url']       ?? null,
+                        'currentId'     => $recipientPicker['company']['currentId'] ?? null,
+                        'fallbackField' => null,
+                        'placeholder'   => '— CRM-Firma wählen —',
+                    ])
+                </div>
+                <div>
+                    <label class="text-[0.6rem] font-semibold text-[var(--ui-muted)] block mb-1">Ansprechpartner (CRM)</label>
+                    <div wire:key="order-recipient-contact-{{ $activeItem->id }}-{{ md5(json_encode($recipientPicker['contact']['contacts'] ?? [])) }}">
+                        @include('events::partials.crm-contact-picker', [
+                            'slot'          => 'recipient',
+                            'available'     => $recipientPicker['contact']['available']    ?? false,
+                            'contacts'      => $recipientPicker['contact']['contacts']     ?? [],
+                            'currentId'     => $recipientPicker['contact']['currentId']    ?? null,
+                            'currentLabel'  => $recipientPicker['contact']['currentLabel'] ?? null,
+                            'currentUrl'    => $recipientPicker['contact']['currentUrl']   ?? null,
+                            'hasCompany'    => $recipientPicker['contact']['hasCompany']   ?? false,
+                            'fallbackField' => null,
+                            'placeholder'   => '— Kontakt wählen —',
+                        ])
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[0.6rem] font-semibold text-[var(--ui-muted)] block mb-1">Telefon</label>
+                    <input type="text" value="{{ $activeItem->empfaenger_tel }}"
+                           wire:change="updateItemTel($event.target.value)"
+                           placeholder="— (CRM liefert kein Telefon)"
+                           class="w-full border border-slate-200 rounded-md px-2 py-1 text-[0.7rem] bg-white">
+                </div>
+                <div>
+                    <label class="text-[0.6rem] font-semibold text-[var(--ui-muted)] block mb-1">Bemerkung</label>
+                    <input type="text" value="{{ $activeItem->bemerkung }}"
+                           wire:change="updateItemBemerkung($event.target.value)"
+                           placeholder="Bemerkung auf dem Bestellschein"
+                           class="w-full border border-slate-200 rounded-md px-2 py-1 text-[0.7rem] bg-white">
+                </div>
+            </div>
         </div>
 
         @include('events::partials.order-positions-editor')

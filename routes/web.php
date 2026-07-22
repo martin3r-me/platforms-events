@@ -4,6 +4,7 @@ use Platform\Events\Http\Controllers\CalendarIcalController;
 use Platform\Events\Http\Controllers\ContractAssetController;
 use Platform\Events\Http\Controllers\ContractPdfController;
 use Platform\Events\Http\Controllers\InvoicePdfController;
+use Platform\Events\Http\Controllers\OrderFormPdfController;
 use Platform\Events\Http\Controllers\QuotePdfController;
 use Platform\Events\Http\Controllers\ReportPdfController;
 use Platform\Events\Http\Controllers\SignatureController;
@@ -33,6 +34,7 @@ Route::delete('/va/{event}/sign/{role}', [SignatureController::class, 'reset'])-
 Route::get('/va/{event}/angebot/{quoteId}/pdf', [QuotePdfController::class, 'download'])->name('events.quote.pdf');
 Route::get('/va/{event}/vertrag/{contractId}/pdf', [ContractPdfController::class, 'download'])->name('events.contract.pdf');
 Route::get('/va/{event}/rechnung/{invoiceId}/pdf', [InvoicePdfController::class, 'download'])->name('events.invoice.pdf');
+Route::get('/va/{event}/bestellung/{orderItemId}/bestellschein/pdf', [OrderFormPdfController::class, 'download'])->name('events.order-form.pdf');
 Route::get('/va/{event}/projekt-function/pdf', [ReportPdfController::class, 'projektFunction'])->name('events.projekt-function.pdf');
 Route::get('/va/{event}/schlussbericht/pdf', [ReportPdfController::class, 'finalReport'])->name('events.final-report.pdf');
 Route::get('/va/{event}/function-sheet/pdf', [ReportPdfController::class, 'functionSheet'])->name('events.function-sheet.pdf');
