@@ -22,7 +22,7 @@ class OrderItem extends Model
         'typ', 'status', 'price_mode',
         'artikel', 'positionen', 'einkauf', 'lieferant', 'sort_order',
         // Bestellschein-Empfaenger (externer Dienstleister)
-        'crm_company_id', 'crm_contact_id', 'empfaenger_tel', 'bemerkung',
+        'crm_company_id', 'crm_contact_id', 'empfaenger_tel', 'bemerkung', 'order_form_mode',
     ];
 
     protected $casts = [
@@ -73,5 +73,32 @@ class OrderItem extends Model
             }
         }
         return (string) ($this->lieferant ?? '');
+    }
+
+    /**
+     * Ob fuer diesen Vorgang ein Bestellschein relevant ist.
+     * Modus 'on'/'off' erzwingt; 'auto' (Default) leitet aus den Positionen ab:
+     * mind. eine effektiv-supplier-Position (via ProcurementTypeResolver).
+     *
+     * @param iterable|null $positions  bereits geladene Positionen (spart Query)
+     * @param array|null    $articleLookup  vorgebauter Katalog-Lookup (spart Query)
+     */
+    public function isOrderFormRelevant($positions = null, ?array $articleLookup = null): bool
+    {
+        $mode = $this->order_form_mode ?: 'auto';
+        if ($mode === 'on')  return true;
+        if ($mode === 'off') return false;
+
+        $positions = $positions ?? $this->posList;
+        foreach ($positions as $pos) {
+            $type = \Platform\Events\Services\ProcurementTypeResolver::resolve(
+                $pos->procurement_type,
+                (string) ($pos->name ?? ''),
+                (int) $this->team_id,
+                $articleLookup
+            );
+            if ($type === 'supplier') return true;
+        }
+        return false;
     }
 }

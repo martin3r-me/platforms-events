@@ -29,13 +29,15 @@
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <a href="{{ route('events.order-form.pdf', ['event' => $event->slug, 'orderItemId' => $activeItem->id]) }}"
-                   target="_blank"
-                   class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-orange-600 border border-orange-600 hover:bg-orange-700 text-white text-[0.68rem] font-semibold"
-                   title="Bestellschein (AUFTRAG) als PDF">
-                    @svg('heroicon-o-document-arrow-down', 'w-3.5 h-3.5')
-                    Bestellschein PDF
-                </a>
+                @if($activeItemIsExternal ?? false)
+                    <a href="{{ route('events.order-form.pdf', ['event' => $event->slug, 'orderItemId' => $activeItem->id]) }}"
+                       target="_blank"
+                       class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-orange-600 border border-orange-600 hover:bg-orange-700 text-white text-[0.68rem] font-semibold"
+                       title="Bestellschein (AUFTRAG) als PDF">
+                        @svg('heroicon-o-document-arrow-down', 'w-3.5 h-3.5')
+                        Bestellschein PDF
+                    </a>
+                @endif
                 <button wire:click="closePositions"
                         class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-[0.68rem] font-semibold">
                     @svg('heroicon-o-arrow-left', 'w-3.5 h-3.5')
@@ -45,6 +47,7 @@
         </div>
 
         {{-- Empfänger des Bestellscheins (externer Dienstleister) --}}
+        @if($activeItemIsExternal ?? false)
         <div class="bg-white border border-[var(--ui-border)] rounded-xl shadow-sm mb-4 p-4">
             <div class="flex items-center gap-2 mb-3">
                 <div class="w-[3px] h-3.5 bg-orange-600 rounded-sm"></div>
@@ -97,6 +100,7 @@
                 </div>
             </div>
         </div>
+        @endif
 
         @include('events::partials.order-positions-editor')
 

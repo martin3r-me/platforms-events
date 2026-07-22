@@ -247,6 +247,30 @@ class Orders extends Component
         if ($item) $item->update(['bemerkung' => $bemerkung ?: null]);
     }
 
+    /** Bestellschein-Sichtbarkeit des Vorgangs: 'auto' | 'on' | 'off'. */
+    public function updateItemOrderFormMode(string $mode): void
+    {
+        if (!in_array($mode, ['auto', 'on', 'off'], true)) return;
+        $item = $this->activeOrderItem();
+        if ($item) $item->update(['order_form_mode' => $mode]);
+    }
+
+    /**
+     * Katalog-Lookup fuer die procurement_type-Ableitung (einmal pro Render).
+     * Leeres Array, wenn kein Katalog-Provider gebunden ist.
+     */
+    protected function procurementLookup(int $teamId): array
+    {
+        try {
+            if (app()->bound(\Platform\Core\Contracts\CatalogArticleProcurementMapProviderInterface::class)) {
+                return \Platform\Events\Services\ProcurementTypeResolver::buildArticleLookup($teamId);
+            }
+        } catch (\Throwable $e) {
+            // Katalog nicht verfuegbar
+        }
+        return [];
+    }
+
     /**
      * Baut die View-Daten fuer den Empfaenger-Picker der aktiven Bestellung.
      *
@@ -525,11 +549,16 @@ class Orders extends Component
         $activeItem = null;
         $positions = collect();
         $recipientPicker = ['company' => [], 'contact' => []];
+        $activeItemIsExternal = false;
         if ($this->activeItemId) {
             $activeItem = OrderItem::find($this->activeItemId);
             if ($activeItem) {
                 $positions = $activeItem->posList()->orderBy('sort_order')->get();
                 $recipientPicker = $this->recipientPickerData($activeItem);
+                $activeItemIsExternal = $activeItem->isOrderFormRelevant(
+                    $positions,
+                    $this->procurementLookup((int) $event->team_id)
+                );
             }
         }
 
@@ -569,6 +598,7 @@ class Orders extends Component
             'bausteine'      => $bausteine,
             'allowedGruppen' => $allowedGruppen,
             'recipientPicker' => $recipientPicker,
+            'activeItemIsExternal' => $activeItemIsExternal,
         ]);
     }
 }

@@ -71,6 +71,15 @@
                    wire:change="updateItemLieferant($event.target.value)"
                    placeholder="—"
                    class="w-[140px] border border-slate-200 rounded-md px-2 py-1 text-[0.65rem] bg-white">
+            <label class="text-[0.58rem] font-bold uppercase tracking-wider text-[var(--ui-muted)]" title="Ob dieser Vorgang extern bestellt wird und einen Bestellschein bekommt.">Bestellschein</label>
+            @php $ofMode = $activeItem->order_form_mode ?: 'auto'; @endphp
+            <select wire:change="updateItemOrderFormMode($event.target.value)"
+                    class="border border-slate-200 rounded-md px-2 py-1 text-[0.65rem] bg-white cursor-pointer font-semibold"
+                    title="Auto: sichtbar, wenn der Vorgang externe (supplier) Positionen hat.">
+                <option value="auto" @selected($ofMode === 'auto')>Auto{{ ($activeItemIsExternal ?? false) ? ' (an)' : ' (aus)' }}</option>
+                <option value="on"   @selected($ofMode === 'on')>Ja</option>
+                <option value="off"  @selected($ofMode === 'off')>Nein</option>
+            </select>
         </div>
     </div>
     @if(session('positionError'))
