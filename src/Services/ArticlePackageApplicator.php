@@ -44,6 +44,7 @@ class ArticlePackageApplicator
                 'ek'      => (float)  ($article['ek'] ?? 0),
                 'preis'   => (float)  ($pi->vk ?? ($article['vk'] ?? 0)),
                 'mwst'    => (string) ($article['mwst'] ?? '7%'),
+                'procurement_type' => $article['procurement_type'] ?? null,
             ];
             $payload['gesamt'] = (float) ($pi->gesamt ?: ((float) $payload['anz']) * $payload['preis']);
 
@@ -68,6 +69,7 @@ class ArticlePackageApplicator
                 'ek'            => $payload['ek'],
                 'preis'         => $payload['preis'],
                 'mwst'          => $payload['mwst'],
+                'procurement_type' => $payload['procurement_type'],
                 'gesamt'        => $payload['gesamt'],
                 'sort_order'    => ++$maxSort,
             ]);

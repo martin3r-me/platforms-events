@@ -38,7 +38,7 @@ class Orders extends Component
         'gruppe' => '', 'name' => '', 'anz' => '', 'anz2' => '',
         'start_time' => '', 'end_time' => '', 'inhalt' => '', 'gebinde' => '',
         'ek' => 0, 'mwst' => '7%',
-        'gesamt' => 0, 'bemerkung' => '',
+        'gesamt' => 0, 'bemerkung' => '', 'procurement_type' => null,
     ];
 
     // Mehrfachauswahl fuer Bulk-Delete von Positionen
@@ -366,6 +366,7 @@ class Orders extends Component
                 'gebinde'       => $p->gebinde,
                 'ek'            => $p->ek,
                 'mwst'          => $p->mwst,
+                'procurement_type' => $p->procurement_type,
                 'gesamt'        => $p->gesamt,
                 'bemerkung'     => $p->bemerkung,
                 'sort_order'    => $p->sort_order,
@@ -401,7 +402,7 @@ class Orders extends Component
             'gruppe' => '', 'name' => '', 'anz' => '', 'anz2' => '',
             'start_time' => '', 'end_time' => '', 'inhalt' => '', 'gebinde' => '',
             'ek' => 0, 'mwst' => '7%',
-            'gesamt' => 0, 'bemerkung' => '',
+            'gesamt' => 0, 'bemerkung' => '', 'procurement_type' => null,
         ];
     }
 
@@ -421,6 +422,7 @@ class Orders extends Component
         $this->newPosition['inhalt']   = (string) ($article['description'] ?? $article['offer_text'] ?? '');
         $this->newPosition['gebinde']  = (string) ($article['gebinde'] ?? '');
         $this->newPosition['ek']       = (float) ($article['ek'] ?? 0);
+        $this->newPosition['procurement_type'] = $article['procurement_type'] ?? null;
         if (!empty($article['mwst'])) $this->newPosition['mwst'] = (string) $article['mwst'];
     }
 

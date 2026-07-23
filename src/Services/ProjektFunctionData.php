@@ -15,6 +15,19 @@ class ProjektFunctionData
     {
         $event->loadMissing(['days.quoteItems.posList', 'scheduleItems', 'notes']);
 
+        // Beschaffungs-Klassifizierung: die Projekt-Function ist das Kuechen-/
+        // Regieblatt. Extern beschaffte (supplier) und reine Lager-Positionen
+        // (stock) gehoeren nicht darauf; kitchen + Unklassifizierte bleiben.
+        $teamId = (int) $event->team_id;
+        $articleLookup = [];
+        try {
+            if (app()->bound(\Platform\Core\Contracts\CatalogArticleProcurementMapProviderInterface::class)) {
+                $articleLookup = ProcurementTypeResolver::buildArticleLookup($teamId);
+            }
+        } catch (\Throwable $e) {
+            // Katalog nicht verfuegbar -> keine Klassifizierung, alles bleibt sichtbar
+        }
+
         $dayNames = [
             'Mo' => 'Montag', 'Di' => 'Dienstag', 'Mi' => 'Mittwoch',
             'Do' => 'Donnerstag', 'Fr' => 'Freitag', 'Sa' => 'Samstag', 'So' => 'Sonntag',
@@ -62,7 +75,7 @@ class ProjektFunctionData
             ->pluck('text')
             ->implode("\n");
 
-        $days = $event->days->map(function ($day) use ($schedule, $dayNames) {
+        $days = $event->days->map(function ($day) use ($schedule, $dayNames, $articleLookup, $teamId) {
             $datumFormatted = $day->datum
                 ? \Carbon\Carbon::parse($day->datum)->format('d.m.Y')
                 : '';
@@ -77,24 +90,35 @@ class ProjektFunctionData
 
             $vorgaenge = ($day->quoteItems ?? collect())
                 ->sortBy('sort_order')
-                ->map(function ($qi) {
+                ->map(function ($qi) use ($articleLookup, $teamId) {
                     $positionen = $qi->posList
                         ->sortBy('sort_order')
-                        ->map(fn ($p) => [
-                            'gruppe'    => $p->gruppe ?? '',
-                            'name'      => $p->name ?? '',
-                            'anz'       => $p->anz ?? '',
-                            'anz2'      => $p->anz2 ?? '',
-                            'start_time'   => $p->uhrzeit ?? '',
-                            'end_time'       => $p->bis ?? '',
-                            'inhalt'    => $p->inhalt ?? '',
-                            'gebinde'   => $p->gebinde ?? '',
-                            'ek'        => $p->ek ?? '',
-                            'preis'     => $p->preis ?? '',
-                            'gesamt'    => $p->gesamt ?? '',
-                            'mwst'      => $p->mwst ?? '',
-                            'bemerkung' => $p->bemerkung ?? '',
-                        ])
+                        ->map(function ($p) use ($articleLookup, $teamId) {
+                            $type = ProcurementTypeResolver::resolve(
+                                $p->procurement_type,
+                                (string) ($p->name ?? ''),
+                                $teamId,
+                                $articleLookup
+                            );
+                            return [
+                                'gruppe'    => $p->gruppe ?? '',
+                                'name'      => $p->name ?? '',
+                                'anz'       => $p->anz ?? '',
+                                'anz2'      => $p->anz2 ?? '',
+                                'start_time'   => $p->uhrzeit ?? '',
+                                'end_time'       => $p->bis ?? '',
+                                'inhalt'    => $p->inhalt ?? '',
+                                'gebinde'   => $p->gebinde ?? '',
+                                'ek'        => $p->ek ?? '',
+                                'preis'     => $p->preis ?? '',
+                                'gesamt'    => $p->gesamt ?? '',
+                                'mwst'      => $p->mwst ?? '',
+                                'bemerkung' => $p->bemerkung ?? '',
+                                'procurement_type' => $type,
+                            ];
+                        })
+                        // extern (supplier) + Lager (stock) raus; kitchen + unklassifiziert bleiben
+                        ->reject(fn ($row) => in_array($row['procurement_type'], ['supplier', 'stock'], true))
                         ->values()
                         ->toArray();
 
@@ -103,6 +127,8 @@ class ProjektFunctionData
                         'positionen' => $positionen,
                     ];
                 })
+                // Vorgaenge ohne verbleibende Positionen nicht anzeigen
+                ->filter(fn ($v) => !empty($v['positionen']))
                 ->values()
                 ->toArray();
 

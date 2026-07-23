@@ -46,7 +46,7 @@ class Quotes extends Component
         'gruppe' => '', 'name' => '', 'anz' => '', 'anz2' => '',
         'start_time' => '', 'end_time' => '', 'inhalt' => '', 'gebinde' => '',
         'basis_ek' => 0, 'ek' => 0, 'preis' => 0, 'mwst' => '7%',
-        'gesamt' => 0, 'bemerkung' => '',
+        'gesamt' => 0, 'bemerkung' => '', 'procurement_type' => null,
     ];
 
     // Mehrfachauswahl fuer Bulk-Delete von Positionen
@@ -566,7 +566,7 @@ class Quotes extends Component
             'gruppe' => '', 'name' => '', 'anz' => '', 'anz2' => '',
             'start_time' => '', 'end_time' => '', 'inhalt' => '', 'gebinde' => '',
             'basis_ek' => 0, 'ek' => 0, 'preis' => 0, 'mwst' => '7%',
-            'gesamt' => 0, 'bemerkung' => '',
+            'gesamt' => 0, 'bemerkung' => '', 'procurement_type' => null,
         ];
     }
 
@@ -833,6 +833,7 @@ class Quotes extends Component
         $this->newPosition['ek']       = (float) ($article['ek'] ?? 0);
         $this->newPosition['basis_ek'] = (float) ($article['ek'] ?? 0);
         $this->newPosition['preis']    = (float) ($article['vk'] ?? 0);
+        $this->newPosition['procurement_type'] = $article['procurement_type'] ?? null;
         if (!empty($article['mwst'])) $this->newPosition['mwst'] = (string) $article['mwst'];
     }
 
@@ -867,6 +868,7 @@ class Quotes extends Component
             'ek'            => (float) $this->newPosition['ek'],
             'preis'         => (float) $this->newPosition['preis'],
             'mwst'          => $this->newPosition['mwst'],
+            'procurement_type' => $this->newPosition['procurement_type'] ?? null,
             'gesamt'        => (float) ($this->newPosition['gesamt'] ?: ((float) $this->newPosition['anz']) * ((float) $this->newPosition['preis'])),
             'bemerkung'     => $this->newPosition['bemerkung'],
             'sort_order'    => $maxSort + 1,
