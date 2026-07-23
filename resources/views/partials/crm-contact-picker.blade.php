@@ -46,10 +46,16 @@
                 const btn = this.$refs.trigger;
                 if (!btn) return;
                 const r = btn.getBoundingClientRect();
+                // Mindestbreite, damit Kontaktname/E-Mail nicht abgeschnitten werden;
+                // auf Viewport begrenzen und bei Bedarf nach links schieben.
+                const width = Math.min(Math.max(r.width, 280), window.innerWidth - 16);
+                let left = r.left + window.scrollX;
+                const maxLeft = window.scrollX + window.innerWidth - width - 8;
+                if (left > maxLeft) left = Math.max(window.scrollX + 8, maxLeft);
                 this.pos = {
                     top: r.bottom + window.scrollY + 4,
-                    left: r.left + window.scrollX,
-                    width: r.width,
+                    left,
+                    width,
                 };
             },
             toggle() {
